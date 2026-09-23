@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "lib": ["ESNext", "DOM"],
+    "types": ["node", "vite/client", "vitest/globals"]
+  },
+  "include": ["resources/js/**/*.ts", "resources/js/**/*.vue", "tests/js/**/*.ts", "tests/e2e/**/*.ts"]
+}

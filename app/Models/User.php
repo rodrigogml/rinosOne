@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Models;
+
+use App\Domain\Access\Email\EmailNormalizer;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
+
+class User extends Authenticatable
+{
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable;
+
+    protected $table = 'user';
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
+    public const CREATED_AT = 'createdAt';
+
+    public const UPDATED_AT = 'updatedAt';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'email',
+        'displayName',
+        'passwordHash',
+        'emailVerifiedAt',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'passwordHash',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'emailVerifiedAt' => 'datetime',
+            'passwordHash' => 'hashed',
+        ];
+    }
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: static fn (string $email): string => EmailNormalizer::normalize($email),
+        );
+    }
+
+    public function getAuthPasswordName(): string
+    {
+        return 'passwordHash';
+    }
+
+    public function getAuthPassword(): string
+    {
+        return $this->passwordHash ?? '';
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $user): void {
+            $user->id ??= (string) Str::ulid();
+        });
+    }
+}

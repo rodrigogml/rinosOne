@@ -1,0 +1,86 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: PHP, Vue and browser checks
+    runs-on: ubuntu-latest
+    services:
+      mailpit:
+        image: axllent/mailpit:v1.31.2
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Prepare isolated application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          touch database/ci.sqlite
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+          sed -i 's|^DB_DATABASE=.*|DB_DATABASE=database/ci.sqlite|' .env
+          php artisan migrate --force
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      - name: Run backend tests
+        run: php artisan test
+
+      - name: Run SMTP integration tests
+        env:
+          MAILPIT_API_URL: http://127.0.0.1:8025
+          MAIL_HOST: 127.0.0.1
+          MAIL_PORT: 1025
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 1 http://127.0.0.1:8025/api/v1/info > /dev/null
+          php artisan test --filter=MailpitEmailRoundtripTest
+
+      - name: Run frontend unit tests
+        run: npm run test
+
+      - name: Check TypeScript
+        run: npm run type-check
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: |
+          composer audit --no-dev
+          npm audit --omit=dev --audit-level=high
+
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
