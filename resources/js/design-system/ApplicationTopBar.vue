@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BrandMark from './BrandMark.vue';
+import TenantSelector from './TenantSelector.vue';
 import UserMenu from './UserMenu.vue';
 
 defineProps<{
@@ -13,7 +14,7 @@ defineProps<{
     signOutLabel: string;
 }>();
 
-const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMenu: [] }>();
+const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMenu: []; openTenantCreation: []; openTenantManagement: [] }>();
 </script>
 
 <template>
@@ -25,6 +26,7 @@ const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMe
             </button>
         </div>
         <div class="application-top-bar__personal">
+            <TenantSelector @create="emit('openTenantCreation')" @manage="emit('openTenantManagement')" @changed="emit('openPersonalMenu')" />
             <UserMenu :display-name="displayName" :avatar-label="avatarLabel" :menu-label="menuLabel" :settings-label="settingsLabel" :settings-unavailable-label="settingsUnavailableLabel" :sign-out-label="signOutLabel" @sign-out="emit('signOut')" @opened="emit('openPersonalMenu')" />
         </div>
     </header>

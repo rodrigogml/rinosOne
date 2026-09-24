@@ -6,6 +6,14 @@ return [
         'tenantPrefix' => env('RINOS_TENANT_DATABASE_PREFIX', 'rinosone_'),
     ],
 
+    'tenantProvisioning' => [
+        'maximumAttempts' => (int) env('TENANT_PROVISIONING_MAXIMUM_ATTEMPTS', 3),
+        'retryDelaysMinutes' => array_values(array_filter(array_map(
+            static fn (string $delay): int => (int) trim($delay),
+            explode(',', env('TENANT_PROVISIONING_RETRY_DELAYS_MINUTES', '1,5,15')),
+        ), static fn (int $delay): bool => $delay > 0)),
+    ],
+
     'authentication' => [
         'emailChallengeLifetimeMinutes' => (int) env('ACCESS_EMAIL_CHALLENGE_LIFETIME_MINUTES', 10),
         'emailEmissionLimit' => (int) env('ACCESS_EMAIL_EMISSION_LIMIT', 3),

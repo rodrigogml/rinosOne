@@ -10,6 +10,8 @@ class AccessConfigurationTest extends TestCase
     {
         $this->assertSame('rinosone', config('access.schemas.core'));
         $this->assertSame('rinosone_', config('access.schemas.tenantPrefix'));
+        $this->assertSame(3, config('access.tenantProvisioning.maximumAttempts'));
+        $this->assertSame([1, 5, 15], config('access.tenantProvisioning.retryDelaysMinutes'));
         $this->assertSame(10, config('access.authentication.emailChallengeLifetimeMinutes'));
         $this->assertSame(3, config('access.authentication.emailEmissionLimit'));
         $this->assertSame(5, config('access.authentication.codeAttemptLimit'));

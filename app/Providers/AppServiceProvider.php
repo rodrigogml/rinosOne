@@ -21,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->app->make('migrator')->path(database_path('migrations/core'));
+
         Session::extend('rinos-database', function ($app): DatabaseSessionHandler {
             return new DatabaseSessionHandler(
                 $app['db']->connection(config('session.connection')),

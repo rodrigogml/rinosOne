@@ -23,7 +23,8 @@ describe('application top bar', () => {
 
         expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
         expect(wrapper.get('.application-top-bar__mobile-trigger img').attributes('src')).toBe('/assets/brand/logo-768.png');
-        expect(wrapper.get('[role="img"]').text()).toBe('RL');
+        expect(wrapper.get('button[aria-label="Selecionar organização"] [role="img"]').text()).toBe('?');
+        expect(wrapper.get('button[aria-label="Menu pessoal de Rodrigo Leitão"] [role="img"]').text()).toBe('RL');
         expect(wrapper.get('button[aria-label="Abrir navegação"]')).toBeTruthy();
         wrapper.unmount();
     });

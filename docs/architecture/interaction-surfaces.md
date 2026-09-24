@@ -9,13 +9,14 @@
 
 | Surface ID | Tipo | Usuários | Plataformas e form factors | Cobertura de produto | Tecnologia, linguagem e runtime | Estratégia de entrega | Sistema de design | Módulo/repositório | Status da decisão |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SURF-WEB-ACCESS | WEB | Visitante e usuário validado | Navegadores modernos em desktop, tablet e telefone | Cadastro, validação de e-mail, login, controle de sessões e casca autenticada global | Vue 3, TypeScript e navegador moderno | SPA responsiva | Tokens CSS, componentes próprios, temas, preferências locais, i18n e casca autenticada | `resources/js`, `resources/css`, `resources/views` | Aprovado |
+| SURF-WEB-ACCESS | WEB | Visitante e usuário validado | Navegadores modernos em desktop, tablet e telefone | Cadastro, validação de e-mail, login, controle de sessões, casca autenticada global e fundação de tenants | Vue 3, TypeScript e navegador moderno | SPA responsiva | Tokens CSS, componentes próprios, temas, preferências locais, i18n e casca autenticada | `resources/js`, `resources/css`, `resources/views` | Aprovado |
+| SURF-FUTURE-CONSUMERS | API | Integrações e interfaces futuras autorizadas | A definir por capacidade | Contratos JSON versionados já definidos, sem interface ou consumidor entregue nesta fase | API JSON `/api/v1` | A definir | Contratos independentes da web | `app`, `routes/api` | Adiado |
 
 ## Decisões entre Superfícies
 
 ### Política de capacidade e paridade
 
-Somente a web responsiva possui cobertura nesta fase. Consumidores futuros permanecem adiados e não possuem paridade implícita.
+A web responsiva é a única superfície humana entregue nesta fase. Consumidores futuros possuem somente a fronteira de API versionada necessária para a expansão, sem paridade implícita, interface ou cliente entregue.
 
 ### Domínio e contratos compartilhados
 
@@ -44,3 +45,4 @@ A web adota dez famílias cromáticas claro/escuro em tokens, com Rubi Industria
 | 2026-09-22 | SURF-WEB-ACCESS | Uma única web responsiva cobre o acesso inicial | Não há outra superfície aprovada; a API preserva a expansão futura | Briefing inicial |
 | 2026-09-23 | SURF-WEB-ACCESS | A fundação visual inclui temas, i18n e preferências locais | Mantém a experiência consistente e reutilizável sem expandir a capacidade de negócio | Plano de identidade visual |
 | 2026-09-24 | SURF-WEB-ACCESS | A área autenticada adota uma casca global com barra, área pessoal e painel móvel | Mantém pontos de orientação estáveis e prepara a futura navegação de módulos sem antecipar produtos | Plano da casca autenticada |
+| 2026-09-24 | SURF-WEB-ACCESS | O contexto de tenant complementa, mas não substitui, o workspace pessoal | Permite organizações distintas por aba sem esconder recursos pessoais nem compartilhar contexto | Plano da fundação de tenants |

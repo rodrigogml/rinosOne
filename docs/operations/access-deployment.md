@@ -9,7 +9,7 @@ Copie `.env.example` para `.env` e gere uma chave própria com `php artisan key:
 | Grupo | Variáveis | Regra operacional |
 | --- | --- | --- |
 | Aplicação | `APP_ENV`, `APP_KEY`, `APP_DEBUG`, `APP_URL` | Em produção, usar `APP_ENV=production`, `APP_DEBUG=false`, chave exclusiva e URL HTTPS pública. |
-| Banco | `DB_*`, `RINOS_CORE_DATABASE`, `RINOS_TENANT_DATABASE_PREFIX` | Usar um usuário de banco com permissões restritas ao schema principal. Executar migrations antes de iniciar a aplicação. |
+| Banco | `DB_*`, `RINOS_CORE_DATABASE`, `RINOS_TENANT_DATABASE_PREFIX`, `TENANT_RUNTIME_*`, `TENANT_PROVISIONING_*` | Usar credenciais separadas para runtime e provisionamento. Executar migrations globais antes de iniciar a aplicação; veja [provisionamento de tenants](tenant-provisioning.md). |
 | Cookies e sessão | `SESSION_*`, `ACCESS_PERSISTENT_*` | Em produção, `SESSION_SECURE_COOKIE=true`, `SESSION_HTTP_ONLY=true` e `SESSION_SAME_SITE=lax`. A sessão não expira por inatividade quando o valor configurado é `0`; a persistência só é criada após escolha explícita do usuário. |
 | Fila | `QUEUE_CONNECTION`, `DB_QUEUE_*` | Manter `database` e `DB_QUEUE_AFTER_COMMIT=true` para que mensagens só sejam entregues após a emissão estar persistida. |
 | E-mail | `MAIL_*` | Usar `smtp` somente com servidor SMTP configurado. `APP_URL` determina a raiz dos links enviados; localhost é adequado somente ao teste local. |
@@ -53,7 +53,7 @@ php artisan queue:restart
 | Worker de fila indisponível | Restaurar o worker. As mensagens pendentes permanecem na fila de banco; investigar jobs falhos sem copiar código, token ou link para tickets ou logs. |
 | SMTP indisponível | Validar conectividade e credenciais somente no ambiente. Após restaurar o SMTP, reiniciar o worker; o job será reprocessado conforme a política da fila. |
 | Sessão server-side indisponível | Restaurar a conexão com o banco. A pessoa com credencial persistente válida volta a receber uma sessão ao acessar a API; sem essa escolha, deverá entrar novamente. |
-| Migrations pendentes | Colocar a aplicação em manutenção quando necessário, executar `php artisan migrate --force`, verificar o status e então liberar a aplicação. |
+| Migrations globais pendentes | Colocar a aplicação em manutenção quando necessário, executar `php artisan migrate:global --force`, verificar o status e então liberar a aplicação. Migrations de tenant são responsabilidade do worker de provisionamento. |
 | Limpeza de emissões atrasada | Restaurar o scheduler e executar `php artisan access:purge-expired-challenges`. A expiração lógica continua sendo aplicada na confirmação. |
 
 ## Checklist antes da liberação

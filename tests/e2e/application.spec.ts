@@ -169,6 +169,48 @@ test('keeps the authenticated security actions keyboard accessible', async ({ pa
     await expect(preferences).toBeFocused();
 });
 
+test('keeps tenant context isolated by tab and clears it after a page reload', async ({ page, context }) => {
+    const tenants = [
+        { id: '01J00000000000000000000000', displayName: 'Ateliê Norte', state: 'ACTIVE', selectable: true, role: 'OWNER' },
+        { id: '01J00000000000000000000001', displayName: 'Ateliê Sul', state: 'ACTIVE', selectable: true, role: 'OWNER' },
+    ];
+
+    await context.route('**/api/v1/auth/session', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ persistentAuthentication: true, user }) });
+    });
+    await context.route('**/api/v1/tenants', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tenants }) });
+    });
+    await context.route('**/api/v1/tenants/*/contexts', async (route) => {
+        if (route.request().method() === 'DELETE') { await route.fulfill({ status: 204 }); return; }
+        const tenant = tenants.find((candidate) => route.request().url().includes(candidate.id));
+        await route.fulfill(tenant
+            ? { contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: `membership-${tenant.id}`, role: 'OWNER' }, availableModules: [] } }) }
+            : { contentType: 'application/json', status: 404, body: JSON.stringify({ error: { code: 'TENANT_NOT_AVAILABLE', message: 'Unavailable' } }) });
+    });
+
+    const secondTab = await context.newPage();
+    await page.goto('/');
+    await secondTab.goto('/');
+
+    await page.getByRole('button', { name: 'Selecionar organização' }).click();
+    await page.getByRole('button', { name: 'Ateliê Norte', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Organização atual: Ateliê Norte' })).toBeVisible();
+
+    await secondTab.getByRole('button', { name: 'Selecionar organização' }).click();
+    await secondTab.getByRole('button', { name: 'Ateliê Sul', exact: true }).click();
+    await expect(secondTab.getByRole('button', { name: 'Organização atual: Ateliê Sul' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Organização atual: Ateliê Norte' }).click();
+    await page.getByRole('button', { name: 'Usar somente meu espaço' }).click();
+    await expect(page.getByRole('button', { name: 'Selecionar organização' })).toBeVisible();
+    await expect(secondTab.getByRole('button', { name: 'Organização atual: Ateliê Sul' })).toBeVisible();
+
+    await secondTab.reload();
+    await expect(secondTab.getByRole('button', { name: 'Selecionar organização' })).toBeVisible();
+    await secondTab.close();
+});
+
 for (const viewport of [
     { name: 'telefone', width: 375, height: 667 },
     { name: 'tablet', width: 768, height: 1024 },
