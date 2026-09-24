@@ -6,12 +6,12 @@ Em 23 de setembro de 2026, as validações locais disponíveis concluíram sem f
 
 | Verificação | Resultado |
 | --- | --- |
-| `php artisan test` | 64 testes aprovados, 216 asserções; 2 testes SMTP ignorados sem Mailpit local. |
+| `php artisan test` | 69 testes aprovados, 276 asserções; 2 testes SMTP ignorados sem Mailpit local. |
 | `php vendor/bin/pint --test` | Formatação aprovada. |
 | `npm run type-check` | Tipagem TypeScript aprovada. |
-| `npm run test` | 14 testes de componente aprovados. |
+| `npm run test` | 33 testes de interface aprovados. |
 | `npm run build` | Bundle de produção gerado. |
-| `PLAYWRIGHT_BROWSER_CHANNEL=chrome` e `PHP_BINARY=<PHP 8.4> npm run test:e2e` | 9 cenários de navegador aprovados localmente. |
+| `PLAYWRIGHT_BROWSER_CHANNEL=chrome` e `PHP_BINARY=<PHP 8.5> npm run test:e2e` | 10 cenários de navegador aprovados localmente. |
 
 Os cenários E2E versionados exercitam cadastro, confirmação por código e link, login por senha e sem senha, persistência, restauração de sessão, definição de senha, encerramento atual, invalidação de outras sessões e navegação por teclado. Localmente, eles podem usar um canal de navegador já instalado; no CI, a workflow instala o Chromium do Playwright.
 

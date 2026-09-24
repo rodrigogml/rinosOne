@@ -1,0 +1,78 @@
+/* Semânticos: componentes usam estes aliases, jamais cores de marca diretamente. */
+:root,
+:root[data-theme='light'] {
+    color-scheme: light;
+    --color-canvas: var(--palette-industrial-ruby-light-canvas);
+    --color-canvas-background: var(--color-canvas);
+    --color-surface: var(--palette-industrial-ruby-light-surface);
+    --color-surface-raised: var(--color-silver-50);
+    --color-surface-muted: var(--color-silver-100);
+    --color-text-primary: var(--palette-industrial-ruby-light-text);
+    --color-text-secondary: var(--palette-industrial-ruby-light-muted);
+    --color-text-disabled: var(--color-silver-500);
+    --color-border-subtle: var(--color-silver-300);
+    --color-border-strong: var(--color-silver-500);
+    --color-action-primary: var(--palette-industrial-ruby-light-action);
+    --color-action-primary-hover: var(--palette-imperial-wine-light-action);
+    --color-action-primary-content: var(--color-white);
+    --color-action-secondary: var(--color-silver-100);
+    --color-action-secondary-content: var(--palette-industrial-ruby-light-action);
+    --color-focus-ring: var(--palette-industrial-ruby-light-action);
+    --color-success: var(--color-success-700);
+    --color-warning: var(--color-warning-700);
+    --color-danger: var(--color-danger-700);
+    --shadow-card: var(--shadow-elevation-card-light);
+    --shadow-float: var(--shadow-elevation-float-light);
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --color-canvas: var(--palette-industrial-ruby-dark-canvas);
+    --color-canvas-background: repeating-linear-gradient(45deg, rgb(255 255 255 / .022) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, rgb(0 0 0 / .16) 0 1px, transparent 1px 6px), linear-gradient(135deg, rgb(255 255 255 / .025), transparent 48%, rgb(0 0 0 / .10)), var(--color-canvas);
+    --color-surface: var(--palette-industrial-ruby-dark-surface);
+    --color-surface-raised: var(--palette-industrial-ruby-dark-raised);
+    --color-surface-muted: var(--palette-industrial-ruby-dark-muted-surface);
+    --color-text-primary: var(--palette-industrial-ruby-dark-text);
+    --color-text-secondary: var(--palette-industrial-ruby-dark-muted);
+    --color-text-disabled: var(--color-silver-500);
+    --color-border-subtle: var(--color-silver-700);
+    --color-border-strong: var(--color-silver-500);
+    --color-action-primary: var(--palette-industrial-ruby-dark-action);
+    --color-action-primary-hover: var(--palette-imperial-wine-dark-action);
+    --color-action-primary-content: var(--color-white);
+    --color-action-secondary: var(--color-graphite-700);
+    --color-action-secondary-content: var(--color-silver-50);
+    --color-focus-ring: var(--palette-industrial-ruby-dark-action);
+    --color-success: var(--color-success-300);
+    --color-warning: var(--color-warning-300);
+    --color-danger: var(--color-danger-300);
+    --shadow-card: var(--shadow-elevation-card-dark);
+    --shadow-float: var(--shadow-elevation-float-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme='system'] {
+        color-scheme: dark;
+        --color-canvas: var(--palette-industrial-ruby-dark-canvas);
+        --color-canvas-background: repeating-linear-gradient(45deg, rgb(255 255 255 / .022) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, rgb(0 0 0 / .16) 0 1px, transparent 1px 6px), linear-gradient(135deg, rgb(255 255 255 / .025), transparent 48%, rgb(0 0 0 / .10)), var(--color-canvas);
+        --color-surface: var(--palette-industrial-ruby-dark-surface);
+        --color-surface-raised: var(--palette-industrial-ruby-dark-raised);
+        --color-surface-muted: var(--palette-industrial-ruby-dark-muted-surface);
+        --color-text-primary: var(--palette-industrial-ruby-dark-text);
+        --color-text-secondary: var(--palette-industrial-ruby-dark-muted);
+        --color-text-disabled: var(--color-silver-500);
+        --color-border-subtle: var(--color-silver-700);
+        --color-border-strong: var(--color-silver-500);
+        --color-action-primary: var(--palette-industrial-ruby-dark-action);
+        --color-action-primary-hover: var(--palette-imperial-wine-dark-action);
+        --color-action-primary-content: var(--color-white);
+        --color-action-secondary: var(--color-graphite-700);
+        --color-action-secondary-content: var(--color-silver-50);
+        --color-focus-ring: var(--palette-industrial-ruby-dark-action);
+        --color-success: var(--color-success-300);
+        --color-warning: var(--color-warning-300);
+        --color-danger: var(--color-danger-300);
+        --shadow-card: var(--shadow-elevation-card-dark);
+        --shadow-float: var(--shadow-elevation-float-dark);
+    }
+}

@@ -1,11 +1,14 @@
 # Interface Specification: Acesso de Usuário
 
-**Feature**: `user-auth`  
-**Created**: 2026-09-22  
-**Status**: Draft  
-**Spec**: [spec.md](spec.md)  
-**Plan**: [plan.md](plan.md)  
+**Feature**: `user-auth`
+**Created**: 2026-09-22
+**Status**: Implemented
+**Spec**: [spec.md](spec.md)
+**Plan**: [plan.md](plan.md)
 **Surface Catalog**: [interaction-surfaces.md](../../architecture/interaction-surfaces.md)
+
+> [!IMPORTANT]
+> As regras, estados e contratos de acesso deste documento permanecem vigentes. A composição visual e os controles globais foram substituídos pela feature [Identidade Visual e Preferências de Interface](../visual-identity/spec.md), que é a referência para marca, tema, idioma, densidades, componentes, layout e acessibilidade dos fluxos web.
 
 ## Interface Coverage
 
@@ -17,7 +20,7 @@
 
 | Surface ID | Existing Route, Command, or Component | Evidence | Current Behavior |
 | --- | --- | --- | --- |
-| SURF-WEB-ACCESS | Nenhum | O repositório contém somente documentação; não há código de produção nem rota existente. | Todas as interações são novas. |
+| SURF-WEB-ACCESS | `resources/js/App.vue`, rotas web e API versionada | Interface Vue, contratos JSON, testes de componente, feature e navegador. | Cadastro, confirmação, login por senha ou e-mail e controles de sessão estão implementados. |
 
 ## Interaction Inventory
 
@@ -37,15 +40,15 @@
 **Purpose**: permitir que visitantes iniciem o cadastro e que usuários existentes escolham entrar por senha ou solicitar acesso sem senha.
 **Actors and Permissions**: visitante; usuário não autenticado; nenhuma ação exige sessão existente.
 **Entry and Navigation**: rota pública raiz; após cadastro ou solicitação de acesso, encaminha para INT-WEB-002; após login por senha bem-sucedido, encaminha para INT-WEB-003.
-**Content and Data**: marca do produto, título do fluxo, opção de criar conta, opção de entrar, campo de e-mail, campo de senha somente na opção correspondente, caixa “Manter-me conectado”, ação de acesso sem senha e mensagens neutras de retorno.
+**Content and Data**: logotipo acima do cartão, título do fluxo, campo de e-mail, campo de senha, caixa “Manter-me conectado”, ação principal dinâmica e mensagens neutras de retorno. Sem senha, a ação é “Entrar sem senha”; com senha, é “Entrar”. O link “Criar conta” abre a jornada própria de cadastro.
 **Actions and Behavior**: criar conta solicita confirmação de e-mail; entrar com senha inicia sessão quando as credenciais forem válidas; acesso sem senha solicita uma mensagem com link e código e preserva o e-mail digitado e a escolha de persistência no fluxo seguinte.
 **Validation and Feedback**: valida formato de e-mail antes do envio; apresenta requisitos de senha quando aplicável; respostas de cadastro e acesso sem senha permanecem neutras; erros de senha, limite e indisponibilidade preservam campos seguros e oferecem nova tentativa quando cabível.
 **Responsive/Adaptive Behavior**: desktop centraliza o formulário em coluna com largura legível; tablet mantém a mesma coluna com margens reduzidas; telefone ocupa a largura disponível, mantém botões com altura mínima adequada ao toque e evita que o teclado virtual cubra a ação principal.
-**Accessibility**: landmark principal, título de primeiro nível, rótulos persistentes, foco inicial no título e depois no campo de e-mail, navegação integral por teclado, mensagens de erro em região de anúncio e contraste suficiente sem depender de cor.
-**Localization**: conteúdo inicial em português do Brasil; termos canônicos são “Criar conta”, “Entrar”, “Acesso sem senha”, “E-mail” e “Senha”; mensagens não interpolam o e-mail completo em erros ou confirmações públicas.
-**Components and Design System**: componentes próprios de formulário, campo, botão, alerta e seletor de modo; tokens de cor, espaçamento, tipografia e foco do sistema de design da web.
+**Accessibility**: landmark principal, título de primeiro nível, rótulos persistentes, foco inicial no campo de e-mail, navegação integral por teclado, mensagens de erro em região de anúncio e contraste suficiente sem depender de cor.
+**Localization**: português do Brasil, inglês, espanhol e francês; termos canônicos incluem “Criar conta”, “Entrar”, “Entrar sem senha”, “E-mail” e “Senha”. Mensagens não interpolam o e-mail completo em erros ou confirmações públicas.
+**Components and Design System**: `AccessFrame`, `UiField`, `UiButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`, todos baseados em tokens centrais.
 **Integration and Contracts**: consome as operações de iniciar cadastro, entrar por senha e solicitar acesso sem senha em [auth-api.md](contracts/auth-api.md); envia `rememberMe` quando selecionado e não armazena código, link ou senha fora do envio da ação.
-**Telemetry**: registrar visualização, modo selecionado, envio concluído, falha categorizada e bloqueio temporário; excluir e-mail, senha, código, link, token e texto livre.
+**Telemetry**: N/A nesta fase. Não registrar e-mail, senha, código, link, token, nome de exibição ou texto livre.
 **Wireframe Requirement**: REQUIRED
 **Wireframe**: wireframes/int-web-001.md
 
@@ -53,14 +56,14 @@
 
 | State | Expected Presentation | Available Actions | Transition/Exit |
 | --- | --- | --- | --- |
-| initial | Modo de criar conta selecionado e e-mail vazio. | Escolher modo, preencher e-mail. | Validação local ou ready. |
+| initial | Entrada pronta, com e-mail e senha vazios. | Informar credenciais, manter conexão ou abrir utilitários. | empty ou ready. |
 | loading | N/A — não há leitura inicial necessária. | Nenhuma. | N/A. |
-| empty | Campos vazios e instrução curta. | Preencher e-mail e, no modo de senha, senha. | ready. |
-| ready | Campos válidos e ação principal habilitada. | Criar conta, entrar por senha ou pedir acesso sem senha. | processing. |
+| empty | Campos vazios e ação sem senha visível. | Preencher e-mail, senha ou criar conta. | ready. |
+| ready | E-mail válido; ação reflete a presença de senha. | Entrar, entrar sem senha ou criar conta. | processing. |
 | processing | Ação enviada fica indisponível e indica processamento. | Cancelar somente antes do envio efetivo. | success, validation-error, remote-error ou access-denied. |
 | success | Confirmação neutra de mensagem enviada ou sessão criada. | Continuar para confirmação ou segurança de acesso. | INT-WEB-002 ou INT-WEB-003. |
 | validation-error | Erro associado ao campo e resumo acessível. | Corrigir e reenviar. | ready. |
-| remote-error | Aviso sem dados sensíveis e ação “Tentar novamente”. | Tentar novamente ou trocar de modo. | processing ou ready. |
+| remote-error | Aviso sem dados sensíveis e ação “Tentar novamente”. | Tentar novamente ou criar conta. | processing ou ready. |
 | offline | Aviso de indisponibilidade local; dados seguros permanecem no formulário. | Verificar conexão e tentar novamente. | ready ao recuperar conexão. |
 | access-denied | Mensagem neutra para credencial inválida ou limite atingido. | Escolher alternativa permitida ou aguardar bloqueio. | ready. |
 | partial-stale | N/A — não há dados remotos parciais nesta tela. | N/A. | N/A. |
@@ -79,9 +82,9 @@
 **Responsive/Adaptive Behavior**: mesma coluna de leitura da entrada de acesso; código usa entrada otimizada para teclado físico e virtual, sem bloquear colagem; em telefone, contador, campos e ação permanecem visíveis acima do teclado virtual.
 **Accessibility**: título anuncia a etapa atual; foco vai ao código após o envio e ao nome de exibição depois de uma confirmação de cadastro; contador não anuncia cada segundo; erro, sucesso e expiração são anunciados uma vez; reenvio informa o tempo de espera em texto.
 **Localization**: português do Brasil; usa “Código de confirmação”, “Reenviar mensagem”, “Confirmar e-mail” e “Concluir acesso”. O código tem 6 dígitos numéricos e a emissão é invalidada após 3 erros por padrão; mensagens de expiração não expõem identificadores nem dados de conta.
-**Components and Design System**: reutiliza formulário, campo, botão, alerta, contador textual e tela de estado da web; não cria componente de credencial reutilizável fora desta feature sem necessidade futura aprovada.
+**Components and Design System**: reutiliza `AccessFrame`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, contador textual e os controles globais de apresentação.
 **Integration and Contracts**: consome confirmações por código e por link para validação e acesso sem senha em [auth-api.md](contracts/auth-api.md); a rota web do link remove o segredo da URL antes de chamar a API e não o expõe à telemetria.
-**Telemetry**: registrar início, confirmação por código ou link, reenvio, expiração, falha categorizada e bloqueio; excluir e-mail, código, link, token, nome de exibição e texto livre.
+**Telemetry**: N/A nesta fase. Não registrar e-mail, código, link, token, nome de exibição ou texto livre.
 **Wireframe Requirement**: REQUIRED
 **Wireframe**: wireframes/int-web-002.md
 
@@ -113,11 +116,11 @@
 **Actions and Behavior**: definir senha valida os critérios e atualiza o estado; encerrar a sessão atual encerra imediatamente o acesso naquele navegador; invalidar as demais sessões mantém somente a atual e a autenticação persistente associada a ela, quando houver, e revoga as demais; uma sessão persistente perdida no servidor é reconstruída automaticamente ao retornar à web.
 **Validation and Feedback**: senha exibe critérios e erro específico de força sem registrar seu conteúdo; invalidação das demais sessões exige confirmação; erros remotos permitem nova tentativa sem declarar quais dispositivos ou sessões existem.
 **Responsive/Adaptive Behavior**: desktop organiza ações de segurança em grupos claros; tablet e telefone empilham grupos e mantêm ações destrutivas separadas visualmente; confirmação é modal em desktop e painel de largura total em telefone.
-**Accessibility**: heading e landmarks distinguem senha e sessões; ação destrutiva recebe nome explícito, confirmação com foco inicial no texto explicativo e retorno de foco à ação original; alertas são anunciados; todos os controles atendem teclado, zoom e toque.
-**Localization**: português do Brasil; termos canônicos são “Definir senha”, “Encerrar esta sessão” e “Invalidar outras sessões”; mensagens distinguem a sessão atual das demais sem identificar dispositivos.
-**Components and Design System**: reutiliza agrupamento de configurações, formulário, botão, alerta, diálogo de confirmação e tokens de ação destrutiva do sistema de design web.
+**Accessibility**: heading e landmarks distinguem senha e sessões; ação destrutiva recebe nome explícito, confirmação prende o foco e o devolve à ação original; alertas são anunciados; todos os controles atendem teclado, zoom e toque.
+**Localization**: português do Brasil, inglês, espanhol e francês; termos canônicos são “Definir senha”, “Encerrar esta sessão” e “Invalidar outras sessões”; mensagens distinguem a sessão atual das demais sem identificar dispositivos.
+**Components and Design System**: reutiliza `AuthenticatedFrame`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, `UiDialog` e os controles globais de apresentação.
 **Integration and Contracts**: consome a leitura da sessão atual, definição de senha e encerramento de sessões em [auth-api.md](contracts/auth-api.md); não mantém estado local após encerramento ou invalidação que exija nova leitura.
-**Telemetry**: registrar visualização, definição de senha concluída ou falha categorizada, encerramento de sessão e invalidação das demais; excluir senha, identificadores de sessão e dados de dispositivo.
+**Telemetry**: N/A nesta fase. Não registrar senha, identificadores de sessão, dados de dispositivo ou conteúdo de formulário.
 **Wireframe Requirement**: REQUIRED
 **Wireframe**: wireframes/int-web-003.md
 

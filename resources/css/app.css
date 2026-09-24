@@ -1,4 +1,8 @@
 @import 'tailwindcss';
+@import './design-system/tokens.css';
+@import './design-system/themes.css';
+@import './design-system/base.css';
+@import './design-system/components.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,6 +10,5 @@
 @source '../**/*.{js,ts,vue}';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: var(--font-family-sans);
 }
