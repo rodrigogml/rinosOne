@@ -63,6 +63,23 @@ class TenantApiTest extends TestCase
             ->assertJsonPath('error.code', 'TENANT_NOT_AVAILABLE');
     }
 
+    public function test_listing_is_ordered_by_the_latest_successful_context_selection(): void
+    {
+        $user = User::factory()->create();
+        $older = $this->activeTenantFor($user);
+        $newer = $this->activeTenantFor($user);
+        TenantMembership::query()->where('idTenant', $older->id)->update(['lastContextSelectedAt' => now()->subMinute()]);
+
+        $this->actingAs($user)->postJson("/api/v1/tenants/{$newer->id}/contexts")->assertOk();
+
+        $this->actingAs($user)->getJson('/api/v1/tenants')
+            ->assertOk()
+            ->assertJsonPath('tenants.0.id', $newer->id)
+            ->assertJsonPath('tenants.1.id', $older->id);
+
+        $this->assertNotNull(TenantMembership::query()->where('idTenant', $newer->id)->value('lastContextSelectedAt'));
+    }
+
     public function test_owner_can_change_availability_and_the_tenant_stops_being_selectable(): void
     {
         $user = User::factory()->create();

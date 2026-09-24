@@ -73,11 +73,11 @@
 **Surface**: SURF-WEB-ACCESS
 **Surface Type**: WEB
 **Change Type**: NEW
-**Purpose**: listar organizações disponíveis, explicitar o contexto ativo e permitir criar, escolher, trocar ou encerrar um tenant sem ocultar funcionalidades pessoais.
+**Purpose**: listar organizações disponíveis, explicitar o contexto ativo e permitir escolher, trocar ou encerrar um tenant sem ocultar funcionalidades pessoais.
 **Actors and Permissions**: usuário autenticado e validado; a lista contém somente organizações vinculadas à pessoa.
 **Entry and Navigation**: abre pelo avatar de tenant. Em desktop é um popover ancorado ao acionador; em telefone é uma folha modal. Escape, toque externo quando aplicável e botão de fechar encerram sem modificar contexto.
-**Content and Data**: cabeçalho “Organização atual”; estado atual ou “Nenhuma selecionada”; ação “Usar somente meu espaço” quando houver tenant ativo; lista de organizações `ACTIVE`; e ações “Criar organização” e “Gerenciar organizações”. Organizações em preparação, falha ou inativas não aparecem na lista operacional.
-**Actions and Behavior**: escolher organização inicia validação e substitui o contexto apenas depois de sucesso. “Usar somente meu espaço” encerra o contexto atual. Criar e gerenciar abrem INT-WEB-003. Não há seleção automática, inclusive com uma única organização.
+**Content and Data**: cabeçalho “Organizações”; ação “Usar somente meu espaço” quando houver tenant ativo; até cinco organizações operacionais, com a selecionada no topo e indicação textual/visual; e o link “Gerenciar organizações”, reservado à tela futura de gestão. A lista vem ordenada pela seleção contextual válida mais recente. Acima de cinco itens, “Mais organizações” abre um diálogo de filtro com todos os vínculos e seus estados.
+**Actions and Behavior**: escolher organização inicia validação e substitui o contexto apenas depois de sucesso. “Usar somente meu espaço” encerra o contexto atual. O diálogo de mais organizações aceita filtro, setas, Enter e Escape. Não há seleção automática, inclusive com uma única organização; a recência não restaura contexto em abas.
 **Validation and Feedback**: carrega a lista ao abrir. Lista vazia apresenta explicação curta e ação de criar. Falha de rede preserva a seleção ativa e oferece nova tentativa. Uma resposta de acesso negado remove somente a opção afetada da apresentação atual e não revela sua causa.
 **Responsive/Adaptive Behavior**: popover respeita bordas da viewport e fica próximo ao avatar em telas largas. Em telefone abre da parte inferior, ocupa largura segura, respeita área segura e permite rolagem interna; lista, ações e botão de fechamento permanecem alcançáveis com teclado virtual aberto.
 **Accessibility**: usa diálogo não modal no desktop e diálogo modal no telefone; foco inicial no título/fechamento, ciclo de foco quando modal e retorno ao avatar ao fechar. Itens da lista têm nome, estado e indicação de seleção para leitor de tela; nunca dependem apenas de cor.
@@ -94,8 +94,8 @@
 | --- | --- | --- | --- |
 | initial | Superfície fechada até acionamento explícito. | Abrir pelo avatar. | Loading. |
 | loading | Esqueleto de cabeçalho e itens; tenant ativo ainda identificável na barra. | Fechar. | Ready, empty ou erro. |
-| empty | “Ainda não há organizações” e ação primária Criar organização. | Criar; fechar. | INT-WEB-003 ou initial. |
-| ready | Estado atual, lista operacional e ações de criação/gestão. | Selecionar, encerrar, criar, gerenciar, fechar. | Processing, INT-WEB-003 ou initial. |
+| empty | “Você não pertence a nenhuma organização” e link de gestão futura. | Fechar. | initial. |
+| ready | Lista operacional limitada e acesso a mais organizações/gestão futura. | Selecionar, encerrar, abrir mais organizações, fechar. | Processing ou initial. |
 | processing | Item solicitado mostra progresso e lista fica indisponível para nova troca. | Cancelar N/A — não há alteração local antes de sucesso. | Success, erro ou access-denied. |
 | success | Anúncio curto confirma a nova organização ou retorno ao espaço pessoal. | Continuar. | Fecha e INT-WEB-001 ready/initial. |
 | validation-error | N/A — não há campos nesse seletor. | — | — |

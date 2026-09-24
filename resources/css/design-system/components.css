@@ -97,14 +97,26 @@
 .tenant-selector__content h2, .tenant-selector__current, .tenant-selector__empty { margin: var(--space-0); }
 .tenant-selector__content h2 { color: var(--color-text-primary); font-family: var(--font-family-display); font-size: var(--font-size-lg); }
 .tenant-selector__current, .tenant-selector__empty { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-.tenant-selector__item, .tenant-selector__action { min-height: var(--control-height-sm); padding-inline: var(--space-3); border: var(--component-border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-primary); font: inherit; text-align: start; cursor: pointer; }
+.tenant-selector__item, .tenant-selector__action { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--control-height-sm); padding-inline: var(--space-3); border: var(--component-border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-primary); font: inherit; text-align: start; cursor: pointer; }
 .tenant-selector__item:hover, .tenant-selector__item[aria-current='true'] { background: var(--color-surface-muted); }
 .tenant-selector__error { margin: var(--space-0); color: var(--color-danger); font-size: var(--font-size-sm); }
 .tenant-selector__actions { display: grid; gap: var(--space-1); padding-top: var(--space-3); border-top: var(--component-border-width) solid var(--color-border-subtle); }
 .tenant-selector__action { color: var(--color-action-primary); font-weight: var(--font-weight-semibold); }
+.tenant-selector__action:disabled { color: var(--color-text-secondary); cursor: not-allowed; }
+.tenant-selector__check, .tenant-search__selected { color: var(--color-action-primary); font-weight: var(--font-weight-bold); }
+.tenant-selector__personal-space { color: var(--color-text-secondary); }
+.tenant-selector__more { color: var(--color-action-primary); font-weight: var(--font-weight-semibold); }
 .tenant-selector__backdrop { position: fixed; z-index: var(--layer-overlay); inset: var(--space-0); display: flex; align-items: end; background: var(--component-overlay-background); }
 .tenant-selector__panel--sheet { position: relative; top: auto; right: auto; width: 100%; max-height: min(80vh, calc(100vh - var(--space-8))); overflow-y: auto; border-radius: var(--radius-xl) var(--radius-xl) var(--space-0) var(--space-0); padding-top: var(--space-6); }
 .tenant-selector__close { position: absolute; top: var(--space-2); right: var(--space-3); width: var(--control-height-sm); height: var(--control-height-sm); border: var(--space-0); border-radius: 50%; background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-xl); cursor: pointer; }
+.tenant-search { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
+.tenant-search__input { min-height: var(--control-height-md); width: 100%; padding-inline: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-muted); color: var(--color-text-primary); font: inherit; }
+.tenant-search__list { display: grid; gap: var(--space-2); max-height: min(48vh, 22rem); overflow-y: auto; }
+.tenant-search__card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; min-height: var(--control-height-md); padding: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-raised); color: var(--color-text-primary); font: inherit; text-align: start; cursor: pointer; }
+.tenant-search__card:hover, .tenant-search__card--active { border-color: var(--color-action-primary); background: var(--color-surface-muted); }
+.tenant-search__card:disabled { color: var(--color-text-secondary); cursor: not-allowed; }
+.tenant-search__card small, .tenant-search__empty { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.tenant-search__empty { margin: var(--space-0); }
 .tenant-management__form, .tenant-management__list { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
 .tenant-management__item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); }
 .tenant-management__item > div { display: grid; gap: var(--space-2); color: var(--color-text-primary); }

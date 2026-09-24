@@ -24,6 +24,8 @@ class TenantController
             ->with('tenant')
             ->where('idUser', request()->user()->id)
             ->where('state', TenantMembershipState::Active)
+            ->orderByDesc('lastContextSelectedAt')
+            ->orderByDesc('updatedAt')
             ->get();
 
         return response()->json(['tenants' => $memberships->map(fn (TenantMembership $membership): array => [
@@ -56,6 +58,7 @@ class TenantController
             return $this->notAvailable();
         }
 
+        $membership->update(['lastContextSelectedAt' => now()]);
         $securityEvents->record(TenantSecurityEvent::ContextSelected, request()->user()->id);
 
         return response()->json(['context' => $contexts->context($membership)]);

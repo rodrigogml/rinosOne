@@ -14,7 +14,7 @@ defineProps<{
     signOutLabel: string;
 }>();
 
-const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMenu: []; openTenantCreation: []; openTenantManagement: [] }>();
+const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMenu: [] }>();
 </script>
 
 <template>
@@ -26,7 +26,7 @@ const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openPersonalMe
             </button>
         </div>
         <div class="application-top-bar__personal">
-            <TenantSelector @create="emit('openTenantCreation')" @manage="emit('openTenantManagement')" @changed="emit('openPersonalMenu')" />
+            <TenantSelector @changed="emit('openPersonalMenu')" />
             <UserMenu :display-name="displayName" :avatar-label="avatarLabel" :menu-label="menuLabel" :settings-label="settingsLabel" :settings-unavailable-label="settingsUnavailableLabel" :sign-out-label="signOutLabel" @sign-out="emit('signOut')" @opened="emit('openPersonalMenu')" />
         </div>
     </header>

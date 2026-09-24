@@ -25,6 +25,7 @@ class TenantMembership extends Model
         'idUser',
         'role',
         'state',
+        'lastContextSelectedAt',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class TenantMembership extends Model
         return [
             'role' => TenantMembershipRole::class,
             'state' => TenantMembershipState::class,
+            'lastContextSelectedAt' => 'datetime',
         ];
     }
 

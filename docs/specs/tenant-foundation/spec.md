@@ -21,6 +21,12 @@ Um tenant representa uma organização com identidade estável, ciclo de vida pr
 permitir que a mesma pessoa trabalhe com organizações distintas em abas distintas, sem misturar dados, permissões,
 ações ou estados transitórios.
 
+## Clarifications
+
+### Session 2026-09-24
+
+- Q: A lista de organizações deve lembrar a última organização usada entre sessões e abas? -> A: Sim, por usuário e vínculo, após seleção contextual validada.
+
 ## Cenários de Usuário e Testes
 
 ### User Story 1 - Criar uma organização de trabalho (Prioridade: P1)
@@ -68,6 +74,8 @@ persistente no workspace, seus recursos pessoais preservados e apenas os recurso
    **então** o contexto é negado sem expor dados internos da organização.
 5. **Dado** que tenho apenas uma organização disponível, **quando** entro no workspace, **então** ela não é selecionada
    automaticamente.
+6. **Dado** que seleciono uma organização com sucesso, **quando** volto a abrir o seletor nesta ou em outra aba,
+   **então** ela aparece primeiro na lista pessoal sem restaurar nem modificar o contexto das abas.
 
 ---
 
@@ -169,6 +177,8 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
   encerramento e tentativa negada de contexto sem incluir dados do tenant além do necessário para segurança e suporte.
 - **FR-TEN-019**: A feature NÃO DEVE introduzir, nesta fase, convites, gestão de membros, papéis além do proprietário
   inicial, permissões detalhadas, módulos de negócio ou exclusão definitiva de tenant.
+- **FR-TEN-020**: O sistema DEVE registrar a recência de uma seleção contextual somente após validação bem-sucedida e
+  usá-la para ordenar a lista pessoal de organizações, sem armazenar ou restaurar o tenant ativo da aba.
 
 ### Entidades Principais
 

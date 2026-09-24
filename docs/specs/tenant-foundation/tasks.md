@@ -164,6 +164,19 @@ Ref: [plan.md](plan.md#Migrations-e-conexões), [database-topology.md](../../arc
 
 ---
 
+## FASE 5 - Refinamento do Seletor de Organizações
+
+### 5.1 Recência, apresentação e busca `[A]`
+
+Ref: [spec.md](spec.md#requisitos), [interface-spec.md](interface-spec.md#int-web-002--seletor-de-tenant), [tenant-context.md](contracts/tenant-context.md)
+
+- [x] 5.1.1 Persistir a última seleção contextual válida por vínculo e ordenar a listagem pessoal sem restaurar contexto entre abas.
+- [x] 5.1.2 Remodelar o popover com título, até cinco organizações, organização ativa destacada, estado vazio e separador de gestão futura.
+- [x] 5.1.3 Criar diálogo reutilizável de mais organizações com filtro, cartões de estado e suporte a setas, Enter e Escape.
+- [x] 5.1.4 Atualizar traduções, testes de API e componentes para a nova interação, preservando os quatro idiomas.
+
+---
+
 ## Matriz de Dependências
 
 ```mermaid
@@ -172,6 +185,7 @@ flowchart TD
     F2[FASE 2 - Domínio, API e Segurança Contextual]
     F3[FASE 3 - Workspace e Interface Responsiva]
     F4[FASE 4 - Qualidade, Operação e Evidências]
+    F5[FASE 5 - Refinamento do Seletor]
 
     F1 --> F2
     F1 --> F3
@@ -179,6 +193,8 @@ flowchart TD
     F1 --> F4
     F2 --> F4
     F3 --> F4
+    F2 --> F5
+    F3 --> F5
 ```
 
 ## Cobertura de Interfaces
@@ -196,7 +212,8 @@ flowchart TD
 | 2 - Domínio, API e Segurança Contextual | 3 | 16 | C, A |
 | 3 - Workspace e Interface Responsiva | 3 | 16 | A |
 | 4 - Qualidade, Operação e Evidências | 4 | 19 | C, A |
-| **Total** | **13** | **66** | — |
+| 5 - Refinamento do Seletor de Organizações | 1 | 4 | A |
+| **Total** | **14** | **70** | — |
 
 ## Escopo Coberto
 
@@ -206,6 +223,7 @@ flowchart TD
 | TEN-FOUND-02 | Entidades, associação OWNER, estados, API e contexto explícito. | 2 |
 | TEN-FOUND-03 | Avatar, seletor, criação, gestão e troca responsiva por aba. | 3 |
 | TEN-FOUND-04 | Evidências de qualidade, integração MySQL e operação. | 4 |
+| TEN-FOUND-05 | Recência persistida e seletor limitado com busca acessível. | 5 |
 
 ## Escopo Excluído
 

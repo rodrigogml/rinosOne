@@ -35,6 +35,7 @@ Somente `ACTIVE` pode estabelecer novo contexto operacional.
 | `idUser` | CHAR(26) | FK obrigatória para `user.id` | Pessoa associada. |
 | `role` | VARCHAR(16) | obrigatório, valor inicial `OWNER` | Reservado à evolução de acesso. |
 | `state` | VARCHAR(16) | obrigatório, valor inicial `ACTIVE` | Impede uso contextual quando não ativo. |
+| `lastContextSelectedAt` | TIMESTAMP | nulo, indexado com usuário e estado | Última seleção contextual concluída; ordena a lista pessoal de organizações, sem restaurar contexto em uma aba. |
 | `createdAt` | TIMESTAMP | obrigatório | Instante de associação. |
 | `updatedAt` | TIMESTAMP | obrigatório | Última alteração do vínculo. |
 

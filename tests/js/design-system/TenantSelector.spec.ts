@@ -93,4 +93,23 @@ describe('tenant selector', () => {
         wrapper.unmount();
         Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
     });
+
+    it('limits the popover list and filters all organizations in the more dialog', async () => {
+        const organizations = Array.from({ length: 6 }, (_, index) => ({ ...tenant, id: `01J0000000000000000000000${index}`, displayName: `Organização ${index + 1}` }));
+        http.get.mockResolvedValue({ data: { tenants: organizations } });
+        const wrapper = mountSelector();
+
+        await wrapper.get('button[aria-label="Selecionar organização"]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.findAll('.tenant-selector__item')).toHaveLength(6);
+        await wrapper.get('.tenant-selector__more').trigger('click');
+        await wrapper.get('.tenant-search__input').setValue('6');
+        expect(wrapper.findAll('.tenant-search__card')).toHaveLength(1);
+        await wrapper.get('.tenant-search__input').trigger('keydown', { key: 'Enter' });
+        await flushPromises();
+
+        expect(http.post).toHaveBeenCalledWith(`/api/v1/tenants/${organizations[5].id}/contexts`);
+        wrapper.unmount();
+    });
 });

@@ -25,7 +25,7 @@ Erros de validação podem acrescentar `fields`, mapeando nomes `camelCase` a me
 
 | Campo | Tipo | Descrição |
 | --- | --- | --- |
-| `tenants` | array | Tenants associados ao usuário autenticado. |
+| `tenants` | array | Tenants associados ao usuário autenticado, em ordem de seleção contextual bem-sucedida mais recente; vínculos sem seleção anterior vêm depois. |
 | `tenants[].id` | string | ULID público do tenant. |
 | `tenants[].displayName` | string | Nome visível. |
 | `tenants[].state` | string | Estado atual de disponibilidade. |
@@ -63,7 +63,7 @@ Erros de validação podem acrescentar `fields`, mapeando nomes `camelCase` a me
 
 **Método**: `POST /api/v1/tenants/{tenantId}/contexts`
 
-O endpoint não grava o tenant ativo na sessão. Ele valida explicitamente a associação e devolve uma fotografia mínima para a aba que iniciou a seleção.
+O endpoint não grava o tenant ativo na sessão. Ele valida explicitamente a associação, registra a recência somente após sucesso e devolve uma fotografia mínima para a aba que iniciou a seleção. A recência não restaura nem compartilha contexto entre abas.
 
 ### Resposta (200)
 

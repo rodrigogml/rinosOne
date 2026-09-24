@@ -5,26 +5,29 @@ import { tenantApi } from '../tenant/tenantApi';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
 import type { TenantSummary } from '../tenant/tenantTypes';
 import TenantAvatar from './TenantAvatar.vue';
+import TenantSearchDialog from './TenantSearchDialog.vue';
 
-const emit = defineEmits<{ create: []; manage: []; changed: [displayName: string | null] }>();
+const emit = defineEmits<{ changed: [displayName: string | null] }>();
 const { t } = useI18n();
 const store = useTenantContextStore();
 const root = ref<HTMLElement | null>(null);
-const opener = ref<HTMLButtonElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const open = ref(false);
 const loading = ref(false);
 const error = ref('');
 const tenants = ref<TenantSummary[]>([]);
 const mobile = ref(false);
+const searchOpen = ref(false);
 const status = ref('');
 let returnFocus: HTMLElement | null = null;
 const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const activeName = computed(() => store.context?.tenant.displayName ?? null);
+const activeTenantId = computed(() => store.context?.tenant.id ?? null);
 const avatarLabel = computed(() => activeName.value ? t('access.tenant.currentAvatar', { name: activeName.value }) : t('access.tenant.selectAvatar'));
-const selectableTenants = computed(() => tenants.value.filter((tenant) => tenant.selectable));
-const currentLabel = computed(() => activeName.value ?? t('access.tenant.noneSelected'));
+const orderedTenants = computed(() => [...tenants.value].sort((left, right) => (left.id === activeTenantId.value ? -1 : right.id === activeTenantId.value ? 1 : 0)));
+const visibleTenants = computed(() => orderedTenants.value.filter((tenant) => tenant.selectable).slice(0, 5));
+const hasMore = computed(() => orderedTenants.value.length > 5);
 
 function updateViewport() { mobile.value = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches; }
 function close() { open.value = false; }
@@ -49,16 +52,11 @@ async function select(tenant: TenantSummary) {
         const context = await store.select(tenant.id);
         status.value = t('access.tenant.selected', { name: context.tenant.displayName });
         emit('changed', context.tenant.displayName);
+        searchOpen.value = false;
         close();
     } catch (reason) {
-        const statusCode = typeof reason === 'object' && reason !== null && 'response' in reason
-            ? (reason as { response?: { status?: unknown } }).response?.status
-            : undefined;
-
-        if (statusCode === 404) {
-            tenants.value = tenants.value.filter((candidate) => candidate.id !== tenant.id);
-        }
-
+        const statusCode = typeof reason === 'object' && reason !== null && 'response' in reason ? (reason as { response?: { status?: unknown } }).response?.status : undefined;
+        if (statusCode === 404) tenants.value = tenants.value.filter((candidate) => candidate.id !== tenant.id);
         error.value = t('access.tenant.selectFailed');
     }
 }
@@ -85,17 +83,16 @@ onBeforeUnmount(() => { window.removeEventListener('resize', updateViewport); do
 <template>
     <div ref="root" class="tenant-selector">
         <span class="sr-only" aria-live="polite">{{ status }}</span>
-        <button ref="opener" class="tenant-selector__trigger" type="button" :aria-label="avatarLabel" :aria-expanded="open" aria-haspopup="dialog" @click="toggle">
-            <TenantAvatar :display-name="activeName" :label="avatarLabel" />
-        </button>
+        <button class="tenant-selector__trigger" type="button" :aria-label="avatarLabel" :aria-expanded="open" aria-haspopup="dialog" @click="toggle"><TenantAvatar :display-name="activeName" :label="avatarLabel" /></button>
         <div v-if="open && mobile" class="tenant-selector__backdrop" @mousedown.self="close">
             <section ref="panel" class="tenant-selector__panel tenant-selector__panel--sheet" role="dialog" aria-modal="true" :aria-label="t('access.tenant.title')" tabindex="-1" @keydown="handleKeydown">
                 <button class="tenant-selector__close" type="button" :aria-label="t('access.tenant.close')" @click="close">×</button>
-                <div class="tenant-selector__content"><h2>{{ t('access.tenant.title') }}</h2><p class="tenant-selector__current">{{ t('access.tenant.current') }} <strong>{{ currentLabel }}</strong></p><p v-if="loading">{{ t('access.tenant.loading') }}</p><p v-else-if="error" class="tenant-selector__error" role="status">{{ error }}</p><template v-else><button v-if="store.hasContext" class="tenant-selector__item" type="button" @click="usePersonalSpace">{{ t('access.tenant.personalSpace') }}</button><p v-if="!selectableTenants.length" class="tenant-selector__empty">{{ t('access.tenant.empty') }}</p><button v-for="tenant in selectableTenants" :key="tenant.id" class="tenant-selector__item" type="button" :disabled="store.isChanging" :aria-current="store.context?.tenant.id === tenant.id ? 'true' : undefined" @click="select(tenant)">{{ tenant.displayName }}</button></template><div class="tenant-selector__actions"><button type="button" class="tenant-selector__action" @click="emit('create')">{{ t('access.tenant.create') }}</button><button type="button" class="tenant-selector__action" @click="emit('manage')">{{ t('access.tenant.manage') }}</button></div></div>
+                <div class="tenant-selector__content"><h2>{{ t('access.tenant.title') }}</h2><p v-if="loading">{{ t('access.tenant.loading') }}</p><p v-else-if="error" class="tenant-selector__error" role="status">{{ error }}</p><template v-else><button v-if="store.hasContext" class="tenant-selector__item tenant-selector__personal-space" type="button" @click="usePersonalSpace">{{ t('access.tenant.personalSpace') }}</button><p v-if="!tenants.length" class="tenant-selector__empty">{{ t('access.tenant.empty') }}</p><button v-for="tenant in visibleTenants" :key="tenant.id" class="tenant-selector__item" type="button" :disabled="store.isChanging" :aria-current="activeTenantId === tenant.id ? 'true' : undefined" @click="select(tenant)"><span>{{ tenant.displayName }}</span><span v-if="activeTenantId === tenant.id" class="tenant-selector__check" aria-hidden="true">✓</span></button><button v-if="hasMore" class="tenant-selector__item tenant-selector__more" type="button" @click="searchOpen = true">{{ t('access.tenant.more') }}</button></template><div class="tenant-selector__actions"><button type="button" class="tenant-selector__action" disabled :title="t('access.shell.settingsUnavailable')">{{ t('access.tenant.manage') }}</button></div></div>
             </section>
         </div>
         <section v-else-if="open" ref="panel" class="tenant-selector__panel" role="dialog" :aria-label="t('access.tenant.title')" tabindex="-1" @keydown="handleKeydown">
-            <div class="tenant-selector__content"><h2>{{ t('access.tenant.title') }}</h2><p class="tenant-selector__current">{{ t('access.tenant.current') }} <strong>{{ currentLabel }}</strong></p><p v-if="loading">{{ t('access.tenant.loading') }}</p><p v-else-if="error" class="tenant-selector__error" role="status">{{ error }}</p><template v-else><button v-if="store.hasContext" class="tenant-selector__item" type="button" @click="usePersonalSpace">{{ t('access.tenant.personalSpace') }}</button><p v-if="!selectableTenants.length" class="tenant-selector__empty">{{ t('access.tenant.empty') }}</p><button v-for="tenant in selectableTenants" :key="tenant.id" class="tenant-selector__item" type="button" :disabled="store.isChanging" :aria-current="store.context?.tenant.id === tenant.id ? 'true' : undefined" @click="select(tenant)">{{ tenant.displayName }}</button></template><div class="tenant-selector__actions"><button type="button" class="tenant-selector__action" @click="emit('create')">{{ t('access.tenant.create') }}</button><button type="button" class="tenant-selector__action" @click="emit('manage')">{{ t('access.tenant.manage') }}</button></div></div>
+            <div class="tenant-selector__content"><h2>{{ t('access.tenant.title') }}</h2><p v-if="loading">{{ t('access.tenant.loading') }}</p><p v-else-if="error" class="tenant-selector__error" role="status">{{ error }}</p><template v-else><button v-if="store.hasContext" class="tenant-selector__item tenant-selector__personal-space" type="button" @click="usePersonalSpace">{{ t('access.tenant.personalSpace') }}</button><p v-if="!tenants.length" class="tenant-selector__empty">{{ t('access.tenant.empty') }}</p><button v-for="tenant in visibleTenants" :key="tenant.id" class="tenant-selector__item" type="button" :disabled="store.isChanging" :aria-current="activeTenantId === tenant.id ? 'true' : undefined" @click="select(tenant)"><span>{{ tenant.displayName }}</span><span v-if="activeTenantId === tenant.id" class="tenant-selector__check" aria-hidden="true">✓</span></button><button v-if="hasMore" class="tenant-selector__item tenant-selector__more" type="button" @click="searchOpen = true">{{ t('access.tenant.more') }}</button></template><div class="tenant-selector__actions"><button type="button" class="tenant-selector__action" disabled :title="t('access.shell.settingsUnavailable')">{{ t('access.tenant.manage') }}</button></div></div>
         </section>
+        <TenantSearchDialog v-model="searchOpen" :tenants="orderedTenants" :selected-tenant-id="activeTenantId" @select="select" />
     </div>
 </template>
