@@ -160,7 +160,8 @@ test('keeps the authenticated security actions keyboard accessible', async ({ pa
     await page.keyboard.press('Escape');
     await expect(invalidator).toBeFocused();
 
-    const preferences = page.getByRole('button', { name: 'Preferências visuais' });
+    await page.getByRole('button', { name: 'Menu pessoal de Pessoa' }).click();
+    const preferences = page.getByRole('dialog', { name: 'Menu pessoal' }).getByRole('button', { name: 'Preferências visuais' });
     await preferences.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog', { name: 'Preferências visuais' })).toBeFocused();
@@ -187,11 +188,64 @@ for (const viewport of [
         expect(await page.getByRole('button', { name: 'Entrar sem senha' }).evaluate((element) => Number.parseFloat(getComputedStyle(element).minHeight))).toBeGreaterThanOrEqual(44);
 
         await page.locator('#theme-choice-light').click();
-        await page.locator('#font-scale-choice-compact').click();
-        await page.locator('#spacing-scale-choice-compact').click();
-        await page.locator('#component-scale-choice-compact').click();
+        await page.locator('#font-scale-choice-compact').press('Enter');
+        await page.locator('#spacing-scale-choice-compact').press('Enter');
+        await page.locator('#component-scale-choice-compact').press('Enter');
         await captureState(page, testInfo, `${viewport.name}-light-compact`);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+
+    test(`keeps the authenticated shell usable on ${viewport.name}`, async ({ page }, testInfo) => {
+        let signedOut = false;
+        await page.route('**/api/v1/auth/session', async (route) => {
+            if (route.request().method() === 'DELETE') {
+                signedOut = true;
+                await route.fulfill({ status: 204 });
+                return;
+            }
+            await route.fulfill(signedOut
+                ? { contentType: 'application/json', status: 401, body: JSON.stringify({ code: 'UNAUTHENTICATED' }) }
+                : { contentType: 'application/json', body: JSON.stringify({ persistentAuthentication: true, user }) });
+        });
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.goto('/');
+
+        await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Menu pessoal de Pessoa' })).toBeVisible();
+
+        if (viewport.width < 640) {
+            const navigationOpener = page.getByRole('button', { name: 'Abrir navegação' });
+            await expect(navigationOpener).toBeVisible();
+            await navigationOpener.focus();
+            await page.keyboard.press('Enter');
+            const drawer = page.getByRole('dialog', { name: 'Navegação' });
+            await expect(drawer).toBeVisible();
+            await expect(drawer.getByRole('link')).toHaveCount(0);
+            await page.keyboard.press('Escape');
+            await expect(navigationOpener).toBeFocused();
+        } else {
+            await expect(page.locator('.application-top-bar__desktop-brand')).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Abrir navegação' })).toBeHidden();
+        }
+
+        const personalMenuOpener = page.getByRole('button', { name: 'Menu pessoal de Pessoa' });
+        await personalMenuOpener.focus();
+        await page.keyboard.press('Enter');
+        const personalMenu = page.getByRole('dialog', { name: 'Menu pessoal' });
+        await expect(personalMenu).toBeVisible();
+        await expect(personalMenu.getByRole('button', { name: 'Configurações do usuário' })).toBeDisabled();
+
+        await personalMenu.getByRole('button', { name: 'Preferências visuais' }).click();
+        await page.locator('#theme-choice-dark').click();
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+        await page.keyboard.press('Escape');
+        await personalMenu.getByRole('button', { name: 'Idioma atual: Português (Brasil)' }).click();
+        await personalMenu.getByRole('option', { name: 'English' }).click();
+        await expect(page.getByRole('heading', { name: 'Access security' })).toBeVisible();
+        await captureState(page, testInfo, `${viewport.name}-authenticated-shell`);
+
+        await page.getByRole('button', { name: 'Sign out' }).click();
+        await expect(page.getByRole('heading', { name: 'Access your account' })).toBeVisible();
     });
 }
 

@@ -31,6 +31,7 @@ export const ptBR = {
             textDensity: 'Densidade do texto', spacing: 'Espaçamento', componentSize: 'Tamanho dos elementos',
             compact: 'Compacto', default: 'Padrão', comfortable: 'Confortável', large: 'Amplo', selectedLanguage: 'Idioma atual: {language}',
         },
+        shell: { menu: 'Menu pessoal', avatar: 'Menu pessoal de {name}', userSettings: 'Configurações do usuário', settingsUnavailable: 'Disponível em breve', signOut: 'Sair', openNavigation: 'Abrir navegação', closeNavigation: 'Fechar navegação', navigation: 'Navegação', emptyNavigation: 'Nenhuma área adicional está disponível nesta fase.' },
         feedback: {
             emailInvalid: 'Informe um e-mail válido.', displayNameRequired: 'Informe um nome de exibição.', verificationSent: 'Verifique seu e-mail para continuar.', codeExpired: 'Este código expirou. Solicite uma nova mensagem para continuar.',
             accessSuccess: 'Acesso concluído com sucesso.', requestFailed: 'Não foi possível concluir esta ação.',

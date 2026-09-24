@@ -1,7 +1,7 @@
 # Arquitetura das Superfícies de Interação
 
 **Criado**: 2026-09-22
-**Última atualização**: 2026-09-23
+**Última atualização**: 2026-09-24
 **Status**: Aprovado
 **Fontes**: briefing inicial, Constituição e plano da feature de acesso de usuário.
 
@@ -9,7 +9,7 @@
 
 | Surface ID | Tipo | Usuários | Plataformas e form factors | Cobertura de produto | Tecnologia, linguagem e runtime | Estratégia de entrega | Sistema de design | Módulo/repositório | Status da decisão |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SURF-WEB-ACCESS | WEB | Visitante e usuário validado | Navegadores modernos em desktop, tablet e telefone | Cadastro, validação de e-mail, login e controle de sessões | Vue 3, TypeScript e navegador moderno | SPA responsiva | Tokens CSS, componentes próprios, temas, preferências locais e i18n | `resources/js`, `resources/css`, `resources/views` | Aprovado |
+| SURF-WEB-ACCESS | WEB | Visitante e usuário validado | Navegadores modernos em desktop, tablet e telefone | Cadastro, validação de e-mail, login, controle de sessões e casca autenticada global | Vue 3, TypeScript e navegador moderno | SPA responsiva | Tokens CSS, componentes próprios, temas, preferências locais, i18n e casca autenticada | `resources/js`, `resources/css`, `resources/views` | Aprovado |
 
 ## Decisões entre Superfícies
 
@@ -43,3 +43,4 @@ A web adota dez famílias cromáticas claro/escuro em tokens, com Rubi Industria
 | --- | --- | --- | --- | --- |
 | 2026-09-22 | SURF-WEB-ACCESS | Uma única web responsiva cobre o acesso inicial | Não há outra superfície aprovada; a API preserva a expansão futura | Briefing inicial |
 | 2026-09-23 | SURF-WEB-ACCESS | A fundação visual inclui temas, i18n e preferências locais | Mantém a experiência consistente e reutilizável sem expandir a capacidade de negócio | Plano de identidade visual |
+| 2026-09-24 | SURF-WEB-ACCESS | A área autenticada adota uma casca global com barra, área pessoal e painel móvel | Mantém pontos de orientação estáveis e prepara a futura navegação de módulos sem antecipar produtos | Plano da casca autenticada |

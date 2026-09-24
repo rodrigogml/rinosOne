@@ -45,14 +45,16 @@ describe('authenticated security area', () => {
         document.body.replaceChildren();
     });
 
-    it('presents semantic security groups, reduced brand, and global presentation controls', async () => {
+    it('presents semantic security groups, global top bar, and personal presentation controls', async () => {
         const wrapper = mountAuthenticated(false, true);
         await flushPromises();
 
         expect(wrapper.get('#security-title').text()).toBe('Segurança de acesso');
-        expect(wrapper.get('img[alt="Rinos One"]').attributes('src')).toBe('/assets/brand/icon-192.png');
+        expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
+        expect(wrapper.get('button[aria-label="Menu pessoal de Person"]').text()).toContain('Pe');
         expect(wrapper.get('#password-title').text()).toBe('Senha');
         expect(wrapper.get('#sessions-title').text()).toBe('Sessões');
+        await wrapper.get('button[aria-label="Menu pessoal de Person"]').trigger('click');
         expect(wrapper.findAll('.presentation-control')).toHaveLength(2);
         expect(wrapper.text()).toContain('Você permanecerá conectado neste navegador.');
     });
@@ -122,6 +124,7 @@ describe('authenticated security area', () => {
         await flushPromises();
         const sessionRequests = http.get.mock.calls.length;
 
+        await wrapper.get('button[aria-label="Menu pessoal de Person"]').trigger('click');
         await wrapper.get('button[aria-haspopup="listbox"]').trigger('click');
         await wrapper.get('#language-option-en').trigger('click');
         expect(wrapper.get('#security-title').text()).toBe('Access security');
@@ -131,5 +134,23 @@ describe('authenticated security area', () => {
         await wrapper.vm.$nextTick();
         expect(buttonWithText(wrapper, 'Invalidate other sessions').attributes('disabled')).toBeDefined();
         expect(buttonWithText(wrapper, 'End this session').attributes('disabled')).toBeDefined();
+    });
+
+    it('uses the shared top bar to close the drawer and end the real authenticated session', async () => {
+        http.delete.mockResolvedValue({ data: null });
+        const wrapper = mountAuthenticated(true);
+        await flushPromises();
+
+        await wrapper.get('button[aria-label="Abrir navegação"]').trigger('click');
+        expect(wrapper.get('[role="dialog"][aria-label="Navegação"]').attributes('aria-modal')).toBe('true');
+
+        await wrapper.get('button[aria-label="Menu pessoal de Person"]').trigger('click');
+        expect(wrapper.findAll('[role="dialog"][aria-label="Navegação"]')).toHaveLength(0);
+
+        await wrapper.get('button[aria-label="Sair"]').trigger('click');
+        await flushPromises();
+
+        expect(http.delete).toHaveBeenCalledWith('/api/v1/auth/session');
+        expect(wrapper.get('h1').text()).toBe('Acesse sua conta');
     });
 });
