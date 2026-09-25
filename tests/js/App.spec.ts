@@ -63,7 +63,7 @@ describe('access entry and account creation', () => {
         expect(wrapper.find('#display-name').exists()).toBe(true);
     });
 
-    it('sends only the existing registration contract and retains display name for confirmation', async () => {
+    it('persists the display name with the registration request and asks only for the code afterwards', async () => {
         const wrapper = mount(App);
         await wrapper.get('button.access-link').trigger('click');
         http.post.mockResolvedValue({ data: { challengeId: 'challenge-1' } });
@@ -72,8 +72,8 @@ describe('access entry and account creation', () => {
         await wrapper.get('#email').setValue('person@example.test');
         await wrapper.get('form').trigger('submit');
 
-        expect(http.post).toHaveBeenCalledWith('/api/v1/auth/registrations', { email: 'person@example.test', rememberMe: false });
-        expect((wrapper.get('#display-name').element as HTMLInputElement).value).toBe('Person');
+        expect(http.post).toHaveBeenCalledWith('/api/v1/auth/registrations', { email: 'person@example.test', displayName: 'Person', rememberMe: false });
+        expect(wrapper.find('#display-name').exists()).toBe(false);
         expect(wrapper.get('#code').attributes('inputmode')).toBe('numeric');
     });
 

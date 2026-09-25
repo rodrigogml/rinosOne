@@ -56,7 +56,7 @@ describe('email confirmation', () => {
         await wrapper.get('form').trigger('submit');
 
         expect(http.post).toHaveBeenLastCalledWith('/api/v1/auth/email-verifications', {
-            challengeId: 'challenge-1', code: '123456', displayName: 'Person',
+            challengeId: 'challenge-1', code: '123456',
         });
     });
 

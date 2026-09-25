@@ -20,7 +20,7 @@ final class RegistrationInitiationService
         private readonly SecurityEventLogger $securityEvents,
     ) {}
 
-    public function initiate(string $email, string $origin, bool $rememberMeRequested): AuthenticationChallengeRequestResult
+    public function initiate(string $email, string $displayName, string $origin, bool $rememberMeRequested): AuthenticationChallengeRequestResult
     {
         $normalizedEmail = EmailNormalizer::normalize($email);
         $existingUser = User::query()->where('email', $normalizedEmail)->first();
@@ -34,12 +34,14 @@ final class RegistrationInitiationService
 
         $challengeId = (string) Str::ulid();
 
-        DB::transaction(function () use ($normalizedEmail, $rememberMeRequested, &$challengeId): void {
-            $user = User::query()->firstOrCreate(['email' => $normalizedEmail]);
+        DB::transaction(function () use ($normalizedEmail, $displayName, $rememberMeRequested, &$challengeId): void {
+            $user = User::query()->firstOrCreate(['email' => $normalizedEmail], ['displayName' => trim($displayName)]);
 
             if ($user->emailVerifiedAt !== null) {
                 return;
             }
+
+            $user->forceFill(['displayName' => trim($displayName)])->save();
 
             $issued = $this->challenges->issue(
                 $user,

@@ -17,6 +17,16 @@ Escopo: criar a base global e física de tenants, disponibilizar sua API e conte
 
 ---
 
+## FASE 0 - Migração do padrão de identidade `[C]`
+
+Ref: [Constituição](../../constitution.md#vi-identidades-numéricas-e-referências-unidirecionais), [database-topology.md](../../architecture/database-topology.md), [data-model.md](data-model.md)
+
+- [ ] 0.1 Substituir o padrão de identificadores textuais existente por `BIGINT UNSIGNED AUTO_INCREMENT` nas migrations e entidades globais, preservando a consistência entre PKs e FKs.
+- [ ] 0.2 Substituir validações, rotas, contratos e geração de chaves de intenção ligados ao padrão anterior; `Idempotency-Key` deve usar UUID v4 e não se tornar PK de domínio.
+- [ ] 0.3 Atualizar testes de backend, frontend e integração afetados e validar a derivação segura de `rinosone_{tenantId}` a partir de um inteiro sem sinal.
+
+---
+
 ## FASE 1 - Fundação de Dados e Provisionamento
 
 ### 1.1 Catálogos de migrations e dados globais `[C]`
@@ -24,7 +34,7 @@ Escopo: criar a base global e física de tenants, disponibilizar sua API e conte
 Ref: [plan.md](plan.md#Migrations-e-conexões), [data-model.md](data-model.md), [database-topology.md](../../architecture/database-topology.md)
 
 - [x] 1.1.1 Criar o catálogo `database/migrations/core/` sem mover ou alterar migrations globais já aplicadas.
-- [x] 1.1.2 Criar migrations globais para `tenant`, `tenantMembership` e `tenantProvisioning`, com ULIDs, constraints, índices e transições compatíveis com o modelo aprovado.
+- [x] 1.1.2 Criar migrations globais para `tenant`, `tenantMembership` e `tenantProvisioning`, com constraints, índices e transições compatíveis com o modelo então aprovado.
 - [x] 1.1.3 Criar o catálogo `database/migrations/tenant/` e sua baseline mínima, sem adicionar tabelas de módulos de negócio.
 - [x] 1.1.4 Implementar comando de migration global que execute o catálogo legado e o catálogo core de forma determinística.
 - [x] 1.1.5 Criar testes de schema para constraints de associação, unicidade da intenção e separação dos catálogos.
@@ -35,7 +45,7 @@ Ref: [plan.md](plan.md#Migrations-e-conexões), [research.md](research.md#decisi
 
 - [x] 1.2.1 Adicionar ao modelo de ambiente as configurações não sensíveis de conexão de provisionamento e da política de retentativas.
 - [x] 1.2.2 Configurar conexão global, conexão dinâmica de tenant e conexão de provisionamento sem expor credenciais no repositório.
-- [x] 1.2.3 Implementar derivação e validação estrita do schema `rinosone_{tenantId}` a partir de ULID, sem aceitar nome fornecido pela interface.
+- [x] 1.2.3 Implementar derivação e validação estrita do schema `rinosone_{tenantId}` a partir do identificador técnico, sem aceitar nome fornecido pela interface.
 - [x] 1.2.4 Documentar privilégios mínimos separados para runtime e provisionamento, incluindo preparação de schema e migrations.
 - [x] 1.2.5 Criar testes unitários para derivação de nome físico e rejeição de identificadores inválidos.
 

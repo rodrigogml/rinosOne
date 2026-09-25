@@ -28,7 +28,6 @@ const shell = ref<HTMLElement | null>(null);
 const windowArea = ref<HTMLElement | null>(null);
 const activeCategoryId = ref<string | null>(null);
 const megaMenuTop = ref('0px');
-const mobileTaskPanelOpen = ref(false);
 const mobileNavigationVisible = ref(props.mobileNavigationOpen);
 const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null }));
 const destinations = computed(() => availableWorkspaceDestinations(workspaceDestinations, context.value));
@@ -80,7 +79,7 @@ function openDestination(destination: WorkspaceDestination): void {
     closeNavigation();
     workspace.menuCollapsed = true;
     setMobileNavigationOpen(false);
-    mobileTaskPanelOpen.value = false;
+    workspace.mobileTaskPanelOpen = false;
 }
 
 function activateSurface(surfaceId: string): boolean {
@@ -90,7 +89,7 @@ function activateSurface(surfaceId: string): boolean {
 function requestCloseSurface(surfaceId: string): boolean {
     const result = workspace.requestCloseSurface(surfaceId);
     if (result === 'closed' && !workspace.surfaces.length) workspace.menuCollapsed = false;
-    if (!workspace.surfaces.length) mobileTaskPanelOpen.value = false;
+    if (!workspace.surfaces.length) workspace.mobileTaskPanelOpen = false;
     return result !== 'not-found';
 }
 
@@ -135,12 +134,6 @@ function onDocumentKeydown(event: KeyboardEvent): void {
     if (accepted) event.preventDefault();
 }
 
-function openMobileTaskPanel(): void {
-    if (!workspace.surfaces.length || workspace.dialogStack.length) return;
-    setMobileNavigationOpen(false);
-    mobileTaskPanelOpen.value = true;
-}
-
 function setMobileNavigationOpen(value: boolean): void {
     mobileNavigationVisible.value = value;
     emit('update:mobileNavigationOpen', value);
@@ -149,13 +142,16 @@ function setMobileNavigationOpen(value: boolean): void {
 watch(() => tenantContext.context?.tenant.id ?? null, () => {
     closeNavigation();
     setMobileNavigationOpen(false);
-    mobileTaskPanelOpen.value = false;
+    workspace.mobileTaskPanelOpen = false;
 });
 watch(() => workspace.dialogStack.length, (count) => {
     if (count) {
         setMobileNavigationOpen(false);
-        mobileTaskPanelOpen.value = false;
+        workspace.mobileTaskPanelOpen = false;
     }
+});
+watch(() => workspace.mobileTaskPanelOpen, (open) => {
+    if (open) setMobileNavigationOpen(false);
 });
 watch(() => props.mobileNavigationOpen, (open) => { mobileNavigationVisible.value = open; });
 watch(activeCategoryId, updateMegaMenuPosition);
@@ -198,7 +194,6 @@ onBeforeUnmount(() => {
                         :position-top="megaMenuTop"
                         @open-destination="openDestination"
                     />
-                    <button v-if="workspace.surfaces.length" class="workspace-mobile-task-trigger" type="button" @click="openMobileTaskPanel">{{ t('access.workspace.taskbar.label') }}</button>
                     <WorkspaceStage :surface="workspace.activeSurface" :surfaces="workspace.surfaces" @open-workspace-dialog="openWorkspaceDialog" @notify="notify" @request-close="requestCloseSurface" />
                 </div>
                 <WorkspaceTaskbar
@@ -213,6 +208,6 @@ onBeforeUnmount(() => {
         <WorkspaceOverlayHost :dialogs="workspace.dialogStack" @resolve="workspace.resolveDialog" />
         <WorkspaceNotificationHost :notifications="workspace.notificationQueue" :dismiss-label="t('access.workspace.notification.dismiss')" @dismiss="workspace.dismissNotification" />
         <MobileNavigationDrawer :model-value="mobileNavigationVisible" :brand-label="props.brandLabel" :title="t('access.workspace.navigation.title')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.navigation.empty')" :categories="workspaceNavigationCategories" :destinations="destinations" @update:model-value="setMobileNavigationOpen" @open-destination="openDestination" />
-        <WorkspaceMobileTaskPanel v-model="mobileTaskPanelOpen" :surfaces="workspace.surfaces" :active-surface-id="workspace.activeSurfaceId" :title="t('access.workspace.taskbar.label')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.mobile.noSurfaces')" :close-surface-label="t('access.workspace.taskbar.close')" :dirty-label="t('access.workspace.taskbar.dirty')" @activate="activateSurface" @request-close="requestCloseSurface" />
+        <WorkspaceMobileTaskPanel v-model="workspace.mobileTaskPanelOpen" :surfaces="workspace.surfaces" :active-surface-id="workspace.activeSurfaceId" :title="t('access.workspace.taskbar.label')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.mobile.noSurfaces')" :close-surface-label="t('access.workspace.taskbar.close')" :dirty-label="t('access.workspace.taskbar.dirty')" @activate="activateSurface" @request-close="requestCloseSurface" />
     </section>
 </template>

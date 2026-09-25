@@ -15,10 +15,10 @@ class CompleteEmailVerificationTest extends TestCase
 
     public function test_code_confirms_email_requires_name_and_authenticates_user(): void
     {
-        $user = User::factory()->unverified()->create(['displayName' => null]);
+        $user = User::factory()->unverified()->create(['displayName' => 'Visitante']);
         $issued = app(AuthenticationChallengeService::class)->issue($user, AuthenticationChallengePurpose::EmailVerification);
 
-        $this->postJson('/api/v1/auth/email-verifications', ['challengeId' => $issued->challengeId, 'code' => $issued->code, 'displayName' => 'Visitante'])
+        $this->postJson('/api/v1/auth/email-verifications', ['challengeId' => $issued->challengeId, 'code' => $issued->code])
             ->assertCreated()->assertJsonPath('user.id', $user->id)->assertJsonPath('user.displayName', 'Visitante')->assertJsonMissing(['email']);
 
         $this->assertAuthenticatedAs($user);
@@ -28,9 +28,9 @@ class CompleteEmailVerificationTest extends TestCase
 
     public function test_link_confirms_email_once_and_rejects_reuse(): void
     {
-        $user = User::factory()->unverified()->create(['displayName' => null]);
+        $user = User::factory()->unverified()->create(['displayName' => 'Visitante']);
         $issued = app(AuthenticationChallengeService::class)->issue($user, AuthenticationChallengePurpose::EmailVerification);
-        $payload = ['challengeId' => $issued->challengeId, 'token' => $issued->linkToken, 'displayName' => 'Visitante'];
+        $payload = ['challengeId' => $issued->challengeId, 'token' => $issued->linkToken];
 
         $this->postJson('/api/v1/auth/email-verifications/link-confirmations', $payload)->assertCreated();
         $this->postJson('/api/v1/auth/email-verifications/link-confirmations', $payload)->assertBadRequest()->assertJsonPath('code', 'INVALID_CREDENTIAL');
@@ -38,13 +38,12 @@ class CompleteEmailVerificationTest extends TestCase
 
     public function test_remember_me_choice_creates_persistent_authentication_for_link_confirmation(): void
     {
-        $user = User::factory()->unverified()->create(['displayName' => null]);
+        $user = User::factory()->unverified()->create(['displayName' => 'Visitante']);
         $issued = app(AuthenticationChallengeService::class)->issue($user, AuthenticationChallengePurpose::EmailVerification, true);
 
         $this->postJson('/api/v1/auth/email-verifications/link-confirmations', [
             'challengeId' => $issued->challengeId,
             'token' => $issued->linkToken,
-            'displayName' => 'Visitante',
         ])->assertCreated()->assertCookie(config('access.authentication.persistentCookieName'));
 
         $persistentAuthentication = $this->app['db']->table('persistentAuthentication')->where('idUser', $user->id)->sole();
@@ -55,24 +54,23 @@ class CompleteEmailVerificationTest extends TestCase
     public function test_expired_code_returns_neutral_invalid_credential(): void
     {
         Carbon::setTestNow('2026-09-23 12:00:00');
-        $user = User::factory()->unverified()->create(['displayName' => null]);
+        $user = User::factory()->unverified()->create(['displayName' => 'Visitante']);
         $issued = app(AuthenticationChallengeService::class)->issue($user, AuthenticationChallengePurpose::EmailVerification);
         Carbon::setTestNow('2026-09-23 12:10:00');
 
-        $this->postJson('/api/v1/auth/email-verifications', ['challengeId' => $issued->challengeId, 'code' => $issued->code, 'displayName' => 'Visitante'])
+        $this->postJson('/api/v1/auth/email-verifications', ['challengeId' => $issued->challengeId, 'code' => $issued->code])
             ->assertBadRequest()->assertJsonPath('code', 'INVALID_CREDENTIAL');
         Carbon::setTestNow();
     }
 
     public function test_code_confirmation_requires_exactly_six_numeric_digits(): void
     {
-        $user = User::factory()->unverified()->create(['displayName' => null]);
+        $user = User::factory()->unverified()->create(['displayName' => 'Visitante']);
         $issued = app(AuthenticationChallengeService::class)->issue($user, AuthenticationChallengePurpose::EmailVerification);
 
         $this->postJson('/api/v1/auth/email-verifications', [
             'challengeId' => $issued->challengeId,
             'code' => '12ab',
-            'displayName' => 'Visitante',
         ])->assertUnprocessable()->assertJsonValidationErrors('code');
     }
 }

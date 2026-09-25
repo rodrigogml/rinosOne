@@ -8,7 +8,7 @@ Todas as entidades desta feature pertencem ao schema principal `rinosone`. Nenhu
 
 | Campo | Tipo | Restrições | Observações |
 | --- | --- | --- | --- |
-| id | ULID | chave primária | Identificador público da conta. |
+| id | BIGINT UNSIGNED | chave primária | Identificador técnico da conta. |
 | email | string | obrigatório, único, normalizado | Identidade de acesso. |
 | displayName | string | obrigatório para acesso; ausente durante ativação | Nome informado após confirmar o e-mail. |
 | passwordHash | string | opcional | Nunca armazena senha em texto. |
@@ -34,8 +34,8 @@ A conta está apta à autenticação somente no estado `active`. A definição d
 
 | Campo | Tipo | Restrições | Observações |
 | --- | --- | --- | --- |
-| id | ULID | chave primária | Identifica uma emissão. |
-| userId | ULID | obrigatório após o cadastro inicial; referência a User | Titular da emissão. |
+| id | BIGINT UNSIGNED | chave primária | Identifica uma emissão. |
+| userId | BIGINT UNSIGNED | obrigatório após o cadastro inicial; referência a User | Titular da emissão. |
 | purpose | enum | `email_verification` ou `passwordless_login` | Finalidade única da emissão. |
 | secretHash | string | obrigatório | Hash do segredo opaco usado exclusivamente pelo link. |
 | codeHash | string | obrigatório para novas emissões | Hash do código numérico de seis dígitos; nenhuma cópia recuperável é persistida. |
@@ -67,8 +67,8 @@ O link recebe um segredo opaco e o código recebe seis dígitos numéricos indep
 | Campo | Tipo | Restrições | Observações |
 | --- | --- | --- | --- |
 | id | string | chave primária | Identificador opaco de sessão. |
-| userId | ULID | opcional antes da autenticação; referência a User após autenticar | Sessões técnicas anônimas podem existir para CSRF; uma sessão de acesso possui titular. |
-| persistentAuthenticationId | ULID | opcional; referência a PersistentAuthentication | Origem da sessão reconstruída, quando aplicável. |
+| userId | BIGINT UNSIGNED | opcional antes da autenticação; referência a User após autenticar | Sessões técnicas anônimas podem existir para CSRF; uma sessão de acesso possui titular. |
+| persistentAuthenticationId | BIGINT UNSIGNED | opcional; referência a PersistentAuthentication | Origem da sessão reconstruída, quando aplicável. |
 | payload | blob | obrigatório | Estado de sessão protegido pelo framework. |
 | lastActivityAt | timestamp | obrigatório | Última atividade observada. |
 
@@ -88,8 +88,8 @@ Sessões encerradas ou invalidadas são excluídas imediatamente, sem retenção
 
 | Campo | Tipo | Restrições | Observações |
 | --- | --- | --- | --- |
-| id | ULID | chave primária | Identifica uma autenticação persistente. |
-| userId | ULID | obrigatório; referência a User | Titular da credencial. |
+| id | BIGINT UNSIGNED | chave primária | Identifica uma autenticação persistente. |
+| userId | BIGINT UNSIGNED | obrigatório; referência a User | Titular da credencial. |
 | secretHash | string | obrigatório, único | Hash do segredo enviado somente no cookie persistente. |
 | createdAt | timestamp | obrigatório | Registro da criação. |
 | revokedAt | timestamp | opcional | Indica logout ou revogação. |

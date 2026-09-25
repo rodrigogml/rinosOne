@@ -6,16 +6,19 @@ export const VISUAL_PREFERENCES_VERSION = 1;
 export const VISUAL_PREFERENCES_STORAGE_KEY = `rinos-one.visual-preferences.v${VISUAL_PREFERENCES_VERSION}`;
 
 export const THEMES = ['system', 'light', 'dark'] as const;
+export const PALETTES = ['amethyst-technical', 'architectural-teal', 'refined-copper', 'imperial-wine', 'sober-emerald', 'mineral-gold', 'orbital-indigo', 'industrial-ruby', 'deep-cyan', 'executive-coral'] as const;
 export const LOCALES = ['pt-BR', 'en', 'es', 'fr'] as const;
 export const SCALES = ['compact', 'default', 'comfortable'] as const;
 
 export type ThemePreference = (typeof THEMES)[number];
+export type PalettePreference = (typeof PALETTES)[number];
 export type LocalePreference = (typeof LOCALES)[number];
 export type DensityPreference = (typeof SCALES)[number];
 
 export interface VisualPreferences {
     version: typeof VISUAL_PREFERENCES_VERSION;
     theme: ThemePreference;
+    palette: PalettePreference;
     locale: LocalePreference;
     fontScale: DensityPreference;
     spacingScale: DensityPreference;
@@ -25,6 +28,7 @@ export interface VisualPreferences {
 export const DEFAULT_VISUAL_PREFERENCES: Readonly<VisualPreferences> = Object.freeze({
     version: VISUAL_PREFERENCES_VERSION,
     theme: 'system',
+    palette: 'industrial-ruby',
     locale: 'pt-BR',
     fontScale: 'default',
     spacingScale: 'default',
@@ -53,6 +57,7 @@ export function normalizeVisualPreferences(value: unknown): VisualPreferences {
     return {
         version: VISUAL_PREFERENCES_VERSION,
         theme: isOneOf(source.theme, THEMES) ? source.theme : DEFAULT_VISUAL_PREFERENCES.theme,
+        palette: isOneOf(source.palette, PALETTES) ? source.palette : DEFAULT_VISUAL_PREFERENCES.palette,
         locale: isOneOf(source.locale, LOCALES) ? source.locale : DEFAULT_VISUAL_PREFERENCES.locale,
         fontScale: isOneOf(source.fontScale, SCALES) ? source.fontScale : DEFAULT_VISUAL_PREFERENCES.fontScale,
         spacingScale: isOneOf(source.spacingScale, SCALES) ? source.spacingScale : DEFAULT_VISUAL_PREFERENCES.spacingScale,
@@ -125,6 +130,7 @@ export function applyVisualPreferences(preferences: VisualPreferences, documentR
     const root = documentReference.documentElement;
 
     root.dataset.theme = preferences.theme;
+    root.dataset.palette = preferences.palette;
     root.dataset.fontScale = preferences.fontScale;
     root.dataset.spacingScale = preferences.spacingScale;
     root.dataset.componentScale = preferences.componentScale;

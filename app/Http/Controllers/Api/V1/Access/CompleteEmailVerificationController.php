@@ -15,12 +15,12 @@ class CompleteEmailVerificationController
 {
     public function byCode(CompleteEmailVerificationRequest $request, EmailVerificationService $verification): JsonResponse
     {
-        return $this->respond($verification->confirmByCode($request->string('challengeId')->toString(), $request->string('code')->toString(), $request->string('displayName')->toString(), $request->ip() ?? 'unknown'));
+        return $this->respond($verification->confirmByCode($request->string('challengeId')->toString(), $request->string('code')->toString(), $request->ip() ?? 'unknown'));
     }
 
     public function byLink(CompleteEmailVerificationLinkRequest $request, EmailVerificationService $verification): JsonResponse
     {
-        return $this->respond($verification->confirmByLink($request->string('challengeId')->toString(), $request->string('token')->toString(), $request->string('displayName')->toString()));
+        return $this->respond($verification->confirmByLink($request->string('challengeId')->toString(), $request->string('token')->toString()));
     }
 
     private function respond(?CompletedEmailVerification $completed): JsonResponse

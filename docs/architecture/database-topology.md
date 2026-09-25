@@ -8,9 +8,9 @@
 | Escopo | Padrão | Exemplo | Finalidade |
 | --- | --- | --- | --- |
 | Principal | `rinosone` | `rinosone` | Identidade, acesso e metadados globais da plataforma. |
-| Tenant | `rinosone_{tenantId}` | `rinosone_01j7m2x4p9k6v3q8r5s0t1v2w3` | Dados pertencentes a uma única organização e aos módulos contratados por ela. |
+| Tenant | `rinosone_{tenantId}` | `rinosone_42` | Dados pertencentes a uma única organização e aos módulos contratados por ela. |
 
-`tenantId` é um ULID estável, convertido para minúsculas. O nome da empresa não integra o schema: pode mudar sem renomear dados ou afetar integrações. O schema deve usar `CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`.
+`tenantId` é a PK numérica `BIGINT UNSIGNED` estável do tenant. O nome da empresa não integra o schema: pode mudar sem renomear dados ou afetar integrações. O schema deve usar `CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`.
 
 ## Limites de Responsabilidade
 
@@ -18,7 +18,7 @@ O schema `rinosone` é a autoridade de usuários, autenticação, cadastro de te
 provisionamento. A fundação de tenants é especificada em
 [tenant-foundation](../specs/tenant-foundation/spec.md); seus dados de controle pertencem exclusivamente a este schema.
 
-Cada schema de tenant contém exclusivamente seus dados de domínio. Não há chave estrangeira entre schemas nesta fase. Quando uma necessidade futura exigir referência do tenant ao principal, ela será avaliada como uma exceção explícita: a dependência poderá apontar somente do tenant para o principal, jamais no sentido inverso.
+Cada schema de tenant contém exclusivamente seus dados de domínio. Referências entre schemas seguem uma direção única: uma tabela de tenant pode possuir FK para uma tabela do schema principal; o schema principal nunca possui FK para uma tabela de tenant. A FK deve usar `BIGINT UNSIGNED`, declarar `ON UPDATE CASCADE` e declarar `ON DELETE CASCADE` quando o filho não puder existir sem o pai, ou `ON DELETE SET NULL` quando o vínculo for opcional. `RESTRICT` e `NO ACTION` não são aceitos. Dados globais referenciados não devem ser excluídos fisicamente como operação ordinária; a inativação preserva histórico e evita cascatas não planejadas.
 
 ## Migrations
 

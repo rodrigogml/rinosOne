@@ -119,7 +119,8 @@ describe('WorkspaceShell', () => {
 
         workspace.openDestination({ id: 'dirty-mobile', scope: 'personal', category: 'workspace', titleKey: 'access.workspace.title', icon: 'dirty', createSurface: () => ({ titleKey: 'access.workspace.title', icon: 'dirty', dirty: true }) }, { tenantId: null });
         await nextTick();
-        await wrapper.get('.workspace-mobile-task-trigger').trigger('click');
+        workspace.mobileTaskPanelOpen = true;
+        await nextTick();
         expect(wrapper.findAll('[role="dialog"][aria-label="Navegação"]')).toHaveLength(0);
         expect(wrapper.find('[role="dialog"][aria-label="Superfícies abertas"]').exists()).toBe(true);
 

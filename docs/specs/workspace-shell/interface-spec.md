@@ -146,11 +146,11 @@
 **Change Type**: MODIFIED
 **Purpose**: oferecer descoberta e alternância de superfícies em telefone sem reduzir a Área de trabalho a mini-janelas.
 **Actors and Permissions**: usuário autenticado e validado em tela estreita; os mesmos filtros pessoais e contextuais do desktop são aplicados.
-**Entry and Navigation**: a marca existente abre o painel de navegação; um controle próximo ao palco abre a lista de superfícies quando houver mais de uma. Painéis fecham por botão, Escape, acionador ou camada externa quando não bloqueantes.
-**Content and Data**: painel de navegação mostra marca, fechar, categorias e destinos; painel de superfícies mostra título, lista de instâncias abertas, indicação da ativa e controle de fechar por item. O palco preserva apenas a superfície ativa em largura total.
+**Entry and Navigation**: a marca existente abre o painel de navegação; quando houver superfície aberta, o ícone de alternância de janelas à esquerda do seletor de organização abre a lista de superfícies. Painéis fecham por botão, Escape, acionador ou camada externa quando não bloqueantes.
+**Content and Data**: painel de navegação mostra marca, fechar, categorias e destinos; o seletor de superfícies é um diálogo centralizado sobre a aplicação, com até 95% da largura e altura seguras do viewport, título, lista de instâncias abertas, indicação da ativa e controle de fechar por item. O palco preserva apenas a superfície ativa em largura total.
 **Actions and Behavior**: selecionar destino ou superfície fecha o painel e focaliza o palco. Solicitar fechamento de item pendente abre a confirmação de INT-WEB-WORKSPACE-003. Abrir uma sobreposição estrutural fecha a outra; diálogo bloqueante fica acima dos dois painéis.
 **Validation and Feedback**: destinos sem contexto não aparecem. Se não houver superfícies, o controle de tarefas não se apresenta como ação falsa. Mudança de organização fecha painel aberto e remove itens contextuais antes de listar o novo estado.
-**Responsive/Adaptive Behavior**: até 639 px, painéis ocupam largura segura e respeitam safe areas, teclado virtual e rolagem interna; orientação paisagem mantém palco prioritário. A partir de tablet largo, o rail e taskbar desktop substituem os painéis.
+**Responsive/Adaptive Behavior**: até 639 px, a navegação ocupa largura segura e o seletor de superfícies ocupa até 95% do viewport, sempre respeitando safe areas, teclado virtual e rolagem interna. Nenhum acionador estrutural participa do fluxo vertical do palco. A orientação paisagem mantém palco prioritário. A partir de tablet largo, o rail e taskbar desktop substituem os painéis.
 **Accessibility**: cada painel é diálogo modal com foco inicial no controle de fechar, ciclo de Tab e retorno ao acionador. A lista de superfícies comunica item ativo e pendente sem depender de cor. Alvos de toque respeitam a escala de componentes; redução de movimento elimina deslocamento não essencial.
 **Localization**: todos os rótulos, vazio, ações e descrições usam os quatro idiomas; nomes de superfície podem expandir em duas linhas sem ocultar a ação de fechar.
 **Components and Design System**: evolui `MobileNavigationDrawer`; introduz `WorkspaceMobileNavigationPanel` e `WorkspaceMobileTaskPanel`; reutiliza `BrandMark`, ícones, tokens de overlay e superfícies.
@@ -174,6 +174,35 @@
 | offline | Navegação e alternância locais continuam disponíveis. | Selecionar superfície local; fechar painel. | ready. |
 | access-denied | Painéis fecham e a casca deixa a sessão pública assumir. | Usar acesso público. | Jornada pública. |
 | partial-stale | Item contextual removido da lista após troca ou perda de organização. | Escolher item pessoal restante. | ready ou empty. |
+
+## Convenções de Layout de Janelas
+
+Esta seção consolida somente as convenções já aplicadas. Novos padrões de listagem, edição e fluxos de negócio serão definidos quando houver uma superfície real que os exija.
+
+### Canvas e Estrutura Permanente
+
+- O canvas autenticado usa exclusivamente a área visível do navegador. A topbar permanece fixa, com fundo preto e tokens internos da variante escura da paleta ativa; a rolagem geral do canvas não é permitida.
+- A área abaixo da topbar contém o menu lateral e, à direita, a área de janelas com taskbar. O fundo dessa área é contínuo; a taskbar não possui faixa, linha ou cor própria.
+- Menu, mega menu, taskbar e janelas são componentes estruturais distintos. Um mega menu sobrepõe a área de janelas, sem deslocar seu conteúdo.
+
+### Janela Geral
+
+- A moldura, borda arredondada e sombra pertencem à janela aberta, nunca ao layout vazio da área de janelas.
+- Toda janela possui ícone SVG reutilizável, repetido na taskbar e no cabeçalho compacto. O cabeçalho contém ícone e título à esquerda e o controle de fechamento à direita.
+- O conteúdo usa toda a largura e altura disponível. Quando exceder a área útil, somente o conteúdo interno rola; conteúdo curto fica alinhado ao início, sem centralização artificial.
+- A taskbar desktop centraliza ícones de janelas abertas: o item ativo é maior e usa um marcador pill inferior; hover amplia discretamente os demais itens. O nome continua disponível por semântica acessível, sem texto visível na barra.
+
+### Janela de Configurações
+
+- A variante de configurações mantém a navegação de seções à esquerda e o painel selecionado à direita. A lista de seções usa somente rótulos textuais, sem ícones.
+- O painel da seção ocupa o espaço restante, é responsivo e alinha o conteúdo ao início quando houver espaço excedente.
+- Em largura reduzida, a navegação e o painel passam a uma única coluna, preservando a ordem das seções e a rolagem interna necessária.
+- Controles de escolha agrupados permanecem horizontais quando houver espaço e só refluem de modo seguro em telas estreitas; uma escolha persistida imediatamente aplica sua apresentação sem alterar a sessão ou a janela ativa.
+
+### Camadas e Responsividade
+
+- Um diálogo do workspace bloqueia somente a área abaixo da topbar. Uma janela mantém sua própria pilha de diálogos locais, que bloqueia somente essa instância, pode ter camadas e sobrevive à alternância de janelas; a pilha é descartada apenas com sua janela.
+- Em telefone não há taskbar no rodapé nem acionador dentro do palco. O ícone de alternância de janelas fica na topbar, antes do seletor de organização, e abre o diálogo de superfícies centralizado. A marca continua sendo o acionador de navegação móvel sem receber aparência de botão destacado.
 
 ## Cross-Surface Rules
 

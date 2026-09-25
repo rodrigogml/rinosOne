@@ -1,11 +1,11 @@
 <!--
 Sync Impact Report
-- Version: none -> 1.0.0
-- Princípios modificados: criação inicial dos princípios de arquitetura incremental, fronteira API, identidade segura, configuração por ambiente e qualidade verificável.
-- Seções adicionadas: Limites de Arquitetura e Dados; Processo e Documentação.
+- Version: 1.0.0 -> 1.1.0
+- Princípios modificados: adição do padrão de identidades BIGINT e das regras de referências entre core e tenant.
+- Seções adicionadas: nenhuma.
 - Seções removidas: nenhuma.
-- Artefatos que precisam atualização: docs/briefing/20260922-briefing-inicial.md (alinhado); specs, plans, interfaces e tasks futuros devem demonstrar conformidade.
-- TODOs pendentes: compliance, retenção, equipe, prazo e budget.
+- Artefatos sincronizados: docs/architecture/database-topology.md; docs/specs/user-auth/{data-model,research}.md; docs/specs/tenant-foundation/{data-model,research,plan,tasks}.md; docs/specs/tenant-foundation/contracts/tenant-context.md; docs/specs/tenant-foundation/checklists/security.md; docs/operations/tenant-provisioning.md.
+- TODOs pendentes: migrar código, migrations e testes existentes para o padrão numérico antes da próxima entrega de implementação; compliance, retenção, equipe, prazo e budget.
 -->
 
 # Constituição do Rinos One
@@ -42,9 +42,15 @@ Toda mudança de comportamento DEVE ter testes automatizados proporcionais ao ri
 
 **Racional**: qualidade e rastreabilidade reduzem regressões sem substituir a simplicidade do escopo.
 
+### VI. Identidades numéricas e referências unidirecionais
+
+Entidades persistidas DEVEM usar `BIGINT UNSIGNED AUTO_INCREMENT` como chave primária e FKs `BIGINT UNSIGNED` compatíveis. Dados de tenant PODEM referenciar dados globais do core; o core NUNCA DEVE possuir FK para dados de tenant. Toda FK tenant para core DEVE declarar `ON UPDATE CASCADE` e `ON DELETE CASCADE` quando o filho não puder existir sem o pai, ou `ON DELETE SET NULL` quando o vínculo for opcional. `RESTRICT` e `NO ACTION` são proibidos nessas referências. Dados globais referenciados devem preferir inativação à exclusão física e qualquer exclusão física exige planejamento explícito de impacto entre tenants.
+
+**Racional**: identidades numéricas reduzem custo de índices e joins. A direção única mantém os schemas de tenant independentes, permite relatórios e buscas contra catálogos globais e impede que o core dependa do ciclo de vida de um tenant.
+
 ## Limites de Arquitetura e Dados
 
-O produto é um monólito modular em PHP e Laravel, com interface web responsiva em Vue 3 e TypeScript, MySQL, API JSON versionada e sessões server-side. A organização deve separar domínio, API, interface e infraestrutura. A configuração concreta de e-mail é externa ao repositório e definida por ambiente. Nenhum produto, módulo ou integração adicional é autorizado por este documento.
+O produto é um monólito modular em PHP e Laravel, com interface web responsiva em Vue 3 e TypeScript, MySQL, API JSON versionada e sessões server-side. A organização deve separar domínio, API, interface e infraestrutura. O schema global é a autoridade para dados de sistema e catálogos compartilhados; schemas de tenant podem referenciá-lo conforme o Princípio VI, sem dependência inversa. A configuração concreta de e-mail é externa ao repositório e definida por ambiente. Nenhum produto, módulo ou integração adicional é autorizado por este documento.
 
 ## Processo e Documentação
 
@@ -54,4 +60,4 @@ O ciclo de desenvolvimento começa com briefing e Constituição. Cada capacidad
 
 Esta Constituição prevalece sobre convenções implícitas e orienta decisões de arquitetura, qualidade e processo. Uma emenda exige justificativa, análise de impacto nos artefatos afetados e atualização deste documento. O versionamento segue SemVer: MAJOR para remoção ou redefinição incompatível de princípio; MINOR para adição ou expansão material; PATCH para esclarecimentos sem mudança semântica. Nenhuma decisão futura pode inferir autorização para expandir o escopo atual.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-22
+**Version**: 1.1.0 | **Ratified**: 2026-09-22 | **Last Amended**: 2026-09-25

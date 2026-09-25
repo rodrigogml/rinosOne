@@ -13,7 +13,7 @@
 
 ## Dados, Infraestrutura e Entrada
 
-- [x] CHK005 - A entrada da pessoa nunca forma o nome do schema físico e o identificador técnico é derivado de ULID validado? [Injection, Research §Decision 1; Data Model §tenant] {auto}
+- [x] CHK005 - A entrada da pessoa nunca forma o nome do schema físico e o identificador técnico numérico é validado antes de derivar o nome? [Injection, Research §Decision 1; Data Model §tenant] {auto}
 - [x] CHK006 - As credenciais de provisionamento e runtime são separadas e valores reais permanecem fora do versionamento? [Least privilege, Plan §Migrations e conexões; Constituição IV] {auto}
 - [x] CHK007 - Falha de provisionamento impede contexto operacional e não expõe SQL, host, segredo ou detalhes internos? [Proteção de dados, Spec §FR-TEN-004 e FR-TEN-005; Data Model §tenantProvisioning] {auto}
 - [x] CHK008 - A validação de nome, chave de intenção e parâmetro de tenant é prevista na fronteira de request? [Input validation, Plan §Convenções de Borda; Contracts §Criar tenant] {auto}

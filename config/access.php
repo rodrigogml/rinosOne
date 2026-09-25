@@ -18,6 +18,7 @@ return [
         'emailChallengeLifetimeMinutes' => (int) env('ACCESS_EMAIL_CHALLENGE_LIFETIME_MINUTES', 10),
         'emailEmissionLimit' => (int) env('ACCESS_EMAIL_EMISSION_LIMIT', 3),
         'emailEmissionWindowMinutes' => (int) env('ACCESS_EMAIL_EMISSION_WINDOW_MINUTES', 15),
+        'emailResendCooldownSeconds' => (int) env('ACCESS_EMAIL_RESEND_COOLDOWN_SECONDS', 180),
         'originEmissionLimit' => (int) env('ACCESS_ORIGIN_EMISSION_LIMIT', 10),
         'originEmissionWindowMinutes' => (int) env('ACCESS_ORIGIN_EMISSION_WINDOW_MINUTES', 60),
         'userEmissionLimit' => (int) env('ACCESS_USER_EMISSION_LIMIT', 3),

@@ -25,4 +25,14 @@ class SetPasswordTest extends TestCase
         $this->actingAs($user)->putJson('/api/v1/auth/password', ['password' => 'abcdef'])
             ->assertUnprocessable();
     }
+
+    public function test_active_user_can_remove_their_password(): void
+    {
+        $user = User::factory()->create(['passwordHash' => 'Abcde1']);
+
+        $this->actingAs($user)->deleteJson('/api/v1/auth/password')
+            ->assertNoContent();
+
+        $this->assertNull($user->refresh()->passwordHash);
+    }
 }

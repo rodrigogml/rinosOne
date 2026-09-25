@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { WorkspaceSurface } from '../workspace/workspaceTypes';
 import WorkspaceDemoSurface from './WorkspaceDemoSurface.vue';
+import WorkspaceSettingsSurface from './WorkspaceSettingsSurface.vue';
 import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 
 const props = defineProps<{
@@ -34,7 +35,8 @@ const mountedSurfaces = computed(() => props.surfaces?.length
         <div class="workspace-stage__surface-content">
             <slot name="surface" :surface="surface">
                 <div v-for="mountedSurface in mountedSurfaces" :key="mountedSurface.id" v-show="mountedSurface.id === surface.id" class="workspace-stage__surface-instance">
-                    <WorkspaceDemoSurface :surface="mountedSurface" @open-workspace-dialog="emit('openWorkspaceDialog', $event)" @notify="emit('notify', $event)" />
+                    <WorkspaceSettingsSurface v-if="mountedSurface.destinationId === 'personal.settings'" :surface="mountedSurface" />
+                    <WorkspaceDemoSurface v-else :surface="mountedSurface" @open-workspace-dialog="emit('openWorkspaceDialog', $event)" @notify="emit('notify', $event)" />
                 </div>
             </slot>
         </div>

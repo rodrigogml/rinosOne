@@ -4,9 +4,9 @@ Este documento resolve as decisões técnicas necessárias antes do desenho da f
 
 ## Decision 1: Plano de controle global e schemas isolados
 
-**Decision**: identidade de tenant, vínculos de acesso, estado de provisionamento e auditoria permanecerão no schema principal `rinosone`. Cada tenant ativo terá seu schema isolado `rinosone_{tenantId}`, onde `tenantId` é o ULID estável em minúsculas. O nome de exibição nunca compõe o nome físico.
+**Decision**: identidade de tenant, vínculos de acesso, estado de provisionamento e auditoria permanecerão no schema principal `rinosone`. Cada tenant ativo terá seu schema isolado `rinosone_{tenantId}`, onde `tenantId` é a PK `BIGINT UNSIGNED` estável. O nome de exibição nunca compõe o nome físico.
 
-**Rationale**: o sistema precisa validar se uma pessoa pode selecionar o tenant antes de abrir seus dados. O identificador imutável evita renomeações operacionais e impede que entrada de usuário seja usada como identificador de banco.
+**Rationale**: o sistema precisa validar se uma pessoa pode selecionar o tenant antes de abrir seus dados. O identificador numérico imutável reduz o custo de índices e relacionamentos, evita renomeações operacionais e impede que entrada de usuário seja usada como identificador de banco.
 
 **Alternatives considered**: um único schema com coluna de tenant foi rejeitado por reduzir o isolamento físico. Um schema derivado do nome da empresa foi rejeitado porque o nome é mutável. Guardar vínculos e disponibilidade dentro de cada tenant foi rejeitado porque a autorização deixaria de funcionar durante criação, falha ou indisponibilidade do schema.
 

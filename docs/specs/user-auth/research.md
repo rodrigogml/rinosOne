@@ -66,7 +66,7 @@
 
 ## Decision 9: Topologia de schemas para evolução multi-tenant
 
-**Decision**: usar `rinosone` como schema principal da plataforma e reservar `rinosone_{tenantId}` para cada tenant futuro, onde `tenantId` é um ULID estável em minúsculas. A primeira fase de acesso persiste exclusivamente no schema principal.
+**Decision**: usar `rinosone` como schema principal da plataforma e reservar `rinosone_{tenantId}` para cada tenant futuro, onde `tenantId` é o `BIGINT UNSIGNED` estável do tenant. A primeira fase de acesso persiste exclusivamente no schema principal.
 
 **Rationale**: o padrão isola dados de empresas futuras sem usar seu nome mutável como parte da infraestrutura. Mantém identidade e acesso como autoridade global, sem antecipar entidades, módulos ou provisionamento de tenants.
 

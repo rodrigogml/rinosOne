@@ -1,4 +1,15 @@
 /* Semânticos: componentes usam estes aliases, jamais cores de marca diretamente. */
+:root { --palette-active-light-action: var(--palette-industrial-ruby-light-action); --palette-active-dark-action: var(--palette-industrial-ruby-dark-action); }
+:root[data-palette='amethyst-technical'] { --palette-active-light-action: var(--palette-amethyst-technical-light-action); --palette-active-dark-action: var(--palette-amethyst-technical-dark-action); }
+:root[data-palette='architectural-teal'] { --palette-active-light-action: var(--palette-architectural-teal-light-action); --palette-active-dark-action: var(--palette-architectural-teal-dark-action); }
+:root[data-palette='refined-copper'] { --palette-active-light-action: var(--palette-refined-copper-light-action); --palette-active-dark-action: var(--palette-refined-copper-dark-action); }
+:root[data-palette='imperial-wine'] { --palette-active-light-action: var(--palette-imperial-wine-light-action); --palette-active-dark-action: var(--palette-imperial-wine-dark-action); }
+:root[data-palette='sober-emerald'] { --palette-active-light-action: var(--palette-sober-emerald-light-action); --palette-active-dark-action: var(--palette-sober-emerald-dark-action); }
+:root[data-palette='mineral-gold'] { --palette-active-light-action: var(--palette-mineral-gold-light-action); --palette-active-dark-action: var(--palette-mineral-gold-dark-action); }
+:root[data-palette='orbital-indigo'] { --palette-active-light-action: var(--palette-orbital-indigo-light-action); --palette-active-dark-action: var(--palette-orbital-indigo-dark-action); }
+:root[data-palette='deep-cyan'] { --palette-active-light-action: var(--palette-deep-cyan-light-action); --palette-active-dark-action: var(--palette-deep-cyan-dark-action); }
+:root[data-palette='executive-coral'] { --palette-active-light-action: var(--palette-executive-coral-light-action); --palette-active-dark-action: var(--palette-executive-coral-dark-action); }
+
 :root,
 :root[data-theme='light'] {
     color-scheme: light;
@@ -12,12 +23,12 @@
     --color-text-disabled: var(--color-silver-500);
     --color-border-subtle: var(--color-silver-300);
     --color-border-strong: var(--color-silver-500);
-    --color-action-primary: var(--palette-industrial-ruby-light-action);
-    --color-action-primary-hover: var(--palette-imperial-wine-light-action);
+    --color-action-primary: var(--palette-active-light-action);
+    --color-action-primary-hover: color-mix(in srgb, var(--palette-active-light-action) 86%, var(--color-graphite-950));
     --color-action-primary-content: var(--color-white);
     --color-action-secondary: var(--color-silver-100);
-    --color-action-secondary-content: var(--palette-industrial-ruby-light-action);
-    --color-focus-ring: var(--palette-industrial-ruby-light-action);
+    --color-action-secondary-content: var(--palette-active-light-action);
+    --color-focus-ring: var(--palette-active-light-action);
     --color-success: var(--color-success-700);
     --color-warning: var(--color-warning-700);
     --color-danger: var(--color-danger-700);
@@ -27,22 +38,22 @@
 
 :root[data-theme='dark'] {
     color-scheme: dark;
-    --color-canvas: var(--palette-industrial-ruby-dark-canvas);
-    --color-canvas-background: repeating-linear-gradient(45deg, rgb(255 255 255 / .022) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, rgb(0 0 0 / .16) 0 1px, transparent 1px 6px), linear-gradient(135deg, rgb(255 255 255 / .025), transparent 48%, rgb(0 0 0 / .10)), var(--color-canvas);
-    --color-surface: var(--palette-industrial-ruby-dark-surface);
-    --color-surface-raised: var(--palette-industrial-ruby-dark-raised);
-    --color-surface-muted: var(--palette-industrial-ruby-dark-muted-surface);
-    --color-text-primary: var(--palette-industrial-ruby-dark-text);
-    --color-text-secondary: var(--palette-industrial-ruby-dark-muted);
-    --color-text-disabled: var(--color-silver-500);
-    --color-border-subtle: var(--color-silver-700);
-    --color-border-strong: var(--color-silver-500);
-    --color-action-primary: var(--palette-industrial-ruby-dark-action);
-    --color-action-primary-hover: var(--palette-imperial-wine-dark-action);
+    --color-canvas: var(--color-carbon-950);
+    --color-canvas-background: var(--color-carbon-900);
+    --color-surface: var(--color-carbon-900);
+    --color-surface-raised: var(--color-carbon-800);
+    --color-surface-muted: var(--color-carbon-700);
+    --color-text-primary: var(--color-carbon-text-primary);
+    --color-text-secondary: var(--color-carbon-text-secondary);
+    --color-text-disabled: var(--color-carbon-text-disabled);
+    --color-border-subtle: var(--color-carbon-border-subtle);
+    --color-border-strong: var(--color-carbon-border-strong);
+    --color-action-primary: var(--palette-active-dark-action);
+    --color-action-primary-hover: color-mix(in srgb, var(--palette-active-dark-action) 84%, var(--color-white));
     --color-action-primary-content: var(--color-white);
-    --color-action-secondary: var(--color-graphite-700);
-    --color-action-secondary-content: var(--color-silver-50);
-    --color-focus-ring: var(--palette-industrial-ruby-dark-action);
+    --color-action-secondary: var(--color-carbon-700);
+    --color-action-secondary-content: var(--color-carbon-text-primary);
+    --color-focus-ring: var(--palette-active-dark-action);
     --color-success: var(--color-success-300);
     --color-warning: var(--color-warning-300);
     --color-danger: var(--color-danger-300);
@@ -53,22 +64,22 @@
 @media (prefers-color-scheme: dark) {
     :root[data-theme='system'] {
         color-scheme: dark;
-        --color-canvas: var(--palette-industrial-ruby-dark-canvas);
-        --color-canvas-background: repeating-linear-gradient(45deg, rgb(255 255 255 / .022) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, rgb(0 0 0 / .16) 0 1px, transparent 1px 6px), linear-gradient(135deg, rgb(255 255 255 / .025), transparent 48%, rgb(0 0 0 / .10)), var(--color-canvas);
-        --color-surface: var(--palette-industrial-ruby-dark-surface);
-        --color-surface-raised: var(--palette-industrial-ruby-dark-raised);
-        --color-surface-muted: var(--palette-industrial-ruby-dark-muted-surface);
-        --color-text-primary: var(--palette-industrial-ruby-dark-text);
-        --color-text-secondary: var(--palette-industrial-ruby-dark-muted);
-        --color-text-disabled: var(--color-silver-500);
-        --color-border-subtle: var(--color-silver-700);
-        --color-border-strong: var(--color-silver-500);
-        --color-action-primary: var(--palette-industrial-ruby-dark-action);
-        --color-action-primary-hover: var(--palette-imperial-wine-dark-action);
+        --color-canvas: var(--color-carbon-950);
+        --color-canvas-background: var(--color-carbon-900);
+        --color-surface: var(--color-carbon-900);
+        --color-surface-raised: var(--color-carbon-800);
+        --color-surface-muted: var(--color-carbon-700);
+        --color-text-primary: var(--color-carbon-text-primary);
+        --color-text-secondary: var(--color-carbon-text-secondary);
+        --color-text-disabled: var(--color-carbon-text-disabled);
+        --color-border-subtle: var(--color-carbon-border-subtle);
+        --color-border-strong: var(--color-carbon-border-strong);
+        --color-action-primary: var(--palette-active-dark-action);
+        --color-action-primary-hover: color-mix(in srgb, var(--palette-active-dark-action) 84%, var(--color-white));
         --color-action-primary-content: var(--color-white);
-        --color-action-secondary: var(--color-graphite-700);
-        --color-action-secondary-content: var(--color-silver-50);
-        --color-focus-ring: var(--palette-industrial-ruby-dark-action);
+        --color-action-secondary: var(--color-carbon-700);
+        --color-action-secondary-content: var(--color-carbon-text-primary);
+        --color-focus-ring: var(--palette-active-dark-action);
         --color-success: var(--color-success-300);
         --color-warning: var(--color-warning-300);
         --color-danger: var(--color-danger-300);

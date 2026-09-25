@@ -11,25 +11,28 @@ final class EmailVerificationService
 {
     public function __construct(private readonly AuthenticationChallengeService $challenges) {}
 
-    public function confirmByCode(string $challengeId, string $code, string $displayName, string $origin): ?CompletedEmailVerification
+    public function confirmByCode(string $challengeId, string $code, string $origin): ?CompletedEmailVerification
     {
-        return $this->confirm($this->challenges->consumeByCode($challengeId, $code, $origin), $displayName);
+        return $this->confirm($this->challenges->consumeByCode($challengeId, $code, $origin));
     }
 
-    public function confirmByLink(string $challengeId, string $token, string $displayName): ?CompletedEmailVerification
+    public function confirmByLink(string $challengeId, string $token): ?CompletedEmailVerification
     {
-        return $this->confirm($this->challenges->consumeByLinkToken($challengeId, $token), $displayName);
+        return $this->confirm($this->challenges->consumeByLinkToken($challengeId, $token));
     }
 
-    private function confirm(?object $consumed, string $displayName): ?CompletedEmailVerification
+    private function confirm(?object $consumed): ?CompletedEmailVerification
     {
         if ($consumed === null || $consumed->purpose !== AuthenticationChallengePurpose::EmailVerification) {
             return null;
         }
 
-        return DB::transaction(function () use ($consumed, $displayName): CompletedEmailVerification {
+        return DB::transaction(function () use ($consumed): ?CompletedEmailVerification {
             $user = User::query()->lockForUpdate()->findOrFail($consumed->userId);
-            $user->forceFill(['emailVerifiedAt' => now(), 'displayName' => trim($displayName)])->save();
+            if (trim((string) $user->displayName) === '') {
+                return null;
+            }
+            $user->forceFill(['emailVerifiedAt' => now()])->save();
 
             return new CompletedEmailVerification($user, $consumed->rememberMeRequested);
         });

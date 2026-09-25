@@ -9,11 +9,10 @@ defineProps<{
     avatarLabel: string;
     menuLabel: string;
     settingsLabel: string;
-    settingsUnavailableLabel: string;
     signOutLabel: string;
 }>();
 
-const emit = defineEmits<{ signOut: []; opened: [] }>();
+const emit = defineEmits<{ signOut: []; opened: []; openSettings: [] }>();
 const root = ref<HTMLElement | null>(null);
 const opener = ref<HTMLButtonElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
@@ -21,6 +20,7 @@ const open = ref(false);
 
 function close() { open.value = false; }
 function toggle() { open.value = !open.value; }
+function openSettings() { close(); emit('openSettings'); }
 function handleKeydown(event: KeyboardEvent) { if (!event.defaultPrevented && event.key === 'Escape') { event.preventDefault(); close(); } }
 function handlePointerDown(event: PointerEvent) { if (open.value && root.value && !root.value.contains(event.target as Node)) close(); }
 
@@ -44,8 +44,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerD
             <UserAvatar :display-name="displayName" :label="avatarLabel" />
         </button>
         <section v-if="open" ref="panel" class="user-menu__panel" role="dialog" :aria-label="menuLabel" tabindex="-1" @keydown="handleKeydown">
-            <button class="user-menu__settings" type="button" disabled :aria-describedby="'user-settings-unavailable'">{{ settingsLabel }}</button>
-            <span id="user-settings-unavailable" class="sr-only">{{ settingsUnavailableLabel }}</span>
+            <button class="user-menu__settings" type="button" @click="openSettings">{{ settingsLabel }}</button>
             <div class="user-menu__utilities">
                 <VisualPreferencesPopover />
                 <LanguageSelector />

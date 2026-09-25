@@ -6,6 +6,6 @@ class CompleteEmailVerificationLinkRequest extends CompleteEmailVerificationRequ
 {
     public function rules(): array
     {
-        return ['challengeId' => ['required', 'string', 'ulid'], 'token' => ['required', 'string'], 'displayName' => ['required', 'string', 'max:255', 'not_regex:/^\\s*$/u']];
+        return ['challengeId' => ['required', 'string', 'ulid'], 'token' => ['required', 'string']];
     }
 }

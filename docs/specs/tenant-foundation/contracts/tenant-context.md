@@ -26,7 +26,7 @@ Erros de validação podem acrescentar `fields`, mapeando nomes `camelCase` a me
 | Campo | Tipo | Descrição |
 | --- | --- | --- |
 | `tenants` | array | Tenants associados ao usuário autenticado, em ordem de seleção contextual bem-sucedida mais recente; vínculos sem seleção anterior vêm depois. |
-| `tenants[].id` | string | ULID público do tenant. |
+| `tenants[].id` | integer | Identificador técnico do tenant. |
 | `tenants[].displayName` | string | Nome visível. |
 | `tenants[].state` | string | Estado atual de disponibilidade. |
 | `tenants[].selectable` | boolean | Indica se pode iniciar contexto operacional. |
@@ -36,7 +36,7 @@ Erros de validação podem acrescentar `fields`, mapeando nomes `camelCase` a me
 
 **Método**: `POST /api/v1/tenants`
 
-**Cabeçalho obrigatório**: `Idempotency-Key` com ULID gerado para uma única intenção de criação.
+**Cabeçalho obrigatório**: `Idempotency-Key` com UUID v4 gerado para uma única intenção de criação.
 
 ### Request
 
@@ -69,9 +69,9 @@ O endpoint não grava o tenant ativo na sessão. Ele valida explicitamente a ass
 
 | Campo | Tipo | Descrição |
 | --- | --- | --- |
-| `context.tenant.id` | string | Tenant validado. |
+| `context.tenant.id` | integer | Tenant validado. |
 | `context.tenant.displayName` | string | Nome para identificação persistente na interface. |
-| `context.membership.id` | string | Vínculo validado. |
+| `context.membership.id` | integer | Vínculo validado. |
 | `context.membership.role` | string | `OWNER` nesta fase. |
 | `context.availableModules` | array | Vazio enquanto não houver módulos aprovados. |
 

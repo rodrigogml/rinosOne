@@ -24,6 +24,7 @@ function nextId(prefix: string, sequence: number): string {
  */
 export const useWorkspaceStore = defineStore('workspace', () => {
     const menuCollapsed = ref(false);
+    const mobileTaskPanelOpen = ref(false);
     const surfaces = ref<WorkspaceSurface[]>([]);
     const activeSurfaceId = ref<string | null>(null);
     const dialogStack = ref<WorkspaceDialog[]>([]);
@@ -199,6 +200,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function discard(): void {
         menuCollapsed.value = false;
+        mobileTaskPanelOpen.value = false;
         surfaces.value = [];
         activeSurfaceId.value = null;
         dialogStack.value = [];
@@ -210,6 +212,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     return {
         menuCollapsed,
+        mobileTaskPanelOpen,
         surfaces,
         activeSurfaceId,
         activeSurface,

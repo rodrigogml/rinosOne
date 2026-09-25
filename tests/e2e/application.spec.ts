@@ -28,7 +28,7 @@ test('starts passwordless access and completes its documented API contract', asy
     await page.route('**/api/v1/auth/passwordless-sessions', async (route) => {
         expect(route.request().method()).toBe('POST');
         expect(route.request().postDataJSON()).toEqual({ email: 'person@example.test', rememberMe: true });
-        await route.fulfill({ contentType: 'application/json', status: 202, body: JSON.stringify({ message: 'accepted', challengeId: 'challenge-passwordless' }) });
+        await route.fulfill({ contentType: 'application/json', status: 202, body: JSON.stringify({ message: 'accepted', challengeId: 'challenge-passwordless', resendAvailableInSeconds: 180 }) });
     });
     await page.route('**/api/v1/auth/passwordless-sessions/confirmations', async (route) => {
         expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-passwordless', code: '123456' });
@@ -43,6 +43,8 @@ test('starts passwordless access and completes its documented API contract', asy
     await page.getByRole('button', { name: 'Entrar sem senha' }).click();
 
     await expect(page.getByRole('heading', { name: 'Confirme seu e-mail' })).toBeVisible();
+    await expect(page.getByText('Se existir uma conta para person@example.test, enviaremos um e-mail de acesso sem senha.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Reenviar em 3:00/ })).toBeDisabled();
     await page.getByLabel('Código de confirmação').fill('123456');
     await page.getByRole('button', { name: 'Concluir acesso' }).click();
     await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
@@ -77,11 +79,11 @@ test('creates an account, confirms the e-mail code and enters the authenticated 
             : { contentType: 'application/json', status: 401, body: JSON.stringify({ code: 'UNAUTHENTICATED' }) });
     });
     await page.route('**/api/v1/auth/registrations', async (route) => {
-        expect(route.request().postDataJSON()).toEqual({ email: 'person@example.test', rememberMe: false });
-        await route.fulfill({ contentType: 'application/json', status: 202, body: JSON.stringify({ message: 'accepted', challengeId: 'challenge-registration' }) });
+        expect(route.request().postDataJSON()).toEqual({ email: 'person@example.test', displayName: 'Pessoa', rememberMe: false });
+        await route.fulfill({ contentType: 'application/json', status: 202, body: JSON.stringify({ message: 'accepted', challengeId: 'challenge-registration', resendAvailableInSeconds: 180 }) });
     });
     await page.route('**/api/v1/auth/email-verifications', async (route) => {
-        expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-registration', code: '654321', displayName: 'Pessoa' });
+        expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-registration', code: '654321' });
         authenticated = true;
         await route.fulfill({ contentType: 'application/json', status: 201, body: JSON.stringify({ user }) });
     });
@@ -113,6 +115,25 @@ test('continues passwordless access from an e-mail link in a new tab', async ({ 
     await page.goto('/access/passwordless?challengeId=challenge-3&token=secret-token');
     await expect(page).toHaveURL(/\/access\/passwordless$/);
     await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
+});
+
+test('confirms a registration link directly without requesting name or code again', async ({ page }) => {
+    let authenticated = false;
+    await page.route('**/api/v1/auth/session', async (route) => {
+        await route.fulfill(authenticated
+            ? { contentType: 'application/json', body: JSON.stringify({ persistentAuthentication: false, user }) }
+            : { contentType: 'application/json', status: 401, body: JSON.stringify({ code: 'UNAUTHENTICATED' }) });
+    });
+    await page.route('**/api/v1/auth/email-verifications/link-confirmations', async (route) => {
+        expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-registration-link', token: 'secret-token' });
+        authenticated = true;
+        await route.fulfill({ contentType: 'application/json', status: 201, body: JSON.stringify({ user }) });
+    });
+
+    await page.goto('/access/email-verification?challengeId=challenge-registration-link&token=secret-token');
+    await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Código de confirmação')).toHaveCount(0);
+    await expect(page.getByLabel('Nome')).toHaveCount(0);
 });
 
 test('preserves safe form state, route and session while changing presentation and language', async ({ page }) => {
@@ -269,6 +290,70 @@ test('anchors hover mega menus and demonstrates window, application and notifica
     expect(await taskbar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
 });
 
+test('opens user settings as a single personal workspace surface', async ({ page }) => {
+    await mockAuthenticatedSession(page);
+    let otherSessionsRevoked = 0;
+    let savedPassword = '';
+    await page.route('**/api/v1/auth/other-sessions', async (route) => {
+        expect(route.request().method()).toBe('DELETE');
+        otherSessionsRevoked += 1;
+        await route.fulfill({ status: 204 });
+    });
+    await page.route('**/api/v1/auth/password', async (route) => {
+        if (route.request().method() === 'DELETE') {
+            await route.fulfill({ status: 204 });
+            return;
+        }
+        expect(route.request().method()).toBe('PUT');
+        savedPassword = route.request().postDataJSON().password;
+        await route.fulfill({ status: 204 });
+    });
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Menu pessoal de Pessoa' }).click();
+    await page.getByRole('button', { name: 'Configurações do usuário', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Configurações do usuário' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tema e aparência' })).toBeVisible();
+    await page.getByRole('button', { name: 'Ametista Técnica' }).click();
+    await page.getByRole('button', { name: 'Claro' }).click();
+    await page.locator('.workspace-settings__panel').nth(2).getByRole('button', { name: 'Confortável' }).click();
+    await page.locator('.workspace-settings__panel').nth(3).getByRole('button', { name: 'Compacta' }).click();
+    await page.locator('.workspace-settings__panel').nth(4).getByRole('button', { name: 'Compacta' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-palette', 'amethyst-technical');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('html')).toHaveAttribute('data-font-scale', 'comfortable');
+    await expect(page.locator('html')).toHaveAttribute('data-spacing-scale', 'compact');
+    await expect(page.locator('html')).toHaveAttribute('data-component-scale', 'compact');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('rinos-one.visual-preferences.v1') ?? '{}'))).toMatchObject({ palette: 'amethyst-technical', theme: 'light', fontScale: 'comfortable', spacingScale: 'compact', componentScale: 'compact' });
+    await page.getByRole('button', { name: 'Escuro' }).click();
+    const darkSurface = await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--color-surface'));
+    await page.getByRole('button', { name: 'Esmeralda Sóbria' }).click();
+    await expect.poll(() => page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--color-surface'))).toBe(darkSurface);
+    await page.getByRole('button', { name: 'Sessões' }).click();
+    await expect(page.getByRole('heading', { name: 'Sessões ativas' })).toBeVisible();
+    await page.getByRole('button', { name: 'Encerrar demais sessões' }).click();
+    await page.getByRole('dialog', { name: 'Encerrar demais sessões' }).getByRole('button', { name: 'Encerrar sessões' }).click();
+    await expect.poll(() => otherSessionsRevoked).toBe(1);
+    await page.getByRole('button', { name: 'Segurança' }).click();
+    await expect(page.getByRole('heading', { name: 'Segurança da conta' })).toBeVisible();
+    await page.getByRole('button', { name: 'Definir senha' }).click();
+    const passwordDialog = page.getByRole('dialog', { name: 'Definir senha' });
+    await passwordDialog.getByLabel('Nova senha', { exact: true }).fill('Nova#Senha1');
+    await passwordDialog.getByLabel('Confirme a nova senha').fill('Nova#Senha1');
+    await passwordDialog.getByRole('button', { name: 'Salvar senha' }).click();
+    await expect.poll(() => savedPassword).toBe('Nova#Senha1');
+    await expect(page.getByRole('button', { name: 'Alterar senha' })).toBeVisible();
+    await page.getByRole('button', { name: 'Remover senha' }).click();
+    const removePasswordDialog = page.getByRole('dialog', { name: 'Remover senha' });
+    await expect(removePasswordDialog.getByText('Sem senha, o acesso à sua conta deverá ser feito por outro método de autenticação válido')).toBeVisible();
+    await removePasswordDialog.getByRole('button', { name: 'Remover senha' }).click();
+    await expect(page.getByRole('button', { name: 'Definir senha' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Menu pessoal de Pessoa' }).click();
+    await page.getByRole('button', { name: 'Configurações do usuário', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Configurações do usuário' })).toHaveCount(1);
+});
+
 for (const viewport of [
     { name: 'telefone', width: 375, height: 667 },
     { name: 'tablet', width: 768, height: 1024 },
@@ -276,8 +361,15 @@ for (const viewport of [
 ]) {
     test(`renders the access journey without horizontal overflow on ${viewport.name} in extreme presentations`, async ({ page }, testInfo) => {
         await mockUnauthenticatedSession(page);
-        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.goto('/');
+        if (viewport.width < 640) {
+            const accessFrame = page.locator('.access-frame');
+            const viewportHeight = await page.evaluate(() => window.innerHeight);
+            const bounds = await accessFrame.boundingBox();
+            expect(bounds!.y + (bounds!.height / 2)).toBeGreaterThan(viewportHeight * 0.4);
+            expect(bounds!.y + (bounds!.height / 2)).toBeLessThan(viewportHeight * 0.6);
+        }
         await page.getByRole('button', { name: 'Preferências visuais' }).click();
         await page.locator('#theme-choice-dark').click();
         await page.locator('#font-scale-choice-comfortable').click();
@@ -345,7 +437,7 @@ for (const viewport of [
         await page.keyboard.press('Enter');
         const personalMenu = page.getByRole('dialog', { name: 'Menu pessoal' });
         await expect(personalMenu).toBeVisible();
-        await expect(personalMenu.getByRole('button', { name: 'Configurações do usuário' })).toBeDisabled();
+        await expect(personalMenu.getByRole('button', { name: 'Configurações do usuário' })).toBeEnabled();
 
         await personalMenu.getByRole('button', { name: 'Preferências visuais' }).click();
         await page.locator('#theme-choice-dark').click();

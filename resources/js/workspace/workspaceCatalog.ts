@@ -58,6 +58,17 @@ export const workspaceDestinations: readonly WorkspaceDestination[] = [
     demoDestination('financial-report', 'insights', 'Relatório financeiro', 'Gestão'),
 ];
 
+/** Superfície pessoal permanente, aberta pelo menu do perfil e não pelo catálogo de módulos. */
+export const personalSettingsDestination: WorkspaceDestination = {
+    id: 'personal.settings',
+    scope: 'personal',
+    category: 'overview',
+    titleKey: 'access.shell.userSettings',
+    icon: 'settings',
+    instancePolicy: 'single',
+    createSurface: () => ({ titleKey: 'access.shell.userSettings', icon: 'settings' }),
+};
+
 export function availableWorkspaceDestinations(
     destinations: readonly WorkspaceDestination[],
     context: WorkspaceContext,

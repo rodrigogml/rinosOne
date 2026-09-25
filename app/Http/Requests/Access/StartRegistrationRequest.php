@@ -17,6 +17,7 @@ class StartRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'displayName' => ['required', 'string', 'max:255', 'not_regex:/^\\s*$/u'],
             'email' => ['required', 'string', 'email:rfc'],
             'rememberMe' => ['sometimes', 'boolean'],
         ];

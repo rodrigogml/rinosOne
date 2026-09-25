@@ -15,6 +15,13 @@ final class AccessRateLimitService
     public function attemptEmailEmission(string $email, string $origin, ?string $userId = null): AccessRateLimitDecision
     {
         $scopes = [
+            $this->scopeInSeconds(
+                'email-emission-cooldown',
+                EmailNormalizer::normalize($email),
+                1,
+                config('access.authentication.emailResendCooldownSeconds'),
+                false,
+            ),
             $this->scope(
                 'email-emission-email',
                 EmailNormalizer::normalize($email),
@@ -100,7 +107,7 @@ final class AccessRateLimitService
     }
 
     /**
-     * @param  array<int, array{key: string, limit: int, windowSeconds: int}>  $scopes
+     * @param  array<int, array{key: string, limit: int, windowSeconds: int, blockOnLimit: bool}>  $scopes
      */
     private function attempt(array $scopes): AccessRateLimitDecision
     {
@@ -112,6 +119,9 @@ final class AccessRateLimitService
             }
 
             if ($this->rateLimiter->tooManyAttempts($scope['key'], $scope['limit'])) {
+                if (! $scope['blockOnLimit']) {
+                    return AccessRateLimitDecision::deny($this->rateLimiter->availableIn($scope['key']));
+                }
                 $this->rateLimiter->hit($blockKey, $this->temporaryBlockSeconds());
 
                 return AccessRateLimitDecision::deny($this->temporaryBlockSeconds());
@@ -126,9 +136,17 @@ final class AccessRateLimitService
     }
 
     /**
-     * @return array{key: string, limit: int, windowSeconds: int}
+     * @return array{key: string, limit: int, windowSeconds: int, blockOnLimit: bool}
      */
     private function scope(string $name, string $identifier, mixed $limit, mixed $windowMinutes): array
+    {
+        return $this->scopeInSeconds($name, $identifier, $limit, max(1, (int) $windowMinutes) * 60);
+    }
+
+    /**
+     * @return array{key: string, limit: int, windowSeconds: int, blockOnLimit: bool}
+     */
+    private function scopeInSeconds(string $name, string $identifier, mixed $limit, mixed $windowSeconds, bool $blockOnLimit = true): array
     {
         $normalizedIdentifier = mb_strtolower(trim($identifier), 'UTF-8');
         $fingerprint = hash_hmac('sha256', $name.':'.$normalizedIdentifier, (string) config('app.key'));
@@ -136,7 +154,8 @@ final class AccessRateLimitService
         return [
             'key' => 'access-rate-limit:'.$name.':'.$fingerprint,
             'limit' => max(1, (int) $limit),
-            'windowSeconds' => max(1, (int) $windowMinutes) * 60,
+            'windowSeconds' => max(1, (int) $windowSeconds),
+            'blockOnLimit' => $blockOnLimit,
         ];
     }
 

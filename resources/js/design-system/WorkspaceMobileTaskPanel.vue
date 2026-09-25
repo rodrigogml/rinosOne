@@ -37,7 +37,7 @@ onBeforeUnmount(() => returnFocus?.focus());
 </script>
 
 <template>
-    <div v-if="modelValue" class="application-overlay" @mousedown.self="close">
+    <div v-if="modelValue" class="application-overlay workspace-mobile-task-overlay" @mousedown.self="close">
         <aside ref="panel" class="workspace-mobile-task-panel" role="dialog" aria-modal="true" :aria-label="title" tabindex="-1" @keydown="handleKeydown">
             <header class="workspace-mobile-task-panel__header">
                 <h2>{{ title }}</h2>

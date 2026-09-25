@@ -17,11 +17,13 @@ class AccessRateLimitServiceTest extends TestCase
             'access.authentication.emailEmissionLimit' => 1,
             'access.authentication.originEmissionLimit' => 10,
             'access.authentication.userEmissionLimit' => 10,
+            'access.authentication.emailResendCooldownSeconds' => 1,
             'access.authentication.temporaryBlockMinutes' => 15,
         ]);
 
         $service = app(AccessRateLimitService::class);
         $first = $service->attemptEmailEmission('visitor@example.test', '203.0.113.4');
+        $this->travel(2)->seconds();
         $second = $service->attemptEmailEmission('visitor@example.test', '203.0.113.4');
 
         $this->assertTrue($first->allowed);

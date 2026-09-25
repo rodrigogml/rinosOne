@@ -14,7 +14,7 @@ Copie `.env.example` para `.env` e gere uma chave própria com `php artisan key:
 | Fila | `QUEUE_CONNECTION`, `DB_QUEUE_*` | Manter `database` e `DB_QUEUE_AFTER_COMMIT=true` para que mensagens só sejam entregues após a emissão estar persistida. |
 | E-mail | `MAIL_*` | Usar `smtp` somente com servidor SMTP configurado. `APP_URL` determina a raiz dos links enviados; localhost é adequado somente ao teste local. |
 | Captura de testes | `MAILPIT_API_URL` | Usada apenas pela integração automatizada para consultar o Mailpit; não configurar em produção. |
-| Política de acesso | `ACCESS_*` | Alterar limites, prazo de emissão, retenção de logs e persistência apenas por configuração de ambiente. O modelo traz 10 minutos para emissões, 3 erros máximos por código e 30 dias para logs. |
+| Política de acesso | `ACCESS_*` | Alterar limites, prazo de emissão, retenção de logs e persistência apenas por configuração de ambiente. O modelo traz 10 minutos para emissões, espera de 3 minutos entre reenvios, 3 erros máximos por código e 30 dias para logs. |
 
 > [!IMPORTANT]
 > Não usar `MAIL_MAILER=log` em produção. Não versionar `.env`, chaves, senhas de banco, senha SMTP ou o destinatário de validação.

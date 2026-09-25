@@ -41,6 +41,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 | III. Identidade e acesso seguros por padrão | PASS | Todo contexto revalida usuário, vínculo e estado; identificador conhecido não concede acesso. |
 | IV. Dados mínimos, sessões controladas e configuração segura | PASS | Contexto não entra na sessão; schemas e credenciais seguem separação por ambiente. |
 | V. Mudanças verificáveis e documentação alinhada | PASS | Contratos, quickstart e cenários backend, frontend e E2E são definidos antes das tarefas. |
+| VI. Identidades numéricas e referências unidirecionais | PENDENTE | A documentação adota `BIGINT UNSIGNED`; a migração de código, migrations e testes está registrada na Fase 0. |
 
 ## Desenho da Arquitetura
 
@@ -48,7 +49,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 
 1. A API valida usuário e nome, reserva a intenção idempotente, cria `tenant`, `tenantMembership(OWNER)` e `tenantProvisioning(QUEUED)` na transação global.
 2. Após a confirmação, a fila persistida executa o provisionamento com a credencial própria de infraestrutura.
-3. O worker deriva e valida o nome físico do schema a partir do ULID, cria o schema e aplica exclusivamente o catálogo de migrations de tenant.
+3. O worker deriva e valida o nome físico do schema a partir do `BIGINT UNSIGNED` do tenant, cria o schema e aplica exclusivamente o catálogo de migrations de tenant.
 4. Somente após confirmar a versão esperada, o worker marca a operação `SUCCEEDED` e o tenant `ACTIVE`.
 5. Em falha, o tenant e a operação ficam `FAILED`, sem poder iniciar contexto; uma retentativa controlada usa o mesmo tenant e nunca cria outro schema.
 
@@ -124,7 +125,7 @@ tests/
 | Payload JSON | camelCase | requests, responses e contrato | `contracts/tenant-context.md` |
 | Erro JSON | camelCase | código seguro e mensagem localizada | `contracts/tenant-context.md` |
 | Tipos da web | camelCase | parser de resposta no cliente | `resources/js/` |
-| Parâmetro de rota | `tenantId` ULID | validação de rota e resolvedor contextual | `routes/api/` |
+| Parâmetro de rota | `tenantId` inteiro sem sinal | validação de rota e resolvedor contextual | `routes/api/` |
 
 **Camada de mapeamento (DB ↔ DTO)**: modelos Eloquent representam dados globais; serviços de tenant criam respostas explícitas e os controladores somente adaptam HTTP. A interface traduz respostas do cliente HTTP para o store de contexto; ela não transforma estado de tenant em autorização.
 

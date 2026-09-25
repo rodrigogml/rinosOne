@@ -11,6 +11,7 @@ Todos os payloads JSON usam `camelCase`. Respostas de solicitação de cadastro 
 
 | Campo | Tipo | Obrigatório | Validação |
 | --- | --- | --- | --- |
+| displayName | string | sim | Nome não vazio, máximo de 255 caracteres. É persistido antes do envio para permitir confirmação automática pelo link. |
 | email | string | sim | e-mail válido |
 | rememberMe | boolean | não | Solicita autenticação persistente após confirmação. |
 
@@ -20,6 +21,7 @@ Todos os payloads JSON usam `camelCase`. Respostas de solicitação de cadastro 
 | --- | --- | --- |
 | message | string | Confirmação neutra de que a instrução foi processada. |
 | challengeId | string | Identificador opaco para a confirmação por código na mesma aba. Quando uma emissão estiver disponível, referencia essa emissão; nos demais casos, não é utilizável. Não é um segredo de acesso. |
+| resendAvailableInSeconds | integer | Tempo mínimo até que uma nova solicitação possa ser emitida para o mesmo endereço. |
 
 ## Concluir validação de e-mail
 
@@ -32,7 +34,6 @@ Todos os payloads JSON usam `camelCase`. Respostas de solicitação de cadastro 
 | --- | --- | --- |
 | challengeId | string | sim | Emissão de validação ativa. |
 | code | string | sim | Código numérico de 6 dígitos e uso único; a emissão é excluída após 3 erros por padrão. |
-| displayName | string | sim | Nome de exibição não vazio. |
 
 ### Response (201)
 
@@ -57,11 +58,10 @@ O link no e-mail abre uma rota web pública com `challengeId` e `token` opaco. A
 | --- | --- | --- | --- |
 | challengeId | string | sim | Emissão de validação ativa. |
 | token | string | sim | Segredo opaco recebido somente no link. |
-| displayName | string | sim | Nome de exibição não vazio. |
 
 ### Response (201)
 
-Mesmo corpo e mesmos cookies da confirmação por código. O primeiro consumo válido por código ou link invalida integralmente a emissão.
+Mesmo corpo e mesmos cookies da confirmação por código. Como o nome já é persistido na criação da conta, o link conclui automaticamente a confirmação sem solicitar dados adicionais. O primeiro consumo válido por código ou link invalida integralmente a emissão.
 
 ## Definir senha
 
@@ -77,6 +77,15 @@ Mesmo corpo e mesmos cookies da confirmação por código. O primeiro consumo v�
 ### Response (204)
 
 Sem corpo.
+
+## Remover senha
+
+**Method**: DELETE `/api/v1/auth/password`
+**Auth**: Requerida
+
+### Response (204)
+
+Sem corpo. A sessão atual permanece válida; acessos futuros devem usar outro método de autenticação disponível, como a confirmação por e-mail.
 
 ## Entrar por senha
 
@@ -115,6 +124,7 @@ Sem corpo.
 | --- | --- | --- |
 | message | string | Confirmação neutra de que a instrução foi processada. |
 | challengeId | string | Identificador opaco para a confirmação por código na mesma aba. Quando uma emissão estiver disponível, referencia essa emissão; nos demais casos, não é utilizável. Não é um segredo de acesso. |
+| resendAvailableInSeconds | integer | Tempo mínimo até que uma nova solicitação possa ser emitida para o mesmo endereço. |
 
 ## Concluir acesso sem senha
 
@@ -192,4 +202,4 @@ Sem corpo. A sessão que fez a solicitação permanece ativa. Sessões e autenti
 | 400 | INVALID_CREDENTIAL | Credencial, código ou link inválido, expirado, substituído ou já utilizado. |
 | 403 | EMAIL_NOT_VERIFIED | A conta não está elegível ao acesso. |
 | 422 | VALIDATION_ERROR | Dados de entrada não atendem às regras. |
-| 429 | RATE_LIMITED | O limite temporário de emissão ou tentativa foi atingido. |
+| 429 | RATE_LIMITED | O limite temporário de emissão ou tentativa foi atingido. O cabeçalho `Retry-After` informa a espera, em segundos. |

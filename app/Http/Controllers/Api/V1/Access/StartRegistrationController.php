@@ -14,6 +14,7 @@ class StartRegistrationController
     ): JsonResponse {
         $result = $registration->initiate(
             $request->string('email')->toString(),
+            $request->string('displayName')->toString(),
             $request->ip() ?? 'unknown',
             $request->boolean('rememberMe'),
         );
@@ -28,6 +29,7 @@ class StartRegistrationController
         return response()->json([
             'message' => 'Se possível, enviaremos instruções para o endereço informado.',
             'challengeId' => $result->challengeId,
+            'resendAvailableInSeconds' => config('access.authentication.emailResendCooldownSeconds'),
         ], 202);
     }
 }

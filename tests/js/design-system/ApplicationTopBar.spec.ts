@@ -10,7 +10,7 @@ function mountTopBar() {
 
     return mount(ApplicationTopBar, {
         props: {
-            displayName: 'Rodrigo Leitão', brandLabel: 'Rinos One', mobileNavigationLabel: 'Abrir navegação', avatarLabel: 'Menu pessoal de Rodrigo Leitão', menuLabel: 'Menu pessoal', settingsLabel: 'Configurações do usuário', settingsUnavailableLabel: 'Disponível em breve', signOutLabel: 'Sair',
+            displayName: 'Rodrigo Leitão', brandLabel: 'Rinos One', mobileNavigationLabel: 'Abrir navegação', mobileTasksLabel: 'Alternar janelas', mobileTasksVisible: true, avatarLabel: 'Menu pessoal de Rodrigo Leitão', menuLabel: 'Menu pessoal', settingsLabel: 'Configurações do usuário', settingsUnavailableLabel: 'Disponível em breve', signOutLabel: 'Sair',
         },
         global: { plugins: [pinia, i18n] },
         attachTo: document.body,
@@ -36,7 +36,7 @@ describe('application top bar', () => {
         (opener.element as HTMLButtonElement).focus();
         await opener.trigger('click');
         expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Menu pessoal');
-        expect(wrapper.get('button:disabled').text()).toBe('Configurações do usuário');
+        expect(wrapper.get('.user-menu__settings').text()).toBe('Configurações do usuário');
         await wrapper.get('button[aria-label="Preferências visuais"]').trigger('click');
         await wrapper.get('[role="dialog"][aria-label="Preferências visuais"]').trigger('keydown', { key: 'Escape' });
         expect(wrapper.get('[role="dialog"][aria-label="Menu pessoal"]')).toBeTruthy();
@@ -48,12 +48,30 @@ describe('application top bar', () => {
         wrapper.unmount();
     });
 
+    it('emits the intent to open the personal settings surface', async () => {
+        const wrapper = mountTopBar();
+
+        await wrapper.get('[aria-label="Menu pessoal de Rodrigo Leitão"]').trigger('click');
+        await wrapper.get('.user-menu__settings').trigger('click');
+
+        expect(wrapper.emitted('openSettings')).toEqual([[]]);
+    });
+
     it('emits the mobile navigation intent without deciding the destination', async () => {
         const wrapper = mountTopBar();
 
         await wrapper.get('button[aria-label="Abrir navegação"]').trigger('click');
 
         expect(wrapper.emitted('openMobileNavigation')).toEqual([[]]);
+        wrapper.unmount();
+    });
+
+    it('emits the mobile task switching intent from the top bar', async () => {
+        const wrapper = mountTopBar();
+
+        await wrapper.get('button[aria-label="Alternar janelas"]').trigger('click');
+
+        expect(wrapper.emitted('openMobileTasks')).toEqual([[]]);
         wrapper.unmount();
     });
 });

@@ -7,7 +7,7 @@ Esta referência define a separação mínima entre as credenciais de banco da a
 | Conexão | Finalidade | Credencial | Regra |
 | --- | --- | --- | --- |
 | `core` | Identidade, autenticação e plano de controle global em `rinosone`. | Runtime global (`DB_*`). | Não cria schemas de tenant. |
-| `tenant` | Dados de um tenant já autorizado. | Runtime de tenant (`TENANT_RUNTIME_*`). | O database é derivado internamente de ULID validado; não recebe nome pela API. |
+| `tenant` | Dados de um tenant já autorizado. | Runtime de tenant (`TENANT_RUNTIME_*`). | O database é derivado internamente do `BIGINT UNSIGNED` validado; não recebe nome pela API. |
 | `provisioning` | Criação e preparação física de schema. | Provisionamento (`TENANT_PROVISIONING_*`). | É usada apenas pelo worker de provisionamento; nunca por requisições web. |
 
 ## Privilégios mínimos

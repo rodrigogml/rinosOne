@@ -41,6 +41,16 @@
     --color-graphite-800: #111c2e;
     --color-graphite-700: #17243a;
     --color-graphite-600: #1e293b;
+    --color-carbon-950: #0b0b0c;
+    --color-carbon-900: #121213;
+    --color-carbon-800: #1a1a1b;
+    --color-carbon-700: #252526;
+    --color-carbon-600: #303031;
+    --color-carbon-text-primary: #f5f5f3;
+    --color-carbon-text-secondary: #c8c8c5;
+    --color-carbon-text-disabled: #777774;
+    --color-carbon-border-subtle: #303031;
+    --color-carbon-border-strong: #525250;
     --color-cyan-300: #67e8f9;
     --color-success-700: #15803d;
     --color-warning-700: #b45309;
@@ -49,6 +59,7 @@
     --color-warning-300: #fcd34d;
     --color-danger-300: #fca5a5;
     --color-white: #ffffff;
+    --color-absolute-black: #000000;
 
     --shadow-elevation-card-light: 0 12px 32px rgb(15 23 42 / 12%);
     --shadow-elevation-float-light: 0 20px 48px rgb(15 23 42 / 18%);

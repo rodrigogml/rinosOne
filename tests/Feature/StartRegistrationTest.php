@@ -19,12 +19,14 @@ class StartRegistrationTest extends TestCase
 
         $this->postJson('/api/v1/auth/registrations', [
             'email' => 'Visitor@Example.test',
+            'displayName' => 'Visitante',
             'rememberMe' => true,
         ])->assertAccepted()->assertJsonPath('message', 'Se possível, enviaremos instruções para o endereço informado.')->assertJsonStructure(['challengeId']);
 
         $user = User::query()->where('email', 'visitor@example.test')->sole();
 
         $this->assertNull($user->emailVerifiedAt);
+        $this->assertSame('Visitante', $user->displayName);
         $this->assertDatabaseHas('authenticationChallenge', [
             'idUser' => $user->id,
             'purpose' => 'email_verification',
@@ -43,6 +45,7 @@ class StartRegistrationTest extends TestCase
 
         $this->postJson('/api/v1/auth/registrations', [
             'email' => 'member@example.test',
+            'displayName' => 'Membro',
         ])->assertAccepted()->assertJsonPath('message', 'Se possível, enviaremos instruções para o endereço informado.')->assertJsonStructure(['challengeId']);
 
         Mail::assertNothingQueued();
@@ -54,6 +57,7 @@ class StartRegistrationTest extends TestCase
 
         $this->postJson('/api/v1/auth/registrations', [
             'email' => 'invalid',
+            'displayName' => 'Visitante',
         ])->assertUnprocessable()->assertJsonValidationErrors(['email']);
 
         Mail::assertNothingQueued();
@@ -64,7 +68,7 @@ class StartRegistrationTest extends TestCase
         Mail::fake();
         $user = User::factory()->unverified()->create(['email' => 'visitor@example.test']);
 
-        $this->postJson('/api/v1/auth/registrations', ['email' => $user->email])->assertAccepted();
+        $this->postJson('/api/v1/auth/registrations', ['email' => $user->email, 'displayName' => 'Visitante'])->assertAccepted();
 
         $this->assertSame(1, User::query()->where('email', $user->email)->count());
         $this->assertDatabaseCount('authenticationChallenge', 1);
@@ -73,10 +77,11 @@ class StartRegistrationTest extends TestCase
 
     public function test_registration_returns_neutral_rate_limit_response(): void
     {
-        config(['access.authentication.emailEmissionLimit' => 1, 'access.authentication.originEmissionLimit' => 10]);
+        config(['access.authentication.emailEmissionLimit' => 1, 'access.authentication.originEmissionLimit' => 10, 'access.authentication.emailResendCooldownSeconds' => 1]);
 
-        $this->postJson('/api/v1/auth/registrations', ['email' => 'visitor@example.test'])->assertAccepted();
-        $this->postJson('/api/v1/auth/registrations', ['email' => 'visitor@example.test'])
+        $this->postJson('/api/v1/auth/registrations', ['email' => 'visitor@example.test', 'displayName' => 'Visitante'])->assertAccepted();
+        $this->travel(2)->seconds();
+        $this->postJson('/api/v1/auth/registrations', ['email' => 'visitor@example.test', 'displayName' => 'Visitante'])
             ->assertStatus(429)->assertJsonPath('code', 'RATE_LIMITED');
     }
 }

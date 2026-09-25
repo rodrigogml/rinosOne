@@ -71,10 +71,12 @@ class PasswordlessSessionTest extends TestCase
     public function test_new_request_replaces_the_previous_passwordless_emission(): void
     {
         Mail::fake();
+        config(['access.authentication.emailResendCooldownSeconds' => 1]);
         $user = User::factory()->create();
 
         $this->postJson('/api/v1/auth/passwordless-sessions', ['email' => $user->email])->assertAccepted();
         $first = Mail::queued(PasswordlessLoginMessage::class)->first();
+        $this->travel(2)->seconds();
         $this->postJson('/api/v1/auth/passwordless-sessions', ['email' => $user->email])->assertAccepted();
         $second = Mail::queued(PasswordlessLoginMessage::class)->last();
 
@@ -83,5 +85,26 @@ class PasswordlessSessionTest extends TestCase
             ->assertJsonPath('code', 'INVALID_CREDENTIAL');
         $this->postJson('/api/v1/auth/passwordless-sessions/confirmations', ['challengeId' => $second->challengeId, 'code' => $second->code])
             ->assertCreated();
+    }
+
+    public function test_passwordless_resend_cooldown_is_enforced_without_revealing_account_existence(): void
+    {
+        Mail::fake();
+        config([
+            'access.authentication.emailResendCooldownSeconds' => 180,
+            'access.authentication.emailEmissionLimit' => 3,
+            'access.authentication.originEmissionLimit' => 100,
+        ]);
+
+        $this->postJson('/api/v1/auth/passwordless-sessions', ['email' => 'cooldown@example.test'])
+            ->assertAccepted()
+            ->assertJsonPath('resendAvailableInSeconds', 180);
+
+        $this->postJson('/api/v1/auth/passwordless-sessions', ['email' => 'cooldown@example.test'])
+            ->assertStatus(429)
+            ->assertHeader('Retry-After', '180')
+            ->assertJsonPath('code', 'RATE_LIMITED');
+
+        Mail::assertNothingQueued();
     }
 }
