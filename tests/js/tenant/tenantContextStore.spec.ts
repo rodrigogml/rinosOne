@@ -3,6 +3,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TenantResponseShapeError } from '../../../resources/js/tenant/tenantApi';
 import { useTenantContextStore } from '../../../resources/js/tenant/tenantContextStore';
+import { useWorkspaceStore } from '../../../resources/js/workspace/workspaceStore';
+import type { WorkspaceDestination } from '../../../resources/js/workspace/workspaceTypes';
 
 vi.mock('axios', () => ({ default: { delete: vi.fn(), get: vi.fn(), post: vi.fn() } }));
 
@@ -16,6 +18,17 @@ const tenantContext = {
     membership: { id: '01J00000000000000000000001', role: 'OWNER' },
     availableModules: [],
 };
+
+function destination(scope: WorkspaceDestination['scope']): WorkspaceDestination {
+    return {
+        id: `${scope}.destination`,
+        scope,
+        category: scope,
+        titleKey: `workspace.destination.${scope}`,
+        icon: scope,
+        createSurface: () => ({ titleKey: `workspace.surface.${scope}`, icon: scope }),
+    };
+}
 
 describe('tenant context store', () => {
     beforeEach(() => {
@@ -48,6 +61,23 @@ describe('tenant context store', () => {
         await expect(store.select('01J00000000000000000000002')).rejects.toBeInstanceOf(TenantResponseShapeError);
         expect(store.context).toEqual(tenantContext);
         expect(store.pendingTenantId).toBeNull();
+    });
+
+    it('clears only contextual workspace surfaces after a successful context change', async () => {
+        const store = useTenantContextStore();
+        const workspace = useWorkspaceStore();
+        const nextContext = { ...tenantContext, tenant: { id: '01J00000000000000000000002', displayName: 'Nova Oficina' } };
+        http.post.mockResolvedValueOnce({ data: { context: tenantContext } }).mockResolvedValueOnce({ data: { context: nextContext } });
+
+        await store.select(tenantContext.tenant.id);
+        const personal = workspace.openDestination(destination('personal'), { tenantId: null });
+        workspace.openDestination(destination('tenant'), { tenantId: tenantContext.tenant.id });
+
+        await store.select(nextContext.tenant.id);
+
+        expect(workspace.surfaces.map((surface) => surface.id)).toEqual([personal?.id]);
+        expect(workspace.activeSurfaceId).toBe(personal?.id);
+        expect(store.context).toEqual(nextContext);
     });
 
     it('discards pending and selected contextual data without storage or restoration', async () => {

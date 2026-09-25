@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ modelValue: boolean; title: string; destructive?: boolean }>(), { destructive: false });
+const props = withDefaults(defineProps<{ modelValue: boolean; title: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean }>(), { destructive: false, escapable: true, backdropDismissible: true });
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const dialog = ref<HTMLElement | null>(null);
 let returnFocus: HTMLElement | null = null;
@@ -14,7 +14,7 @@ async function focusDialog() {
     dialog.value?.querySelector<HTMLElement>(focusableSelector)?.focus();
 }
 function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+    if (event.key === 'Escape' && props.escapable) { event.preventDefault(); close(); return; }
     if (event.key !== 'Tab' || !dialog.value) return;
     const focusable = Array.from(dialog.value.querySelectorAll<HTMLElement>(focusableSelector));
     if (!focusable.length) { event.preventDefault(); dialog.value.focus(); return; }
@@ -30,4 +30,4 @@ onMounted(async () => { if (props.modelValue) await focusDialog(); });
 onBeforeUnmount(() => returnFocus?.focus());
 </script>
 
-<template><div v-if="modelValue" class="ui-dialog-backdrop" @mousedown.self="close"><section ref="dialog" class="ui-dialog" :role="destructive ? 'alertdialog' : 'dialog'" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><h2 class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></template>
+<template><div v-if="modelValue" class="ui-dialog-backdrop" @mousedown.self="backdropDismissible && close()"><section ref="dialog" class="ui-dialog" :role="destructive ? 'alertdialog' : 'dialog'" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><h2 class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></template>

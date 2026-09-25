@@ -45,7 +45,7 @@ test('starts passwordless access and completes its documented API contract', asy
     await expect(page.getByRole('heading', { name: 'Confirme seu e-mail' })).toBeVisible();
     await page.getByLabel('Código de confirmação').fill('123456');
     await page.getByRole('button', { name: 'Concluir acesso' }).click();
-    await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('starts password access with its documented API contract', async ({ page }) => {
@@ -66,8 +66,7 @@ test('starts password access with its documented API contract', async ({ page })
     await page.getByLabel('Senha').fill('Secret#1');
     await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
-    await expect(page.getByText('Sessão atual ativa.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('creates an account, confirms the e-mail code and enters the authenticated area', async ({ page }) => {
@@ -95,7 +94,7 @@ test('creates an account, confirms the e-mail code and enters the authenticated 
     await page.getByRole('button', { name: 'Criar conta' }).click();
     await page.getByLabel('Código de confirmação').fill('654321');
     await page.getByRole('button', { name: 'Concluir acesso' }).click();
-    await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('continues passwordless access from an e-mail link in a new tab', async ({ page }) => {
@@ -113,8 +112,7 @@ test('continues passwordless access from an e-mail link in a new tab', async ({ 
 
     await page.goto('/access/passwordless?challengeId=challenge-3&token=secret-token');
     await expect(page).toHaveURL(/\/access\/passwordless$/);
-    await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
-    await expect(page.getByText('Você permanecerá conectado neste navegador.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('preserves safe form state, route and session while changing presentation and language', async ({ page }) => {
@@ -145,20 +143,9 @@ test('preserves safe form state, route and session while changing presentation a
     await expect.poll(async () => page.evaluate(() => localStorage.getItem('rinos-one.visual-preferences.v1'))).not.toContain('person@example.test');
 });
 
-test('keeps the authenticated security actions keyboard accessible', async ({ page }) => {
+test('keeps the authenticated shell controls keyboard accessible', async ({ page }) => {
     await mockAuthenticatedSession(page);
-    await page.route('**/api/v1/auth/other-sessions', async (route) => {
-        await route.fulfill({ status: 204 });
-    });
     await page.goto('/');
-    const invalidator = page.getByRole('button', { name: 'Invalidar outras sessões' });
-    await invalidator.focus();
-    await page.keyboard.press('Enter');
-    const dialog = page.getByRole('alertdialog');
-    await expect(dialog).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancelar' })).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(invalidator).toBeFocused();
 
     await page.getByRole('button', { name: 'Menu pessoal de Pessoa' }).click();
     const preferences = page.getByRole('dialog', { name: 'Menu pessoal' }).getByRole('button', { name: 'Preferências visuais' });
@@ -252,7 +239,7 @@ for (const viewport of [
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.goto('/');
 
-        await expect(page.getByRole('heading', { name: 'Segurança de acesso' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Menu pessoal de Pessoa' })).toBeVisible();
 
         if (viewport.width < 640) {
@@ -283,7 +270,7 @@ for (const viewport of [
         await page.keyboard.press('Escape');
         await personalMenu.getByRole('button', { name: 'Idioma atual: Português (Brasil)' }).click();
         await personalMenu.getByRole('option', { name: 'English' }).click();
-        await expect(page.getByRole('heading', { name: 'Access security' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Workspace', exact: true })).toBeVisible();
         await captureState(page, testInfo, `${viewport.name}-authenticated-shell`);
 
         await page.getByRole('button', { name: 'Sign out' }).click();

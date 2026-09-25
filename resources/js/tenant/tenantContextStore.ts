@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { tenantApi } from './tenantApi';
 import type { TenantContext } from './tenantTypes';
+import { useWorkspaceStore } from '../workspace/workspaceStore';
 
 /**
  * Mantém o contexto selecionado somente na memória desta aba. Nenhuma seleção
@@ -27,6 +28,10 @@ export const useTenantContextStore = defineStore('tenant-context', () => {
                 return nextContext;
             }
 
+            if (current.value?.tenant.id !== nextContext.tenant.id) {
+                useWorkspaceStore().clearTenantSurfaces();
+            }
+
             current.value = nextContext;
 
             return nextContext;
@@ -49,6 +54,7 @@ export const useTenantContextStore = defineStore('tenant-context', () => {
             await tenantApi.endContext(activeContext.tenant.id);
 
             if (version === requestVersion) {
+                useWorkspaceStore().clearTenantSurfaces();
                 current.value = null;
             }
         } finally {

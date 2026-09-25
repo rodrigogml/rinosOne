@@ -1,9 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import MobileNavigationDrawer from '../../../resources/js/design-system/MobileNavigationDrawer.vue';
+import { i18n } from '../../../resources/js/i18n';
+import type { WorkspaceDestination, WorkspaceNavigationCategory } from '../../../resources/js/workspace/workspaceTypes';
 
 function mountDrawer(modelValue = true) {
-    return mount(MobileNavigationDrawer, { attachTo: document.body, props: { modelValue, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar navegação', emptyLabel: 'Nenhuma área adicional está disponível.' } });
+    return mount(MobileNavigationDrawer, { attachTo: document.body, props: { modelValue, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar navegação', emptyLabel: 'Nenhuma área adicional está disponível.' }, global: { plugins: [i18n] } });
 }
 
 describe('mobile navigation drawer', () => {
@@ -37,5 +39,18 @@ describe('mobile navigation drawer', () => {
         expect(wrapper.emitted('update:modelValue')).toContainEqual([false]);
         wrapper.unmount();
         opener.remove();
+    });
+
+    it('filters destinations under its selected category and emits only the selected destination', async () => {
+        const categories: WorkspaceNavigationCategory[] = [{ id: 'workspace', titleKey: 'access.workspace.navigation.title', icon: 'workspace' }];
+        const destination: WorkspaceDestination = { id: 'personal.sample', scope: 'personal', category: 'workspace', titleKey: 'access.workspace.title', icon: 'sample', createSurface: () => ({ titleKey: 'access.workspace.title', icon: 'sample' }) };
+        const wrapper = mount(MobileNavigationDrawer, {
+            props: { modelValue: true, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar', emptyLabel: 'Vazia', categories, destinations: [destination] },
+            global: { plugins: [i18n] },
+        });
+
+        await wrapper.get('.mobile-navigation-drawer__category-trigger').trigger('click');
+        await wrapper.get('.mobile-navigation-drawer__destination').trigger('click');
+        expect(wrapper.emitted('openDestination')).toEqual([[destination]]);
     });
 });

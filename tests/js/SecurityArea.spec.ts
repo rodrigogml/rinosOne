@@ -10,28 +10,18 @@ vi.mock('axios', () => ({ default: { delete: vi.fn(), get: vi.fn(), isAxiosError
 const http = axios as unknown as {
     delete: ReturnType<typeof vi.fn>;
     get: ReturnType<typeof vi.fn>;
-    put: ReturnType<typeof vi.fn>;
 };
-const mountedAccesses: ReturnType<typeof mount>[] = [];
+const mountedApplications: ReturnType<typeof mount>[] = [];
 
-function mountAuthenticated(passwordDefined = false, persistentAuthentication = false) {
-    http.get.mockResolvedValue({ data: { persistentAuthentication, user: { displayName: 'Person', passwordDefined } } });
+function mountAuthenticated() {
+    http.get.mockResolvedValue({ data: { persistentAuthentication: true, user: { displayName: 'Person', passwordDefined: false } } });
     const wrapper = mount(App, { attachTo: document.body, global: { plugins: [createPinia(), i18n] } });
-    mountedAccesses.push(wrapper);
+    mountedApplications.push(wrapper);
 
     return wrapper;
 }
 
-type ButtonWrapper = { attributes: (key: string) => string | undefined; element: Element; text: () => string; trigger: (event: string) => Promise<unknown> };
-
-function buttonWithText<T extends { findAll: (selector: string) => ButtonWrapper[] }>(wrapper: T, text: string) {
-    const button = wrapper.findAll('button').find((candidate) => candidate.text() === text);
-    if (!button) throw new Error(`Button not found: ${text}`);
-
-    return button;
-}
-
-describe('authenticated security area', () => {
+describe('authenticated workspace area', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         i18n.global.locale.value = 'pt-BR';
@@ -41,104 +31,49 @@ describe('authenticated security area', () => {
     });
 
     afterEach(() => {
-        mountedAccesses.splice(0).forEach((wrapper) => wrapper.unmount());
+        mountedApplications.splice(0).forEach((wrapper) => wrapper.unmount());
         document.body.replaceChildren();
     });
 
-    it('presents semantic security groups, global top bar, and personal presentation controls', async () => {
-        const wrapper = mountAuthenticated(false, true);
-        await flushPromises();
-
-        expect(wrapper.get('#security-title').text()).toBe('Segurança de acesso');
-        expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
-        expect(wrapper.get('button[aria-label="Menu pessoal de Person"]').text()).toContain('Pe');
-        expect(wrapper.get('#password-title').text()).toBe('Senha');
-        expect(wrapper.get('#sessions-title').text()).toBe('Sessões');
-        await wrapper.get('button[aria-label="Menu pessoal de Person"]').trigger('click');
-        expect(wrapper.findAll('.presentation-control')).toHaveLength(2);
-        expect(wrapper.text()).toContain('Você permanecerá conectado neste navegador.');
-    });
-
-    it('returns to the public entry when the current session is no longer valid', async () => {
-        http.get.mockRejectedValue(new Error('No authenticated session'));
-        const wrapper = mount(App, { attachTo: document.body, global: { plugins: [createPinia(), i18n] } });
-        mountedAccesses.push(wrapper);
-        await flushPromises();
-
-        expect(wrapper.get('h1').text()).toBe('Acesse sua conta');
-        expect(wrapper.find('#security-title').exists()).toBe(false);
-    });
-
-    it('validates and submits password definition through the unchanged contract', async () => {
+    it('presents the neutral workspace below the global top bar without security demonstration content', async () => {
         const wrapper = mountAuthenticated();
         await flushPromises();
-        await buttonWithText(wrapper, 'Definir senha').trigger('click');
-        await wrapper.get('form').trigger('submit');
 
-        expect(wrapper.text()).toContain('Informe uma senha para continuar.');
-        expect(http.put).not.toHaveBeenCalled();
-
-        http.put.mockResolvedValue({ data: null });
-        await wrapper.get('#new-password').setValue('Senha#1');
-        await wrapper.get('form').trigger('submit');
-        await flushPromises();
-
-        expect(http.put).toHaveBeenCalledWith('/api/v1/auth/password', { password: 'Senha#1' });
+        expect(wrapper.get('#workspace-title').text()).toBe('Área de trabalho');
+        expect(wrapper.get('.workspace-stage--empty').text()).toContain('Sua área de trabalho está pronta');
+        expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
+        expect(wrapper.get('button[aria-label="Menu pessoal de Person"]').text()).toContain('Pe');
+        expect(wrapper.find('#security-title').exists()).toBe(false);
+        expect(wrapper.find('.security-card').exists()).toBe(false);
+        expect(wrapper.find('#new-password').exists()).toBe(false);
     });
 
-    it('uses the reusable destructive dialog, traps its interaction, and restores focus on cancellation', async () => {
-        const wrapper = mountAuthenticated(true);
-        await flushPromises();
-        const opener = buttonWithText(wrapper, 'Invalidar outras sessões');
-        (opener.element as HTMLElement).focus();
-        await opener.trigger('click');
-        await wrapper.vm.$nextTick();
-
-        const dialog = wrapper.get('[role="alertdialog"]');
-        expect(dialog.text()).toContain('Invalidar outras sessões?');
-        expect(document.activeElement).toBe(buttonWithText(dialog, 'Cancelar').element);
-
-        await buttonWithText(dialog, 'Cancelar').trigger('click');
-        await wrapper.vm.$nextTick();
-        expect(wrapper.find('[role="alertdialog"]').exists()).toBe(false);
-        expect(document.activeElement).toBe(opener.element);
-    });
-
-    it('invalidates other sessions and ends only the current session through their existing endpoints', async () => {
-        http.delete.mockResolvedValue({ data: null });
-        const wrapper = mountAuthenticated(true);
+    it('returns to public access when the current session is no longer valid', async () => {
+        http.get.mockRejectedValue(new Error('No authenticated session'));
+        const wrapper = mount(App, { attachTo: document.body, global: { plugins: [createPinia(), i18n] } });
+        mountedApplications.push(wrapper);
         await flushPromises();
 
-        await buttonWithText(wrapper, 'Invalidar outras sessões').trigger('click');
-        await buttonWithText(wrapper.get('[role="alertdialog"]'), 'Invalidar sessões').trigger('click');
-        await flushPromises();
-        expect(http.delete).toHaveBeenCalledWith('/api/v1/auth/other-sessions');
-
-        await buttonWithText(wrapper, 'Encerrar esta sessão').trigger('click');
-        expect(http.delete).toHaveBeenCalledWith('/api/v1/auth/session');
         expect(wrapper.get('h1').text()).toBe('Acesse sua conta');
+        expect(wrapper.find('#workspace-title').exists()).toBe(false);
     });
 
-    it('keeps the authenticated session intact while language changes and security actions are offline-disabled', async () => {
-        const wrapper = mountAuthenticated(true);
+    it('keeps the authenticated workspace available after a language change without another session request', async () => {
+        const wrapper = mountAuthenticated();
         await flushPromises();
         const sessionRequests = http.get.mock.calls.length;
 
         await wrapper.get('button[aria-label="Menu pessoal de Person"]').trigger('click');
         await wrapper.get('button[aria-haspopup="listbox"]').trigger('click');
         await wrapper.get('#language-option-en').trigger('click');
-        expect(wrapper.get('#security-title').text()).toBe('Access security');
-        expect(http.get).toHaveBeenCalledTimes(sessionRequests);
 
-        window.dispatchEvent(new Event('offline'));
-        await wrapper.vm.$nextTick();
-        expect(buttonWithText(wrapper, 'Invalidate other sessions').attributes('disabled')).toBeDefined();
-        expect(buttonWithText(wrapper, 'End this session').attributes('disabled')).toBeDefined();
+        expect(wrapper.get('#workspace-title').text()).toBe('Workspace');
+        expect(http.get).toHaveBeenCalledTimes(sessionRequests);
     });
 
-    it('uses the shared top bar to close the drawer and end the real authenticated session', async () => {
+    it('uses the shared top bar to close the mobile drawer and end the authenticated session', async () => {
         http.delete.mockResolvedValue({ data: null });
-        const wrapper = mountAuthenticated(true);
+        const wrapper = mountAuthenticated();
         await flushPromises();
 
         await wrapper.get('button[aria-label="Abrir navegação"]').trigger('click');

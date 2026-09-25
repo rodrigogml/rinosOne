@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BrandMark from './BrandMark.vue';
+import type { WorkspaceDestination, WorkspaceNavigationCategory } from '../workspace/workspaceTypes';
 
-const props = defineProps<{ modelValue: boolean; brandLabel: string; title: string; closeLabel: string; emptyLabel: string }>();
-const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
+const props = defineProps<{ modelValue: boolean; brandLabel: string; title: string; closeLabel: string; emptyLabel: string; categories?: readonly WorkspaceNavigationCategory[]; destinations?: readonly WorkspaceDestination[] }>();
+const emit = defineEmits<{ 'update:modelValue': [value: boolean]; openDestination: [destination: WorkspaceDestination] }>();
+const { t } = useI18n();
 const drawer = ref<HTMLElement | null>(null);
+const activeCategoryId = ref<string | null>(null);
+const activeDestinations = computed(() => (props.destinations ?? []).filter((destination) => destination.category === activeCategoryId.value));
 let returnFocus: HTMLElement | null = null;
 const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function close() { emit('update:modelValue', false); }
+function selectCategory(categoryId: string): void { activeCategoryId.value = activeCategoryId.value === categoryId ? null : categoryId; }
+function openDestination(destination: WorkspaceDestination): void { emit('openDestination', destination); }
 async function focusDrawer() {
     returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await nextTick();
@@ -26,6 +34,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 watch(() => props.modelValue, async (visible) => {
     if (visible) { await focusDrawer(); return; }
+    activeCategoryId.value = null;
     returnFocus?.focus(); returnFocus = null;
 });
 onMounted(async () => { if (props.modelValue) await focusDrawer(); });
@@ -41,7 +50,21 @@ onBeforeUnmount(() => returnFocus?.focus());
                     <svg class="ui-icon-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
                 </button>
             </header>
-            <div class="mobile-navigation-drawer__content"><p>{{ emptyLabel }}</p></div>
+            <div class="mobile-navigation-drawer__content">
+                <div class="mobile-navigation-drawer__categories">
+                    <section v-for="category in categories ?? []" :key="category.id" class="mobile-navigation-drawer__category">
+                        <button class="mobile-navigation-drawer__category-trigger" type="button" :aria-expanded="activeCategoryId === category.id" @click="selectCategory(category.id)">
+                            <span>{{ t(category.titleKey) }}</span>
+                            <span aria-hidden="true">{{ activeCategoryId === category.id ? '−' : '+' }}</span>
+                        </button>
+                        <div v-if="activeCategoryId === category.id" class="mobile-navigation-drawer__destinations">
+                            <button v-for="destination in activeDestinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">{{ t(destination.titleKey) }}</button>
+                            <p v-if="!activeDestinations.length">{{ emptyLabel }}</p>
+                        </div>
+                    </section>
+                    <p v-if="!(categories ?? []).length">{{ emptyLabel }}</p>
+                </div>
+            </div>
         </aside>
     </div>
 </template>
