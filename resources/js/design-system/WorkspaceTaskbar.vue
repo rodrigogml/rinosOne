@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { WorkspaceSurface } from '../workspace/workspaceTypes';
+import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 
 defineProps<{
     surfaces: readonly WorkspaceSurface[];
     activeSurfaceId: string | null;
     label: string;
-    closeLabel: string;
     dirtyLabel: string;
 }>();
 
 const emit = defineEmits<{
     activate: [surfaceId: string];
-    requestClose: [surfaceId: string];
 }>();
 const { t } = useI18n();
 </script>
@@ -29,24 +28,13 @@ const { t } = useI18n();
                     role="tab"
                     :aria-selected="activeSurfaceId === surface.id"
                     :aria-disabled="surface.status === 'unavailable'"
-                    :aria-label="t(surface.titleKey)"
-                    :title="t(surface.titleKey)"
+                    :aria-label="surface.label ?? t(surface.titleKey)"
+                    :title="surface.label ?? t(surface.titleKey)"
                     @click="emit('activate', surface.id)"
                 >
-                    <span class="workspace-taskbar__icon" aria-hidden="true"></span>
-                    <span class="workspace-taskbar__title">{{ t(surface.titleKey) }}</span>
+                    <WorkspaceSurfaceIcon :name="surface.icon" :size="surface.id === activeSurfaceId ? 'lg' : 'md'" />
                     <span v-if="surface.dirty" class="workspace-taskbar__dirty" :aria-label="dirtyLabel">●</span>
-                </button>
-                <button
-                    class="workspace-taskbar__close"
-                    type="button"
-                    :aria-label="`${closeLabel}: ${t(surface.titleKey)}`"
-                    :title="`${closeLabel}: ${t(surface.titleKey)}`"
-                    @click="emit('requestClose', surface.id)"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                        <path d="m7 7 10 10M17 7 7 17" stroke-linecap="round" />
-                    </svg>
+                    <span v-if="surface.id === activeSurfaceId" class="workspace-taskbar__active-pill" aria-hidden="true" />
                 </button>
             </div>
         </div>

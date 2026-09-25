@@ -12,9 +12,9 @@ const surfaces: WorkspaceSurface[] = [
 describe('WorkspaceTaskbar', () => {
     beforeEach(() => { i18n.global.locale.value = 'pt-BR'; });
 
-    it('identifies the active surface semantically and emits activation and explicit close requests', async () => {
+    it('identifies the active surface semantically with icon-only items and emits activation', async () => {
         const wrapper = mount(WorkspaceTaskbar, {
-            props: { surfaces, activeSurfaceId: 'surface-1', label: 'Superfícies abertas', closeLabel: 'Fechar', dirtyLabel: 'Alterações não salvas' },
+            props: { surfaces, activeSurfaceId: 'surface-1', label: 'Superfícies abertas', dirtyLabel: 'Alterações não salvas' },
             global: { plugins: [i18n] },
         });
 
@@ -22,11 +22,12 @@ describe('WorkspaceTaskbar', () => {
         expect(tabs[0]!.attributes('aria-selected')).toBe('true');
         expect(tabs[1]!.attributes('aria-selected')).toBe('false');
         expect(wrapper.get('.workspace-taskbar__dirty').attributes('aria-label')).toBe('Alterações não salvas');
+        expect(wrapper.findAll('.workspace-surface-icon')).toHaveLength(2);
+        expect(wrapper.findAll('.workspace-taskbar__active-pill')).toHaveLength(1);
+        expect(wrapper.find('.workspace-taskbar__title').exists()).toBe(false);
 
         await tabs[1]!.trigger('click');
-        await wrapper.get('[aria-label="Fechar: Área de trabalho"]').trigger('click');
 
         expect(wrapper.emitted('activate')).toEqual([['surface-2']]);
-        expect(wrapper.emitted('requestClose')).toEqual([['surface-1']]);
     });
 });

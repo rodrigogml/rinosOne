@@ -54,11 +54,11 @@ onBeforeUnmount(() => returnFocus?.focus());
                 <div class="mobile-navigation-drawer__categories">
                     <section v-for="category in categories ?? []" :key="category.id" class="mobile-navigation-drawer__category">
                         <button class="mobile-navigation-drawer__category-trigger" type="button" :aria-expanded="activeCategoryId === category.id" @click="selectCategory(category.id)">
-                            <span>{{ t(category.titleKey) }}</span>
+                            <span>{{ category.label ?? t(category.titleKey) }}</span>
                             <span aria-hidden="true">{{ activeCategoryId === category.id ? '−' : '+' }}</span>
                         </button>
                         <div v-if="activeCategoryId === category.id" class="mobile-navigation-drawer__destinations">
-                            <button v-for="destination in activeDestinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">{{ t(destination.titleKey) }}</button>
+                            <button v-for="destination in activeDestinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">{{ destination.label ?? t(destination.titleKey) }}</button>
                             <p v-if="!activeDestinations.length">{{ emptyLabel }}</p>
                         </div>
                     </section>

@@ -19,7 +19,7 @@ Construir uma Área de trabalho responsiva abaixo da barra superior existente. A
 
 | Princípio | Status | Notas |
 | --- | --- | --- |
-| I. Simplicidade incremental | PASS | O catálogo inicia vazio e não cria módulo ou produto fictício. |
+| I. Simplicidade incremental | PASS | O catálogo não cria módulo ou produto funcional; fixtures visuais isoladas podem exercitar o shell sem rota, dado, API ou regra de negócio. |
 | II. Fronteira API | PASS | Não há regra de negócio ou contrato externo novo; futuros módulos continuam responsáveis por suas APIs. |
 | III. Identidade segura | PASS | O shell consome somente a sessão já validada e limpa estado ao perdê-la. |
 | IV. Dados mínimos | PASS | Não cria persistência, cookie, sessão adicional ou dados sensíveis. |
@@ -33,7 +33,7 @@ O `AuthenticatedFrame` passa a hospedar um `WorkspaceShell`, preservando `Applic
 2. `WorkspaceMegaMenu`: painel ancorado na navegação, com grupos e destinos do catálogo filtrado.
 3. `WorkspaceStage`: apresenta apenas a superfície ativa e preserva instâncias abertas no ciclo de vida da aba.
 4. `WorkspaceTaskbar`: alterna e solicita o fechamento de superfícies abertas.
-5. `WorkspaceOverlayHost`: gerencia diálogo de descarte, diálogos futuros e retorno de foco.
+5. `WorkspaceOverlayHost`: gerencia o diálogo de descarte e outros diálogos do escopo da área abaixo da topbar, com retorno de foco. Cada janela hospeda a própria pilha efêmera de diálogos locais, preservada ao perder a ativação e descartada somente ao fechar a instância.
 6. `WorkspaceNotificationHost`: apresenta uma única notificação por vez a partir de uma fila.
 7. `WorkspaceMobilePanels`: adapta navegação e tarefas para painéis modais em tela estreita.
 

@@ -7,7 +7,7 @@ import WorkspaceShell from './WorkspaceShell.vue';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
 
-const props = defineProps<{ labelledBy: string; displayName?: string | null }>();
+const props = defineProps<{ displayName?: string | null }>();
 const emit = defineEmits<{ signOut: [] }>();
 const { t } = useI18n();
 const mobileNavigationOpen = ref(false);
@@ -21,8 +21,8 @@ onBeforeUnmount(() => workspace.discard());
 <template>
     <div class="authenticated-application">
         <ApplicationTopBar :display-name="displayName" :brand-label="t('access.brand')" :mobile-navigation-label="t('access.shell.openNavigation')" :avatar-label="avatarLabel" :menu-label="t('access.shell.menu')" :settings-label="t('access.shell.userSettings')" :settings-unavailable-label="t('access.shell.settingsUnavailable')" :sign-out-label="t('access.shell.signOut')" @sign-out="signOut" @open-mobile-navigation="mobileNavigationOpen = true" @open-personal-menu="mobileNavigationOpen = false" />
-        <AppShell :labelled-by="labelledBy">
-            <WorkspaceShell v-model:mobile-navigation-open="mobileNavigationOpen" :brand-label="t('access.brand')" :title-id="labelledBy" :title="t('access.workspace.title')" :empty-title="t('access.workspace.emptyTitle')" :empty-description="t('access.workspace.emptyDescription')" />
+        <AppShell :label="t('access.workspace.title')">
+            <WorkspaceShell v-model:mobile-navigation-open="mobileNavigationOpen" :brand-label="t('access.brand')" />
         </AppShell>
     </div>
 </template>

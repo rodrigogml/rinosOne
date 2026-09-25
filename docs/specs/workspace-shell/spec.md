@@ -13,7 +13,7 @@
 
 ## Direção de Produto
 
-A Área de trabalho é a experiência principal após a autenticação. Ela preserva a barra superior existente e organiza, abaixo dela, a navegação de módulos, as superfícies abertas, notificações e diálogos. Ela deve ser produtiva em computador sem imitar de forma literal um sistema operacional e deve se adaptar para uma única jornada clara em telas estreitas.
+A Área de trabalho é a experiência principal após a autenticação. O canvas da aplicação ocupa somente a área visível do navegador: a topbar permanece fixa e a área abaixo da topbar contém o menu e, à direita, a área de janelas e a taskbar. A rolagem pertence exclusivamente ao conteúdo de uma janela ou painel que a necessite; o canvas não cria rolagem geral. Ela deve ser produtiva em computador sem imitar de forma literal um sistema operacional e deve se adaptar para uma única jornada clara em telas estreitas.
 
 As funcionalidades pessoais permanecem disponíveis sempre. Quando uma organização estiver selecionada, as opções autorizadas da organização se somam às pessoais, sem ocultá-las. Nenhum módulo contextual aparece sem uma organização selecionada e válida.
 
@@ -113,20 +113,20 @@ Como usuário em tela estreita, quero acessar a navegação e uma superfície at
 
 - **FR-WS-001**: O sistema DEVE apresentar uma Área de trabalho abaixo da barra superior em todas as jornadas autenticadas.
 - **FR-WS-002**: O sistema DEVE remover o conteúdo demonstrativo de segurança de acesso da Área de trabalho.
-- **FR-WS-003**: O sistema DEVE oferecer navegação lateral por categorias e um painel contextual de destinos agrupados.
+- **FR-WS-003**: O sistema DEVE oferecer menu lateral por categorias e mega menu contextual de destinos agrupados, sobreposto à área de janelas à direita do menu sem deslocar seu conteúdo. Em desktop, hover abre o menu; clique e teclado permanecem como alternativas acessíveis. A altura é intrínseca, o posicionamento é centralizado no item acionador e limitado ao canvas, sem rolagem própria ou conteúdo oculto.
 - **FR-WS-004**: O sistema DEVE mostrar somente destinos pessoais autorizados sem organização e acrescentar destinos autorizados da organização ativa sem remover os pessoais.
 - **FR-WS-005**: O menu lateral DEVE poder alternar entre apresentação expandida e recolhida, preservando nome acessível e foco de cada destino.
 - **FR-WS-006**: O sistema DEVE manter uma coleção de superfícies abertas independente por aba e permitir que somente uma fique ativa em cada Área de trabalho.
 - **FR-WS-007**: Cada destino DEVE declarar se admite instância única ou múltiplas instâncias; na ausência de declaração, a instância única é o padrão.
-- **FR-WS-008**: O sistema DEVE oferecer uma barra de tarefas para identificar, ativar e fechar superfícies abertas, com indicação que não dependa apenas de cor para a superfície ativa.
+- **FR-WS-008**: O sistema DEVE oferecer uma barra de tarefas centralizada para identificar e ativar superfícies abertas por ícone. O item ativo DEVE ter ícone maior e marcador em formato pill abaixo dele; hover aplica ampliação discreta. A taskbar não exibe títulos nem controles de fechamento, pois o fechamento pertence ao X no cabeçalho da janela. Toda superfície DEVE declarar ícone SVG reutilizado no cabeçalho e na taskbar.
 - **FR-WS-009**: O sistema DEVE fornecer atalhos de teclado documentáveis para avançar, retroceder e solicitar fechamento da superfície ativa, sem interceptar entrada de texto ou atalhos assistivos do navegador.
 - **FR-WS-010**: O sistema DEVE solicitar confirmação antes de encerrar ou descartar uma superfície que declare alterações não confirmadas. Alternar entre superfícies abertas DEVE somente trocar o foco e preservar seu estado local, sem solicitar confirmação.
-- **FR-WS-011**: O sistema DEVE fornecer diálogos empilháveis, com controle de foco, Escape quando permitido e retorno de foco ao originador.
+- **FR-WS-011**: O sistema DEVE fornecer diálogos empilháveis de escopo da área de trabalho, com controle de foco, Escape quando permitido e retorno de foco ao originador. Um diálogo desse escopo cobre e bloqueia toda a área abaixo da topbar, sem cobrir a topbar. Cada superfície também DEVE poder hospedar uma pilha própria de diálogos locais, que bloqueia somente sua janela ativa, preserva-se durante trocas de foco e é descartada ao fechar sua própria janela.
 - **FR-WS-012**: O sistema DEVE apresentar mensagens temporárias em fila, com informação, sucesso, atenção e erro compreensíveis sem depender exclusivamente de cor ou ícone.
 - **FR-WS-013**: O sistema DEVE adaptar o menu, a barra de tarefas e a navegação entre superfícies para telas estreitas sem simular janelas simultâneas de desktop.
 - **FR-WS-014**: A Área de trabalho DEVE manter temas, idioma, escalas visuais, contraste, foco visível e preferência de redução de movimento já definidos pela fundação visual.
 - **FR-WS-015**: O sistema NÃO DEVE restaurar automaticamente superfícies, diálogos ou contexto organizacional após atualização de página ou reinício do navegador nesta fase.
-- **FR-WS-016**: Esta feature NÃO DEVE criar módulos de negócio, catálogo de produtos, regras de permissão detalhadas, dados de módulo persistentes, dock auxiliar funcional ou janelas móveis livres.
+- **FR-WS-016**: Esta feature NÃO DEVE criar módulos de negócio, catálogo de produtos, regras de permissão detalhadas, dados de módulo persistentes ou janelas móveis livres. Painéis acopláveis e diálogos próprios de janela ficam fora deste escopo e só serão projetados quando uma janela real os exigir.
 
 > Decisões de infraestrutura: N/A (a feature mantém estado efêmero por aba, sem agendamento, credenciais, rotação de chaves ou persistência nova).
 
@@ -136,7 +136,8 @@ Como usuário em tela estreita, quero acessar a navegação e uma superfície at
 - **Destino de trabalho**: opção autorizada que pode abrir uma superfície pessoal ou de organização e declara sua política de instância.
 - **Superfície de trabalho**: área identificável, aberta por um destino, com estado local, título, ícone e política de fechamento.
 - **Registro de superfícies**: coleção efêmera de superfícies abertas em uma aba e sua superfície ativa.
-- **Diálogo**: interação sobreposta, bloqueante ou não, que pertence à Área de trabalho ou a uma superfície específica.
+- **Diálogo da área de trabalho**: interação bloqueante sobreposta à área abaixo da topbar, que impede foco e uso do menu, da área de janelas e da taskbar até ser resolvida.
+- **Diálogo de janela**: interação bloqueante empilhável, limitada à instância de janela que a abriu; mantém menu, taskbar e demais janelas acessíveis. Pertence ao componente da janela, nunca ao runtime global, preserva-se durante trocas de janela e só é descartada quando sua própria instância é fechada.
 - **Mensagem temporária**: feedback breve e enfileirado sobre uma ação, sem substituir a superfície ativa.
 
 ## Critérios de Sucesso

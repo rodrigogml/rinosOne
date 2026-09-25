@@ -12,6 +12,7 @@ defineProps<{
 
 const emit = defineEmits<{
     selectCategory: [categoryId: string];
+    previewCategory: [categoryId: string];
     toggleCollapsed: [];
 }>();
 const { t } = useI18n();
@@ -28,9 +29,11 @@ const { t } = useI18n();
                 type="button"
                 :aria-controls="'workspace-mega-menu'"
                 :aria-expanded="activeCategoryId === category.id"
-                :aria-label="t(category.titleKey)"
-                :title="t(category.titleKey)"
+                :aria-label="category.label ?? t(category.titleKey)"
+                :title="category.label ?? t(category.titleKey)"
+                :data-category-id="category.id"
                 @click="emit('selectCategory', category.id)"
+                @mouseenter="emit('previewCategory', category.id)"
             >
                 <svg class="workspace-navigation-rail__category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                     <path d="M4 5.5h16M4 12h16M4 18.5h16" stroke-linecap="round" />
@@ -38,7 +41,7 @@ const { t } = useI18n();
                     <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
                     <circle cx="17" cy="18.5" r="1" fill="currentColor" stroke="none" />
                 </svg>
-                <span v-if="!collapsed" class="workspace-navigation-rail__category-label">{{ t(category.titleKey) }}</span>
+                <span v-if="!collapsed" class="workspace-navigation-rail__category-label">{{ category.label ?? t(category.titleKey) }}</span>
             </button>
         </div>
         <button

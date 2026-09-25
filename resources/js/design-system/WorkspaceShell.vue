@@ -16,10 +16,6 @@ import WorkspaceTaskbar from './WorkspaceTaskbar.vue';
 import WorkspaceMobileTaskPanel from './WorkspaceMobileTaskPanel.vue';
 
 const props = withDefaults(defineProps<{
-    titleId: string;
-    title: string;
-    emptyTitle: string;
-    emptyDescription: string;
     mobileNavigationOpen?: boolean;
     brandLabel?: string;
 }>(), { mobileNavigationOpen: false, brandLabel: '' });
@@ -29,7 +25,9 @@ const { t } = useI18n();
 const tenantContext = useTenantContextStore();
 const workspace = useWorkspaceStore();
 const shell = ref<HTMLElement | null>(null);
+const windowArea = ref<HTMLElement | null>(null);
 const activeCategoryId = ref<string | null>(null);
+const megaMenuTop = ref('0px');
 const mobileTaskPanelOpen = ref(false);
 const mobileNavigationVisible = ref(props.mobileNavigationOpen);
 const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null }));
@@ -46,12 +44,29 @@ function closeNavigation(restoreFocus = false): void {
 }
 
 function selectCategory(categoryId: string): void {
-    if (activeCategoryId.value === categoryId) {
-        closeNavigation(true);
-        return;
-    }
-
     activeCategoryId.value = categoryId;
+}
+
+function previewCategory(categoryId: string): void {
+    if (activeCategoryId.value !== categoryId) activeCategoryId.value = categoryId;
+}
+
+function updateMegaMenuPosition(): void {
+    void nextTick(() => {
+        const area = windowArea.value;
+        const menu = shell.value?.querySelector<HTMLElement>('#workspace-mega-menu') ?? null;
+        const trigger = activeCategoryId.value
+            ? shell.value?.querySelector<HTMLElement>(`.workspace-navigation-rail__category[data-category-id="${activeCategoryId.value}"]`) ?? null
+            : null;
+        if (!area || !menu || !trigger) return;
+
+        const areaRect = area.getBoundingClientRect();
+        const triggerRect = trigger.getBoundingClientRect();
+        const naturalHeight = menu.offsetHeight;
+        const idealTop = triggerRect.top - areaRect.top + (triggerRect.height - naturalHeight) / 2;
+        const maximumTop = Math.max(0, area.clientHeight - naturalHeight);
+        megaMenuTop.value = `${Math.round(Math.min(Math.max(0, idealTop), maximumTop))}px`;
+    });
 }
 
 function toggleRail(): void {
@@ -77,6 +92,14 @@ function requestCloseSurface(surfaceId: string): boolean {
     if (result === 'closed' && !workspace.surfaces.length) workspace.menuCollapsed = false;
     if (!workspace.surfaces.length) mobileTaskPanelOpen.value = false;
     return result !== 'not-found';
+}
+
+function openWorkspaceDialog(surfaceId: string): void {
+    workspace.openDialog({ kind: 'information', closePolicy: 'dismissible', originSurfaceId: surfaceId });
+}
+
+function notify(surfaceId: string): void {
+    workspace.enqueueNotification({ kind: 'success', messageKey: 'access.workspace.notification.demoReady' });
 }
 
 function activateAdjacentSurface(direction: -1 | 1): boolean {
@@ -135,22 +158,26 @@ watch(() => workspace.dialogStack.length, (count) => {
     }
 });
 watch(() => props.mobileNavigationOpen, (open) => { mobileNavigationVisible.value = open; });
+watch(activeCategoryId, updateMegaMenuPosition);
 watch(() => destinations.value, () => {
     if (activeCategoryId.value && !workspaceNavigationCategories.some((category) => category.id === activeCategoryId.value)) {
         closeNavigation();
     }
 });
-onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown));
-onMounted(() => document.addEventListener('keydown', onDocumentKeydown));
+onMounted(() => {
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+    document.addEventListener('keydown', onDocumentKeydown);
+    window.addEventListener('resize', updateMegaMenuPosition);
+});
 onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', onDocumentPointerDown);
     document.removeEventListener('keydown', onDocumentKeydown);
+    window.removeEventListener('resize', updateMegaMenuPosition);
 });
 </script>
 
 <template>
     <section ref="shell" class="workspace-shell">
-        <h1 :id="titleId" class="workspace-shell__title">{{ title }}</h1>
         <div class="workspace-layout">
             <WorkspaceNavigationRail
                 :categories="workspaceNavigationCategories"
@@ -159,25 +186,27 @@ onBeforeUnmount(() => {
                 :collapse-label="t('access.workspace.navigation.collapse')"
                 :expand-label="t('access.workspace.navigation.expand')"
                 @select-category="selectCategory"
+                @preview-category="previewCategory"
                 @toggle-collapsed="toggleRail"
             />
             <div class="workspace-content">
-                <WorkspaceMegaMenu
-                    :category="activeCategory"
-                    :destinations="activeDestinations"
-                    :empty-label="t('access.workspace.navigation.empty')"
-                    @open-destination="openDestination"
-                />
-                <button v-if="workspace.surfaces.length" class="workspace-mobile-task-trigger" type="button" @click="openMobileTaskPanel">{{ t('access.workspace.taskbar.label') }}</button>
-                <WorkspaceStage :surface="workspace.activeSurface" :empty-title="emptyTitle" :empty-description="emptyDescription" />
+                <div ref="windowArea" class="workspace-window-area">
+                    <WorkspaceMegaMenu
+                        :category="activeCategory"
+                        :destinations="activeDestinations"
+                        :empty-label="t('access.workspace.navigation.empty')"
+                        :position-top="megaMenuTop"
+                        @open-destination="openDestination"
+                    />
+                    <button v-if="workspace.surfaces.length" class="workspace-mobile-task-trigger" type="button" @click="openMobileTaskPanel">{{ t('access.workspace.taskbar.label') }}</button>
+                    <WorkspaceStage :surface="workspace.activeSurface" :surfaces="workspace.surfaces" @open-workspace-dialog="openWorkspaceDialog" @notify="notify" @request-close="requestCloseSurface" />
+                </div>
                 <WorkspaceTaskbar
                     :surfaces="workspace.surfaces"
                     :active-surface-id="workspace.activeSurfaceId"
                     :label="t('access.workspace.taskbar.label')"
-                    :close-label="t('access.workspace.taskbar.close')"
                     :dirty-label="t('access.workspace.taskbar.dirty')"
                     @activate="activateSurface"
-                    @request-close="requestCloseSurface"
                 />
             </div>
         </div>

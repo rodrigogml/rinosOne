@@ -55,6 +55,16 @@ Uma mudança de contexto de organização remove somente superfícies cujo `scop
 | `closePolicy` | dispensável ou explícita | obrigatória | Define Escape e clique externo. |
 | `originSurfaceId` | identificador nulo | opcional | Define o retorno de foco. |
 
+## Entidade: `workspaceWindowDialog`
+
+| Campo | Tipo lógico | Restrições | Observações |
+| --- | --- | --- | --- |
+| `id` | identificador único | único na pilha da instância | Permite dispensar somente o diálogo visível. |
+| `title` | conteúdo localizado | obrigatório | Identifica a operação local em curso. |
+| `description` | conteúdo localizado | obrigatório | Explica o bloqueio sem depender da camada global. |
+
+Cada `workspaceSurface` mantém sua própria pilha efêmera de `workspaceWindowDialog`. Somente o item no topo é interativo; a pilha permanece quando outra janela se torna ativa e é descartada somente quando sua própria superfície é fechada.
+
 ## Entidade: `workspaceNotification`
 
 | Campo | Tipo lógico | Restrições | Observações |

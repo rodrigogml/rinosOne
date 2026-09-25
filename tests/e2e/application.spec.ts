@@ -45,7 +45,7 @@ test('starts passwordless access and completes its documented API contract', asy
     await expect(page.getByRole('heading', { name: 'Confirme seu e-mail' })).toBeVisible();
     await page.getByLabel('Código de confirmação').fill('123456');
     await page.getByRole('button', { name: 'Concluir acesso' }).click();
-    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
+    await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('starts password access with its documented API contract', async ({ page }) => {
@@ -66,7 +66,7 @@ test('starts password access with its documented API contract', async ({ page })
     await page.getByLabel('Senha').fill('Secret#1');
     await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
+    await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('creates an account, confirms the e-mail code and enters the authenticated area', async ({ page }) => {
@@ -94,7 +94,7 @@ test('creates an account, confirms the e-mail code and enters the authenticated 
     await page.getByRole('button', { name: 'Criar conta' }).click();
     await page.getByLabel('Código de confirmação').fill('654321');
     await page.getByRole('button', { name: 'Concluir acesso' }).click();
-    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
+    await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('continues passwordless access from an e-mail link in a new tab', async ({ page }) => {
@@ -112,7 +112,7 @@ test('continues passwordless access from an e-mail link in a new tab', async ({ 
 
     await page.goto('/access/passwordless?challengeId=challenge-3&token=secret-token');
     await expect(page).toHaveURL(/\/access\/passwordless$/);
-    await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
+    await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
 
 test('preserves safe form state, route and session while changing presentation and language', async ({ page }) => {
@@ -198,6 +198,77 @@ test('keeps tenant context isolated by tab and clears it after a page reload', a
     await secondTab.close();
 });
 
+test('anchors hover mega menus and demonstrates window, application and notification layers', async ({ page }) => {
+    await mockAuthenticatedSession(page);
+    await page.setViewportSize({ width: 1440, height: 520 });
+    await page.goto('/');
+
+    const windowArea = page.locator('.workspace-window-area');
+    const lastCategory = page.locator('.workspace-navigation-rail__category').last();
+    await lastCategory.hover();
+    await expect(page.locator('#workspace-mega-menu')).toBeVisible();
+
+    const areaBounds = await windowArea.boundingBox();
+    const menuBounds = await page.locator('#workspace-mega-menu').boundingBox();
+    expect(menuBounds!.height).toBeLessThan(areaBounds!.height);
+    expect(menuBounds!.y).toBeGreaterThanOrEqual(areaBounds!.y);
+    expect(menuBounds!.y + menuBounds!.height).toBeLessThanOrEqual(areaBounds!.y + areaBounds!.height);
+    expect(await page.locator('#workspace-mega-menu').evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+
+    await page.locator('.workspace-navigation-rail__category').nth(1).hover();
+    await page.getByRole('button', { name: 'Fluxo de caixa' }).click();
+    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toBeVisible();
+    await expect(page.getByText('Ambiente de demonstração')).toBeVisible();
+    await expect(page.locator('.workspace-stage__close')).toBeVisible();
+    await expect(page.locator('.workspace-taskbar__title')).toHaveCount(0);
+    await expect(page.locator('.workspace-taskbar__active-pill')).toHaveCount(1);
+    await page.getByRole('tab', { name: 'Fluxo de caixa' }).hover();
+    expect(await page.getByRole('tab', { name: 'Fluxo de caixa' }).evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
+
+    const topBar = page.locator('.application-top-bar');
+    expect(await topBar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(0, 0, 0)');
+    const tenantAvatar = page.getByRole('button', { name: 'Selecionar organização' });
+    const personalAvatar = page.getByRole('button', { name: 'Menu pessoal de Pessoa' });
+    const tenantBox = await tenantAvatar.boundingBox();
+    const personalBox = await personalAvatar.boundingBox();
+    expect(personalBox!.x - (tenantBox!.x + tenantBox!.width)).toBeGreaterThanOrEqual(8);
+
+    await page.getByRole('button', { name: 'Diálogo da aplicação' }).click();
+    const applicationDialog = page.getByRole('dialog', { name: 'Informação' });
+    await expect(applicationDialog).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Menu pessoal de Pessoa' })).toBeVisible();
+    await applicationDialog.getByRole('button', { name: 'Fechar' }).click();
+
+    await page.getByRole('button', { name: 'Diálogo desta janela' }).click();
+    const windowDialog = page.locator('.workspace-stage--active .ui-dialog-backdrop--contained');
+    await expect(windowDialog).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toBeVisible();
+    await windowDialog.getByRole('button', { name: 'Abrir diálogo acima' }).click();
+    await expect(page.getByRole('dialog', { name: 'Detalhe do diálogo' })).toBeVisible();
+    await page.getByRole('dialog', { name: 'Detalhe do diálogo' }).getByRole('button', { name: 'Fechar' }).click();
+    await expect(page.getByRole('dialog', { name: 'Diálogo desta janela' })).toBeVisible();
+    await windowDialog.getByRole('button', { name: 'Fechar' }).click();
+
+    await page.getByRole('button', { name: 'Diálogo desta janela' }).click();
+    await page.locator('.workspace-navigation-rail__category').nth(2).hover();
+    await page.getByRole('button', { name: 'Contatos' }).click();
+    await expect(page.getByRole('tab', { name: 'Contatos' })).toBeVisible();
+    await expect(windowDialog).toBeHidden();
+    await page.getByRole('tab', { name: 'Fluxo de caixa' }).click();
+    await expect(windowDialog).toBeVisible();
+    await windowDialog.getByRole('button', { name: 'Fechar' }).click();
+
+    await page.getByRole('button', { name: 'Exibir notificação' }).click();
+    await expect(page.getByText('Notificação de demonstração exibida com sucesso.')).toBeVisible();
+
+    await page.locator('.workspace-stage__close').click();
+    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toHaveCount(0);
+
+    const taskbar = page.locator('.workspace-taskbar');
+    expect(await taskbar.evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe('0px');
+    expect(await taskbar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+});
+
 for (const viewport of [
     { name: 'telefone', width: 375, height: 667 },
     { name: 'tablet', width: 768, height: 1024 },
@@ -239,8 +310,9 @@ for (const viewport of [
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.goto('/');
 
-        await expect(page.getByRole('heading', { name: 'Área de trabalho', exact: true })).toBeVisible();
+        await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Menu pessoal de Pessoa' })).toBeVisible();
+        expect(await page.evaluate(() => document.scrollingElement!.scrollHeight <= window.innerHeight)).toBe(true);
 
         if (viewport.width < 640) {
             const navigationOpener = page.getByRole('button', { name: 'Abrir navegação' });
@@ -255,6 +327,17 @@ for (const viewport of [
         } else {
             await expect(page.locator('.application-top-bar__desktop-brand')).toBeVisible();
             await expect(page.getByRole('button', { name: 'Abrir navegação' })).toBeHidden();
+
+            const stage = page.locator('.workspace-stage--empty');
+            const stageBefore = await stage.boundingBox();
+            await page.locator('.workspace-navigation-rail__category').first().click();
+            await expect(page.locator('#workspace-mega-menu')).toBeVisible();
+            const stageAfter = await stage.boundingBox();
+            const megaMenu = await page.locator('#workspace-mega-menu').boundingBox();
+            expect(stageAfter).toEqual(stageBefore);
+            expect(megaMenu?.x).toBe(stageBefore?.x);
+            expect(megaMenu?.width).toBe(stageBefore?.width);
+            await page.keyboard.press('Escape');
         }
 
         const personalMenuOpener = page.getByRole('button', { name: 'Menu pessoal de Pessoa' });
@@ -270,7 +353,7 @@ for (const viewport of [
         await page.keyboard.press('Escape');
         await personalMenu.getByRole('button', { name: 'Idioma atual: Português (Brasil)' }).click();
         await personalMenu.getByRole('option', { name: 'English' }).click();
-        await expect(page.getByRole('heading', { name: 'Workspace', exact: true })).toBeVisible();
+        await expect(page.getByRole('main', { name: 'Workspace', exact: true })).toBeVisible();
         await captureState(page, testInfo, `${viewport.name}-authenticated-shell`);
 
         await page.getByRole('button', { name: 'Sign out' }).click();

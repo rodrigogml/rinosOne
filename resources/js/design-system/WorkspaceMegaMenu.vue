@@ -9,17 +9,19 @@ const props = defineProps<{
     category: WorkspaceNavigationCategory | null;
     destinations: readonly WorkspaceDestination[];
     emptyLabel: string;
+    positionTop?: string;
 }>();
 const destinationGroups = computed(() => {
-    const groups = new Map<string, WorkspaceDestination[]>();
+    const groups = new Map<string, { label?: string; destinations: WorkspaceDestination[] }>();
     const fallbackGroupKey = props.category?.titleKey ?? '';
 
     for (const destination of props.destinations) {
         const groupKey = destination.groupKey ?? fallbackGroupKey;
-        groups.set(groupKey, [...(groups.get(groupKey) ?? []), destination]);
+        const group = groups.get(groupKey) ?? { label: destination.groupLabel, destinations: [] };
+        groups.set(groupKey, { ...group, destinations: [...group.destinations, destination] });
     }
 
-    return [...groups].map(([titleKey, destinations]) => ({ titleKey, destinations }));
+    return [...groups].map(([titleKey, group]) => ({ titleKey, ...group }));
 });
 </script>
 
@@ -29,14 +31,15 @@ const destinationGroups = computed(() => {
         id="workspace-mega-menu"
         class="workspace-mega-menu"
         role="region"
-        :aria-label="t(category.titleKey)"
+        :aria-label="category.label ?? t(category.titleKey)"
+        :style="{ '--workspace-mega-menu-top': positionTop ?? '0px' }"
     >
         <header class="workspace-mega-menu__header">
-            <h2>{{ t(category.titleKey) }}</h2>
+            <h2>{{ category.label ?? t(category.titleKey) }}</h2>
         </header>
         <div v-if="destinations.length" class="workspace-mega-menu__columns">
             <div v-for="group in destinationGroups" :key="group.titleKey" class="workspace-mega-menu__group">
-                <h3 class="workspace-mega-menu__group-title">{{ t(group.titleKey) }}</h3>
+                <h3 class="workspace-mega-menu__group-title">{{ group.label ?? t(group.titleKey) }}</h3>
                 <button
                     v-for="destination in group.destinations"
                     :key="destination.id"
@@ -45,7 +48,7 @@ const destinationGroups = computed(() => {
                     @click="emit('openDestination', destination)"
                 >
                     <span class="workspace-mega-menu__destination-icon" aria-hidden="true"></span>
-                    <span>{{ t(destination.titleKey) }}</span>
+                    <span>{{ destination.label ?? t(destination.titleKey) }}</span>
                 </button>
             </div>
         </div>

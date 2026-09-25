@@ -28,7 +28,7 @@ Uma superfície expõe ao shell:
 | Foco | recebe sinal de ativação e desativação. |
 | Fechamento | pode informar se há alterações pendentes e recebe confirmação ou cancelamento. |
 | Invalidação contextual | recebe encerramento seguro quando a organização muda ou deixa de estar disponível. |
-| Sobreposições | solicita diálogos e notificações pelo runtime, sem montar camadas globais próprias. |
+| Sobreposições | solicita diálogos da área de trabalho e notificações pelo runtime, sem montar camadas globais próprias. A superfície hospeda sua própria pilha efêmera de diálogos locais; somente o topo é interativo, a pilha é preservada durante trocas de foco e é descartada ao fechar sua própria instância. |
 
 ## Comandos do runtime
 
@@ -38,5 +38,5 @@ Uma superfície expõe ao shell:
 | Ativar superfície | Torna-a exclusiva no palco e atualiza a barra de tarefas. |
 | Solicitar fechamento | Fecha diretamente ou abre confirmação se houver alterações pendentes. |
 | Limpar contexto de organização | Fecha somente superfícies contextuais da aba atual. |
-| Abrir diálogo | Empilha a interação e movimenta o foco para o topo. |
+| Abrir diálogo da área de trabalho | Empilha a interação, bloqueia a área abaixo da topbar e movimenta o foco para o topo. |
 | Enfileirar notificação | Apresenta feedback em ordem, sem disputa visual. |

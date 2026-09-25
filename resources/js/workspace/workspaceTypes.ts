@@ -11,6 +11,7 @@ export interface WorkspaceContext {
 
 export interface WorkspaceSurfaceDefinition {
     titleKey: string;
+    label?: string;
     icon: string;
     dirty?: boolean;
 }
@@ -24,6 +25,7 @@ export interface WorkspaceSurfaceDefinition {
 export interface WorkspaceNavigationCategory {
     id: string;
     titleKey: string;
+    label?: string;
     icon: string;
 }
 
@@ -32,7 +34,9 @@ export interface WorkspaceDestination {
     scope: WorkspaceDestinationScope;
     category: string;
     groupKey?: string;
+    groupLabel?: string;
     titleKey: string;
+    label?: string;
     icon: string;
     instancePolicy?: WorkspaceInstancePolicy;
     createSurface: (input: { id: string; tenantId: string | null }) => WorkspaceSurfaceDefinition;
@@ -44,6 +48,7 @@ export interface WorkspaceSurface {
     scope: WorkspaceDestinationScope;
     tenantId: string | null;
     titleKey: string;
+    label?: string;
     icon: string;
     dirty: boolean;
     status: WorkspaceSurfaceStatus;
@@ -60,6 +65,13 @@ export interface WorkspaceDialog {
     closePolicy: WorkspaceDialogClosePolicy;
     originSurfaceId: string | null;
     action: WorkspaceDialogAction | null;
+}
+
+/** Diálogo efêmero, pertencente exclusivamente a uma instância de janela. */
+export interface WorkspaceWindowDialog {
+    id: string;
+    title: string;
+    description: string;
 }
 
 export interface WorkspaceNotification {

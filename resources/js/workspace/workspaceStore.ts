@@ -70,6 +70,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             scope: destination.scope,
             tenantId: destination.scope === 'tenant' ? context.tenantId : null,
             titleKey: definition.titleKey,
+            label: definition.label,
             icon: definition.icon,
             dirty: definition.dirty ?? false,
             status: 'open',

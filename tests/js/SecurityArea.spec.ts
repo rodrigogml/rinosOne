@@ -39,8 +39,8 @@ describe('authenticated workspace area', () => {
         const wrapper = mountAuthenticated();
         await flushPromises();
 
-        expect(wrapper.get('#workspace-title').text()).toBe('Área de trabalho');
-        expect(wrapper.get('.workspace-stage--empty').text()).toContain('Sua área de trabalho está pronta');
+        expect(wrapper.get('main').attributes('aria-label')).toBe('Área de trabalho');
+        expect(wrapper.get('.workspace-stage--empty').text()).toBe('');
         expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
         expect(wrapper.get('button[aria-label="Menu pessoal de Person"]').text()).toContain('Pe');
         expect(wrapper.find('#security-title').exists()).toBe(false);
@@ -55,7 +55,7 @@ describe('authenticated workspace area', () => {
         await flushPromises();
 
         expect(wrapper.get('h1').text()).toBe('Acesse sua conta');
-        expect(wrapper.find('#workspace-title').exists()).toBe(false);
+        expect(wrapper.find('main[aria-label="Área de trabalho"]').exists()).toBe(false);
     });
 
     it('keeps the authenticated workspace available after a language change without another session request', async () => {
@@ -67,7 +67,7 @@ describe('authenticated workspace area', () => {
         await wrapper.get('button[aria-haspopup="listbox"]').trigger('click');
         await wrapper.get('#language-option-en').trigger('click');
 
-        expect(wrapper.get('#workspace-title').text()).toBe('Workspace');
+        expect(wrapper.get('main').attributes('aria-label')).toBe('Workspace');
         expect(http.get).toHaveBeenCalledTimes(sessionRequests);
     });
 

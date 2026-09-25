@@ -11,14 +11,15 @@ Relaciona INT-WEB-WORKSPACE-001 e INT-WEB-WORKSPACE-002.
 │ ◇ Categoria B │ │ [ícone] Destino        [ícone] Destino         [ícone] Destino            │ │
 │ ◇ Categoria C │ └─────────────────────────────────────────────────────────────────────────┘ │
 │               │                                                                             │
-│ rail          │                         Palco da Área de trabalho                           │
-│ expandido     │                superfície ativa ou estado neutro, sem dados fictícios        │
+│ menu integral │                         Área de janelas                                     │
+│ expandido     │                janela ativa ou estado neutro, sem moldura ou texto             │
 │ ou recolhido  │                                                                             │
 │               │                                                                             │
 │               ├────────────────────────── Barra de tarefas ─────────────────────────────────┤
-│               │ [ícone Superfície A ●]  [ícone Superfície B]                                │
+│               │                    [ícone A] ━  [ícone B]                                  │
 └───────────────┴─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- O mega menu fica abaixo da top bar, sobre o início do palco, e fecha por Escape, destino, categoria repetida ou clique externo.
+- O mega menu fica abaixo da top bar, sobre toda a área de janelas à direita do menu, e fecha por Escape, destino ou clique externo. Ele não desloca a área de janelas.
 - O rail recolhido preserva ícones, tooltip e nome acessível; a seleção de destino recolhe o rail somente em desktop.
+- A taskbar centraliza somente ícones. O ícone ativo é maior e recebe pill inferior; hover amplia o ícone. O X de fechamento está no canto direito do cabeçalho da janela.

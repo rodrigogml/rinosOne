@@ -29,6 +29,7 @@ function resolve(confirmed: boolean): void {
         :destructive="isDiscardConfirmation || activeDialog?.kind === 'error'"
         :escapable="activeDialog?.closePolicy === 'dismissible'"
         :backdrop-dismissible="activeDialog?.closePolicy === 'dismissible'"
+        contained
         @update:model-value="resolve(false)"
     >
         <p class="dialog-description">{{ description }}</p>

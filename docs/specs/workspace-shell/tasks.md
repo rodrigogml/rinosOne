@@ -114,6 +114,52 @@ Ref: [quickstart.md](quickstart.md); [interface-spec.md](interface-spec.md) §Tr
 
 ---
 
+## FASE 5 - Correções da composição do canvas `[x]`
+
+Ref: [spec.md](spec.md) FR-WS-001, FR-WS-003, FR-WS-008 e FR-WS-011; [interface-spec.md](interface-spec.md) INT-WEB-WORKSPACE-001 a 003.
+
+- [x] 5.1 Reestruturar o canvas autenticado para manter topbar fixa, remover a rolagem geral e limitar a rolagem ao conteúdo interno que a necessitar.
+- [x] 5.2 Remover título, mensagem e moldura do estado neutro; a moldura pertence somente a uma janela aberta.
+- [x] 5.3 Converter o mega menu em popover sobreposto à área de janelas, sem deslocar a taskbar ou o conteúdo dessa área.
+- [x] 5.4 Remover a previsão de painéis acopláveis e formalizar os escopos de diálogo: área de trabalho bloqueante e janela local.
+- [x] 5.5 Executar testes, checagem de tipos, build e validação em navegador dos limites de rolagem e sobreposição. <!-- vue-tsc: aprovado; Vitest: 86 aprovados; Vite build: aprovado; Playwright: 14 cenários aprovados, incluindo viewport e sobreposição do mega menu. -->
+
+---
+
+## FASE 6 - Validação visual com fixtures `[x]`
+
+Ref: [spec.md](spec.md) FR-WS-003, FR-WS-006, FR-WS-008 e FR-WS-011; [interface-spec.md](interface-spec.md) INT-WEB-WORKSPACE-002 e 003.
+
+- [x] 6.1 Fazer o mega menu abrir por hover, manter clique/teclado e calcular o posicionamento vertical a partir do item acionador, respeitando os limites do canvas.
+- [x] 6.2 Aplicar altura intrínseca e remover a rolagem própria do mega menu.
+- [x] 6.3 Criar fixtures temporárias de navegação e janelas para testar categorias, grupos, instância única/múltipla e taskbar, sem criar módulos ou dados reais.
+- [x] 6.4 Criar controles de demonstração para notificação, diálogo da área de trabalho e diálogo local de janela.
+- [x] 6.5 Validar hover, posicionamento, limites verticais, diálogos e taskbar em navegador e nos testes de componente. <!-- Playwright: cenário de hover, limites do canvas e dois escopos de diálogo aprovado; regressões desktop e tablet aprovadas. -->
+
+---
+
+## FASE 7 - Refinamento de taskbar e topbar `[x]`
+
+Ref: [spec.md](spec.md) FR-WS-008 e FR-WS-014; [interface-spec.md](interface-spec.md) INT-WEB-WORKSPACE-003.
+
+- [x] 7.1 Usar ícone SVG de superfície no cabeçalho da janela e na taskbar; mover fechamento para o X no cabeçalho.
+- [x] 7.2 Transformar taskbar em dock centralizado de ícones, com ampliação por hover, escala do ativo e marcador pill.
+- [x] 7.3 Fixar o fundo da topbar em preto e derivar seus tokens internos da variante escura do tema selecionado.
+- [x] 7.4 Validar acessibilidade, fechamento, animação, contraste e responsividade em navegador. <!-- vue-tsc: aprovado; Vitest: 89 aprovados; Vite build: aprovado; Playwright: 15 cenários aprovados, incluindo taskbar, fechamento de janela e topbar preta. -->
+
+---
+
+## FASE 8 - Correções de escopo local e acabamento `[x]`
+
+Ref: [spec.md](spec.md) FR-WS-008 e FR-WS-011; [interface-spec.md](interface-spec.md) INT-WEB-WORKSPACE-003.
+
+- [x] 8.1 Aplicar separação explícita e verificável entre avatar de organização e avatar pessoal na topbar.
+- [x] 8.2 Criar host de diálogos próprio da instância de janela, com pilha local, interação somente no topo, preservação durante troca de janela e descarte no fechamento da própria instância.
+- [x] 8.3 Remover fundo e divisão visual da taskbar, preservando o dock centralizado de ícones sobre a área de trabalho.
+- [x] 8.4 Cobrir empilhamento, descarte por troca de janela, espaçamento dos avatares e transparência da taskbar em testes de componente e navegador. <!-- Evidência: Vitest, type-check, build e Playwright executados após a correção. -->
+
+---
+
 ## Matriz de Dependências
 
 ```mermaid
@@ -184,7 +230,7 @@ flowchart TD
 
 | Item | Descrição | Motivo |
 | --- | --- | --- |
-| Módulos de negócio | Conteúdo, rotas, dados, permissões e operações de produtos futuros. | Não autorizado nesta fase; o catálogo começa vazio. |
+| Módulos de negócio | Conteúdo, rotas, dados, permissões e operações de produtos futuros. | Não autorizado nesta fase; o catálogo contém somente fixtures visuais sem comportamento de produto. |
 | Catálogo remoto e permissões detalhadas | Serviço, endpoint ou modelo persistido para descoberta de módulos autorizados. | Depende de especificação de produtos, papéis e acessos. |
 | Restauração entre sessões | Reabrir superfícies, menus ou contexto após recarregar a aba. | Contraria a decisão de estado efêmero da fase. |
 | Janelas livres | Arrastar, redimensionar, sobrepor ou replicar janelas de sistema operacional. | A experiência usa superfícies produtivas, não simulação de desktop. |

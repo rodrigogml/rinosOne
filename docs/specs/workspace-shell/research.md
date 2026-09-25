@@ -15,7 +15,7 @@
 
 **Decision**: integrar cada superfície futura por uma definição declarativa de destino, escopo, ícone, título, política de instância e capacidade de alterações pendentes.
 
-**Rationale**: o shell precisa saber abrir, focar e encerrar superfícies sem importar regras de um módulo de negócio. O catálogo começa vazio, pois nenhum módulo foi aprovado.
+**Rationale**: o shell precisa saber abrir, focar e encerrar superfícies sem importar regras de um módulo de negócio. Enquanto nenhum módulo é aprovado, fixtures visuais isoladas podem validar a composição sem introduzir produto, rota, dado, API ou regra de negócio.
 
 **Alternatives considered**:
 
