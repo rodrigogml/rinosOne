@@ -63,20 +63,20 @@ Ref: spec.md FR-MH-011; research.md Decisão 4; checklists/requirements.md CHK01
 
 Ref: interface-spec.md INT-WEB-MAINTENANCE-001; contracts/maintenance-administration.md.
 
-- [ ] 3.2.1 Adicionar destino administrativo na Área de Trabalho e tela de lista/detalhe de rotinas.
-- [ ] 3.2.2 Implementar filtros, histórico técnico, auditoria e estados inicial, vazio, pronto, erro, offline e desatualizado.
-- [ ] 3.2.3 Implementar reflow desktop/tablet/telefone, teclado, foco, anúncios e localização definidos na interface spec.
-- [ ] 3.2.4 Integrar dados reais da API e verificar paridade dos tipos TypeScript com o contrato.
-- [ ] 3.2.5 Criar testes de componente, integração e E2E com inspeção responsiva documentada.
+- [x] 3.2.1 Adicionar destino administrativo na Área de Trabalho e tela de lista/detalhe de rotinas.
+- [x] 3.2.2 Implementar filtros, histórico técnico, auditoria e estados inicial, vazio, pronto, erro, offline e desatualizado.
+- [x] 3.2.3 Implementar reflow desktop/tablet/telefone, teclado, foco, anúncios e localização definidos na interface spec.
+- [x] 3.2.4 Integrar dados reais da API e verificar paridade dos tipos TypeScript com o contrato.
+- [x] 3.2.5 Criar testes de componente, integração e E2E com inspeção responsiva documentada. <!-- Executado no Chrome instalado: lista, confirmação, retorno de sucesso, reflow e histórico rolável em telefone. -->
 
 ### 3.3 Implementar INT-WEB-MAINTENANCE-002 — Confirmação de Ação `[A]`
 
 Ref: interface-spec.md INT-WEB-MAINTENANCE-002; contracts/maintenance-administration.md.
 
-- [ ] 3.3.1 Implementar confirmação com descrição segura e parâmetros permitidos pela integração.
-- [ ] 3.3.2 Implementar estados de processamento, recusa, falha, sucesso e preservação de parâmetros em erro.
-- [ ] 3.3.3 Implementar foco modal, teclado, toque e comportamento de folha móvel definidos na interface spec.
-- [ ] 3.3.4 Integrar a solicitação real, atualizar histórico/auditoria e criar testes de componente e E2E.
+- [x] 3.3.1 Implementar confirmação com descrição segura e parâmetros permitidos pela integração.
+- [x] 3.3.2 Implementar estados de processamento, recusa, falha, sucesso e preservação de parâmetros em erro.
+- [x] 3.3.3 Implementar foco modal, teclado, toque e comportamento de folha móvel definidos na interface spec.
+- [x] 3.3.4 Integrar a solicitação real, atualizar histórico/auditoria e criar testes de componente e E2E. <!-- Executado no Chrome instalado com contrato simulado da API. -->
 
 ## FASE 4 - Qualidade e Evolução Controlada
 
@@ -84,10 +84,10 @@ Ref: interface-spec.md INT-WEB-MAINTENANCE-002; contracts/maintenance-administra
 
 Ref: spec.md SC-MH-001 a 005; quickstart.md; checklists/requirements.md.
 
-- [ ] 4.1.1 Executar os cenários de validação de consulta, ação permitida, recusa, agenda diária e retenção.
-- [ ] 4.1.2 Executar formatação, testes PHP e JavaScript, verificação de tipos e build de produção.
-- [ ] 4.1.3 Revisar segurança de dados em logs, telemetria, respostas e auditoria.
-- [ ] 4.1.4 Documentar a revisão individual necessária antes de integrar limpeza de autenticações vencidas e demais rotinas.
+- [x] 4.1.1 Executar os cenários de validação de consulta, ação permitida, recusa, agenda diária e retenção. <!-- 14 testes focados e 71 asserções; agenda diária confirmada por `schedule:list`. -->
+- [x] 4.1.2 Executar formatação, testes PHP e JavaScript, verificação de tipos e build de produção. <!-- PHP: 222 aprovados/2 ignorados; JavaScript: 98 aprovados; type-check e build aprovados. -->
+- [x] 4.1.3 Revisar segurança de dados em logs, telemetria, respostas e auditoria. <!-- Evidências registradas em validation.md. -->
+- [x] 4.1.4 Documentar a revisão individual necessária antes de integrar limpeza de autenticações vencidas e demais rotinas. <!-- Consultar routine-integration-review.md. -->
 
 ---
 

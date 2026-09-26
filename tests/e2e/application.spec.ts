@@ -18,6 +18,24 @@ async function captureState(page: Page, testInfo: TestInfo, name: string): Promi
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
 }
 
+/**
+ * Allows browser-level UI tests to keep exercising the production bundle when
+ * a local PHP server cannot bootstrap its dynamic document.
+ */
+async function mockProductionDocument(page: Page): Promise<void> {
+    const manifestResponse = await page.request.get('/build/manifest.json');
+    const manifest = await manifestResponse.json() as Record<string, { file: string; css?: string[] }>;
+    const entry = manifest['resources/js/app.ts'];
+    if (!entry) throw new Error('Production entry was not found in the Vite manifest.');
+
+    const styleFiles = [...new Set(Object.values(manifest).flatMap((asset) => [asset.file.endsWith('.css') ? asset.file : null, ...(asset.css ?? [])]).filter((file): file is string => file !== null))];
+    const styles = styleFiles.map((file) => `<link rel="stylesheet" href="/build/${file}">`).join('');
+    await page.route('**/', (route) => route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><html lang="pt-BR"><head><meta name="viewport" content="width=device-width, initial-scale=1">${styles}</head><body><div id="app"></div><script type="module" src="/build/${entry.file}"></script></body></html>`,
+    }));
+}
+
 test('starts passwordless access and completes its documented API contract', async ({ page }) => {
     let authenticated = false;
     await page.route('**/api/v1/auth/session', async (route) => {
@@ -491,6 +509,43 @@ for (const viewport of [
         await expect(page.getByRole('heading', { name: 'Access your account' })).toBeVisible();
     });
 }
+
+test('opens the authorized maintenance hub, confirms its action and reflows on a telephone', async ({ page }, testInfo) => {
+    const routine = {
+        routineKey: 'financial-institution-catalog', title: 'Instituições financeiras', description: 'Catálogo oficial do Banco Central.', state: 'READY', scheduleDescription: 'Diariamente', capabilities: { canSynchronize: true },
+        lastExecution: { state: 'SUCCEEDED', triggerType: 'SCHEDULED', startedAt: '2026-09-26T10:00:00Z', completedAt: '2026-09-26T10:01:00Z', summary: 'Concluída.', createdCount: 1, updatedCount: 2 }, executionHistory: [], administrativeAudits: [],
+    };
+    await mockAuthenticatedSession(page);
+    await page.route('**/api/v1/platform/maintenance/routines**', async (route) => {
+        const request = route.request();
+        if (request.method() === 'POST') {
+            await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ execution: { summary: 'Atualização aceita.' } }) });
+            return;
+        }
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify(request.url().endsWith('/routines') ? { routines: [routine] } : { routine }) });
+    });
+    await mockProductionDocument(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.locator('.workspace-navigation-rail__category').first().click();
+    await page.getByRole('button', { name: 'Manutenções' }).click();
+    await expect(page.locator('#maintenance-title')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Instituições financeiras' })).toBeVisible();
+    await page.getByRole('button', { name: 'Atualizar agora' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Atualizar instituições financeiras' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Confirmar atualização' }).click();
+    await expect(page.getByText('Atualização aceita.')).toBeVisible();
+
+    await page.setViewportSize({ width: 375, height: 667 });
+    await expect(page.getByRole('button', { name: 'Voltar às rotinas' })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await captureState(page, testInfo, 'maintenance-hub-phone');
+    const surfaceContent = page.locator('.workspace-stage__surface-content');
+    await surfaceContent.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect(page.getByRole('heading', { name: 'Histórico técnico' })).toBeVisible();
+    await captureState(page, testInfo, 'maintenance-hub-phone-history');
+});
 
 test('honours reduced motion and ships the web installation manifest', async ({ page }) => {
     await mockUnauthenticatedSession(page);
