@@ -14,8 +14,8 @@ const http = axios as unknown as {
 };
 
 const tenantContext = {
-    tenant: { id: '01J00000000000000000000000', displayName: 'Oficina Rubi' },
-    membership: { id: '01J00000000000000000000001', role: 'OWNER' },
+    tenant: { id: 1, displayName: 'Oficina Rubi' },
+    membership: { id: 1, role: 'OWNER' },
     availableModules: [],
 };
 
@@ -43,13 +43,13 @@ describe('tenant context store', () => {
         await store.select(tenantContext.tenant.id);
 
         expect(store.context).toEqual(tenantContext);
-        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants/01J00000000000000000000000/contexts');
+        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants/1/contexts');
 
         http.delete.mockResolvedValueOnce({ status: 204 });
         await store.end();
 
         expect(store.context).toBeNull();
-        expect(http.delete).toHaveBeenCalledWith('/api/v1/tenants/01J00000000000000000000000/contexts');
+        expect(http.delete).toHaveBeenCalledWith('/api/v1/tenants/1/contexts');
     });
 
     it('does not alter the current context when the remote response has an invalid shape', async () => {
@@ -58,7 +58,7 @@ describe('tenant context store', () => {
         await store.select(tenantContext.tenant.id);
         http.post.mockResolvedValueOnce({ data: { context: { tenant: {} } } });
 
-        await expect(store.select('01J00000000000000000000002')).rejects.toBeInstanceOf(TenantResponseShapeError);
+        await expect(store.select(2)).rejects.toBeInstanceOf(TenantResponseShapeError);
         expect(store.context).toEqual(tenantContext);
         expect(store.pendingTenantId).toBeNull();
     });
@@ -66,7 +66,7 @@ describe('tenant context store', () => {
     it('clears only contextual workspace surfaces after a successful context change', async () => {
         const store = useTenantContextStore();
         const workspace = useWorkspaceStore();
-        const nextContext = { ...tenantContext, tenant: { id: '01J00000000000000000000002', displayName: 'Nova Oficina' } };
+        const nextContext = { ...tenantContext, tenant: { id: 2, displayName: 'Nova Oficina' } };
         http.post.mockResolvedValueOnce({ data: { context: tenantContext } }).mockResolvedValueOnce({ data: { context: nextContext } });
 
         await store.select(tenantContext.tenant.id);

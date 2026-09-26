@@ -5,15 +5,10 @@ namespace App\Models;
 use App\Domain\Tenant\TenantProvisioningState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class TenantProvisioning extends Model
 {
     protected $table = 'tenantProvisioning';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
 
     public const CREATED_AT = 'createdAt';
 
@@ -48,10 +43,4 @@ class TenantProvisioning extends Model
         return $this->belongsTo(User::class, 'idRequestedByUser');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $provisioning): void {
-            $provisioning->id ??= (string) Str::ulid();
-        });
-    }
 }

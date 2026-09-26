@@ -5,17 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class AuthenticationChallenge extends Model
 {
     use HasFactory;
 
     protected $table = 'authenticationChallenge';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
 
     public $timestamps = false;
 
@@ -47,10 +42,4 @@ class AuthenticationChallenge extends Model
         return $this->belongsTo(User::class, 'idUser');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $challenge): void {
-            $challenge->id ??= (string) Str::ulid();
-        });
-    }
 }

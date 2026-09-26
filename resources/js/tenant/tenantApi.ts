@@ -21,6 +21,10 @@ function nonEmptyString(value: unknown): string | null {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
+function positiveInteger(value: unknown): number | null {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
 function oneOf<T extends readonly string[]>(value: unknown, values: T): T[number] | null {
     return typeof value === 'string' && values.includes(value) ? value as T[number] : null;
 }
@@ -35,7 +39,7 @@ function requiredObject(value: unknown): Record<string, unknown> {
 
 export function parseTenantSummary(value: unknown, requiresRole = true): TenantSummary {
     const source = requiredObject(value);
-    const id = nonEmptyString(source.id);
+    const id = positiveInteger(source.id);
     const displayName = nonEmptyString(source.displayName);
     const state = oneOf(source.state, TENANT_STATES) as TenantState | null;
     const role = oneOf(source.role, TENANT_ROLES) as TenantRole | null;
@@ -51,9 +55,9 @@ export function parseTenantContext(value: unknown): TenantContext {
     const source = requiredObject(value);
     const tenant = requiredObject(source.tenant);
     const membership = requiredObject(source.membership);
-    const id = nonEmptyString(tenant.id);
+    const id = positiveInteger(tenant.id);
     const displayName = nonEmptyString(tenant.displayName);
-    const membershipId = nonEmptyString(membership.id);
+    const membershipId = positiveInteger(membership.id);
     const role = oneOf(membership.role, TENANT_ROLES) as TenantRole | null;
 
     if (!id || !displayName || !membershipId || !role || !Array.isArray(source.availableModules) || !source.availableModules.every((module) => typeof module === 'string')) {
@@ -65,7 +69,7 @@ export function parseTenantContext(value: unknown): TenantContext {
 
 function parseProvisioning(value: unknown): TenantProvisioning {
     const source = requiredObject(value);
-    const id = nonEmptyString(source.id);
+    const id = positiveInteger(source.id);
     const state = oneOf(source.state, PROVISIONING_STATES);
 
     if (!id || !state) throw new TenantResponseShapeError();
@@ -94,16 +98,16 @@ export const tenantApi = {
     async create(displayName: string, idempotencyKey: string): Promise<TenantCreation> {
         return parseTenantCreation((await axios.post('/api/v1/tenants', { displayName }, { headers: { 'Idempotency-Key': idempotencyKey } })).data);
     },
-    async startContext(tenantId: string): Promise<TenantContext> {
+    async startContext(tenantId: number): Promise<TenantContext> {
         const response = await axios.post(`/api/v1/tenants/${encodeURIComponent(tenantId)}/contexts`);
         const source = requiredObject(response.data);
 
         return parseTenantContext(source.context);
     },
-    async endContext(tenantId: string): Promise<void> {
+    async endContext(tenantId: number): Promise<void> {
         await axios.delete(`/api/v1/tenants/${encodeURIComponent(tenantId)}/contexts`);
     },
-    async changeAvailability(tenantId: string, state: Extract<TenantState, 'ACTIVE' | 'INACTIVE'>): Promise<TenantSummary> {
+    async changeAvailability(tenantId: number, state: Extract<TenantState, 'ACTIVE' | 'INACTIVE'>): Promise<TenantSummary> {
         const response = await axios.post(`/api/v1/tenants/${encodeURIComponent(tenantId)}/availability`, { state });
         const source = requiredObject(response.data);
 

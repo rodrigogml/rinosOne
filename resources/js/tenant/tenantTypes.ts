@@ -5,7 +5,7 @@ export type TenantState = (typeof TENANT_STATES)[number];
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export interface TenantSummary {
-    id: string;
+    id: number;
     displayName: string;
     state: TenantState;
     selectable: boolean;
@@ -13,7 +13,7 @@ export interface TenantSummary {
 }
 
 export interface TenantMembershipContext {
-    id: string;
+    id: number;
     role: TenantRole;
 }
 
@@ -24,7 +24,7 @@ export interface TenantContext {
 }
 
 export interface TenantProvisioning {
-    id: string;
+    id: number;
     state: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
 }
 

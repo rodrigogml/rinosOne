@@ -5,7 +5,7 @@ Sync Impact Report
 - Seções adicionadas: nenhuma.
 - Seções removidas: nenhuma.
 - Artefatos sincronizados: docs/architecture/database-topology.md; docs/specs/user-auth/{data-model,research}.md; docs/specs/tenant-foundation/{data-model,research,plan,tasks}.md; docs/specs/tenant-foundation/contracts/tenant-context.md; docs/specs/tenant-foundation/checklists/security.md; docs/operations/tenant-provisioning.md.
-- TODOs pendentes: migrar código, migrations e testes existentes para o padrão numérico antes da próxima entrega de implementação; compliance, retenção, equipe, prazo e budget.
+- TODOs pendentes: compliance, retenção, equipe, prazo e budget.
 -->
 
 # Constituição do Rinos One

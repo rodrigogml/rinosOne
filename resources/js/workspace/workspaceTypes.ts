@@ -6,7 +6,7 @@ export type WorkspaceDialogClosePolicy = 'dismissible' | 'explicit';
 export type WorkspaceNotificationKind = 'information' | 'success' | 'warning' | 'error';
 
 export interface WorkspaceContext {
-    tenantId: string | null;
+    tenantId: number | null;
 }
 
 export interface WorkspaceSurfaceDefinition {
@@ -39,14 +39,14 @@ export interface WorkspaceDestination {
     label?: string;
     icon: string;
     instancePolicy?: WorkspaceInstancePolicy;
-    createSurface: (input: { id: string; tenantId: string | null }) => WorkspaceSurfaceDefinition;
+    createSurface: (input: { id: string; tenantId: number | null }) => WorkspaceSurfaceDefinition;
 }
 
 export interface WorkspaceSurface {
     id: string;
     destinationId: string;
     scope: WorkspaceDestinationScope;
-    tenantId: string | null;
+    tenantId: number | null;
     titleKey: string;
     label?: string;
     icon: string;

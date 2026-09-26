@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tenant', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_tenant');
+            $table->id();
             $table->string('displayName', 120);
             $table->enum('state', ['PROVISIONING', 'ACTIVE', 'INACTIVE', 'FAILED']);
             $table->timestamp('createdAt')->useCurrent();
@@ -23,9 +23,9 @@ return new class extends Migration
 
         Schema::create('tenantMembership', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_tenant_membership');
-            $table->char('idTenant', 26);
-            $table->char('idUser', 26);
+            $table->id();
+            $table->unsignedBigInteger('idTenant');
+            $table->unsignedBigInteger('idUser');
             $table->enum('role', ['OWNER']);
             $table->enum('state', ['ACTIVE', 'INACTIVE']);
             $table->timestamp('createdAt')->useCurrent();
@@ -46,10 +46,10 @@ return new class extends Migration
 
         Schema::create('tenantProvisioning', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_tenant_provisioning');
-            $table->char('idTenant', 26);
-            $table->char('idRequestedByUser', 26);
-            $table->char('idempotencyKey', 26);
+            $table->id();
+            $table->unsignedBigInteger('idTenant');
+            $table->unsignedBigInteger('idRequestedByUser');
+            $table->uuid('idempotencyKey');
             $table->enum('state', ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED']);
             $table->unsignedTinyInteger('attemptCount')->default(0);
             $table->string('lastFailureCode', 100)->nullable();

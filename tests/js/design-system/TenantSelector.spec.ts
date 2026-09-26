@@ -9,8 +9,8 @@ import { useTenantContextStore } from '../../../resources/js/tenant/tenantContex
 vi.mock('axios', () => ({ default: { delete: vi.fn(), get: vi.fn(), post: vi.fn() } }));
 
 const http = axios as unknown as { delete: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-const tenant = { id: '01J00000000000000000000000', displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, role: 'OWNER' };
-const context = { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: '01J00000000000000000000001', role: 'OWNER' }, availableModules: [] };
+const tenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, role: 'OWNER' };
+const context = { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1, role: 'OWNER' }, availableModules: [] };
 
 function mountSelector() {
     const pinia = createPinia();
@@ -23,7 +23,7 @@ describe('tenant selector', () => {
     beforeEach(() => { vi.resetAllMocks(); i18n.global.locale.value = 'pt-BR'; document.body.replaceChildren(); });
 
     it('presents a neutral tenant avatar and loads only selectable organizations when opened', async () => {
-        http.get.mockResolvedValue({ data: { tenants: [tenant, { ...tenant, id: '01J00000000000000000000002', state: 'INACTIVE', selectable: false }] } });
+        http.get.mockResolvedValue({ data: { tenants: [tenant, { ...tenant, id: 2, state: 'INACTIVE', selectable: false }] } });
         const wrapper = mountSelector();
 
         expect(wrapper.get('button[aria-label="Selecionar organização"] [role="img"]').text()).toBe('?');
@@ -95,7 +95,7 @@ describe('tenant selector', () => {
     });
 
     it('limits the popover list and filters all organizations in the more dialog', async () => {
-        const organizations = Array.from({ length: 6 }, (_, index) => ({ ...tenant, id: `01J0000000000000000000000${index}`, displayName: `Organização ${index + 1}` }));
+        const organizations = Array.from({ length: 6 }, (_, index) => ({ ...tenant, id: index + 1, displayName: `Organização ${index + 1}` }));
         http.get.mockResolvedValue({ data: { tenants: organizations } });
         const wrapper = mountSelector();
 

@@ -12,14 +12,14 @@ class ConfirmPasswordlessSessionController
 {
     public function __invoke(ConfirmPasswordlessSessionRequest $request, PasswordlessSessionService $service, AuthenticationSessionService $sessions): JsonResponse
     {
-        $result = $service->confirmCode($request->string('challengeId')->toString(), $request->string('code')->toString(), $request->ip() ?? 'unknown');
+        $result = $service->confirmCode($request->integer('challengeId'), $request->string('code')->toString(), $request->ip() ?? 'unknown');
 
         return $this->respond($result, $sessions);
     }
 
     public function byLink(ConfirmPasswordlessSessionLinkRequest $request, PasswordlessSessionService $service, AuthenticationSessionService $sessions): JsonResponse
     {
-        return $this->respond($service->confirmLink($request->string('challengeId')->toString(), $request->string('token')->toString()), $sessions);
+        return $this->respond($service->confirmLink($request->integer('challengeId'), $request->string('token')->toString()), $sessions);
     }
 
     private function respond(?array $result, AuthenticationSessionService $sessions): JsonResponse

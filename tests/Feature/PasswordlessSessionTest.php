@@ -63,8 +63,8 @@ class PasswordlessSessionTest extends TestCase
 
         $unknown->assertAccepted()->assertJsonPath('message', 'Se possível, enviaremos instruções para o endereço informado.');
         $ineligible->assertAccepted()->assertJsonPath('message', 'Se possível, enviaremos instruções para o endereço informado.');
-        $this->assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $unknown->json('challengeId'));
-        $this->assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $ineligible->json('challengeId'));
+        $this->assertIsInt($unknown->json('challengeId'));
+        $this->assertIsInt($ineligible->json('challengeId'));
         Mail::assertNothingQueued();
     }
 

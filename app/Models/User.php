@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -17,10 +16,6 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $table = 'user';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
 
     public const CREATED_AT = 'createdAt';
 
@@ -82,10 +77,4 @@ class User extends Authenticatable
         return $this->hasMany(TenantMembership::class, 'idUser');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $user): void {
-            $user->id ??= (string) Str::ulid();
-        });
-    }
 }

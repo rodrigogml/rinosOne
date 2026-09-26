@@ -14,7 +14,7 @@ const { t } = useI18n();
 const publicView = ref<PublicView>(window.location.pathname === '/access/register' ? 'register' : 'login');
 const email = ref(''); const password = ref(''); const createDisplayName = ref(''); const rememberMe = ref(false); const processing = ref(false);
 const message = ref(''); const feedbackKind = ref<'success' | 'error'>('success'); const emailError = ref(''); const displayNameError = ref('');
-const challengeId = ref<string | null>(null); const challengePurpose = ref<ChallengePurpose>('passwordless'); const code = ref(''); const linkToken = ref<string | null>(null);
+const challengeId = ref<number | null>(null); const challengePurpose = ref<ChallengePurpose>('passwordless'); const code = ref(''); const linkToken = ref<string | null>(null);
 const security = ref(false); const session = ref<{ user: { displayName: string; passwordDefined: boolean }; persistentAuthentication: boolean } | null>(null);
 const remainingSeconds = ref(0); const resendCooldownSeconds = ref(0); const offline = ref(!navigator.onLine);
 const emailInput = ref<HTMLInputElement | null>(null); const displayNameInput = ref<HTMLInputElement | null>(null); const codeInput = ref<HTMLInputElement | null>(null); let expiryTimer: number | undefined; let resendTimer: number | undefined;
@@ -39,7 +39,7 @@ async function loadSession() { try { session.value = (await axios.get('/api/v1/a
 async function logout() { if (offline.value) return; await axios.delete('/api/v1/auth/session'); security.value = false; session.value = null; navigate('login', true); }
 function online() { offline.value = false; } function offlineEvent() { offline.value = true; }
 function updatePublicViewFromPath() { publicView.value = window.location.pathname === '/access/register' ? 'register' : 'login'; }
-onMounted(async () => { window.addEventListener('online', online); window.addEventListener('offline', offlineEvent); window.addEventListener('popstate', updatePublicViewFromPath); await loadSession(); if (security.value) return; const query = new URLSearchParams(window.location.search); const id = query.get('challengeId'); const token = query.get('token'); if (id && token) { challengeId.value = id; linkToken.value = token; challengePurpose.value = window.location.pathname.includes('passwordless') ? 'passwordless' : 'register'; startExpiry(); window.history.replaceState({}, '', window.location.pathname); } await focusCurrentField(); if (linkToken.value) await confirm(); });
+onMounted(async () => { window.addEventListener('online', online); window.addEventListener('offline', offlineEvent); window.addEventListener('popstate', updatePublicViewFromPath); await loadSession(); if (security.value) return; const query = new URLSearchParams(window.location.search); const id = query.get('challengeId'); const token = query.get('token'); const numericId = id === null ? NaN : Number(id); if (Number.isSafeInteger(numericId) && numericId > 0 && token) { challengeId.value = numericId; linkToken.value = token; challengePurpose.value = window.location.pathname.includes('passwordless') ? 'passwordless' : 'register'; startExpiry(); window.history.replaceState({}, '', window.location.pathname); } await focusCurrentField(); if (linkToken.value) await confirm(); });
 onUnmounted(() => { window.clearInterval(expiryTimer); window.clearInterval(resendTimer); window.removeEventListener('online', online); window.removeEventListener('offline', offlineEvent); window.removeEventListener('popstate', updatePublicViewFromPath); });
 </script>
 

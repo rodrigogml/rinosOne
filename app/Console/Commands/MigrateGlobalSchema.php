@@ -15,6 +15,7 @@ class MigrateGlobalSchema extends Command
     public function handle(): int
     {
         return $this->call('migrate', [
+            '--database' => 'coreMigration',
             '--force' => (bool) $this->option('force'),
             '--pretend' => (bool) $this->option('pretend'),
         ]);

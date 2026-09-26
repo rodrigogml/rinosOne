@@ -5,18 +5,18 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class UserPersistenceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_a_user_receives_a_ulid_and_uses_the_approved_columns(): void
+    public function test_a_user_receives_an_incrementing_identifier_and_uses_the_approved_columns(): void
     {
         $user = User::factory()->create();
 
-        $this->assertTrue(Str::isUlid($user->id));
+        $this->assertIsInt($user->id);
+        $this->assertGreaterThan(0, $user->id);
         $this->assertDatabaseHas('user', [
             'id' => $user->id,
             'email' => $user->email,

@@ -9,7 +9,6 @@ use App\Services\Tenant\TenantProvisioningLifecycle;
 use App\Services\Tenant\TenantSchemaProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Mockery\MockInterface;
 use PDOException;
@@ -110,7 +109,7 @@ class ProvisionTenantSchemaTest extends TestCase
     }
 
     /**
-     * @return array{string, string}
+     * @return array{int, int}
      */
     private function createProvisioning(
         string $provisioningState = 'QUEUED',
@@ -118,28 +117,25 @@ class ProvisionTenantSchemaTest extends TestCase
         int $attemptCount = 0,
     ): array {
         $user = User::factory()->create();
-        $tenantId = (string) Str::ulid();
-        $provisioningId = (string) Str::ulid();
-
         DB::table('tenant')->insert([
-            'id' => $tenantId,
             'displayName' => 'Tenant test',
             'state' => $tenantState,
         ]);
+        $tenantId = (int) DB::table('tenant')->max('id');
         DB::table('tenantProvisioning')->insert([
-            'id' => $provisioningId,
             'idTenant' => $tenantId,
             'idRequestedByUser' => $user->id,
-            'idempotencyKey' => (string) Str::ulid(),
+            'idempotencyKey' => (string) str()->uuid(),
             'state' => $provisioningState,
             'attemptCount' => $attemptCount,
             'completedAt' => $provisioningState === 'SUCCEEDED' ? now() : null,
         ]);
+        $provisioningId = (int) DB::table('tenantProvisioning')->max('id');
 
         return [$provisioningId, $tenantId];
     }
 
-    private function runJob(string $provisioningId): void
+    private function runJob(int $provisioningId): void
     {
         (new ProvisionTenantSchema($provisioningId))->handle(
             app(TenantProvisioningLifecycle::class),

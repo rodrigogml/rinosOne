@@ -11,7 +11,7 @@ class AuthenticationChallengeLifecycleService
         $challenge->delete();
     }
 
-    public function discardForUserAndPurpose(string $userId, string $purpose): int
+    public function discardForUserAndPurpose(int $userId, string $purpose): int
     {
         return AuthenticationChallenge::query()
             ->where('idUser', $userId)

@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TenantPersistenceConstraintsTest extends TestCase
@@ -33,9 +32,9 @@ class TenantPersistenceConstraintsTest extends TestCase
         $this->expectException(QueryException::class);
 
         DB::table('tenantMembership')->insert([
-            'id' => (string) Str::ulid(),
-            'idTenant' => (string) Str::ulid(),
-            'idUser' => (string) Str::ulid(),
+            'id' => 1,
+            'idTenant' => 999999,
+            'idUser' => 999999,
             'role' => 'OWNER',
             'state' => 'ACTIVE',
         ]);
@@ -44,7 +43,7 @@ class TenantPersistenceConstraintsTest extends TestCase
     public function test_provisioning_intent_is_unique_for_each_requesting_user(): void
     {
         $user = User::factory()->create();
-        $intent = (string) Str::ulid();
+        $intent = (string) str()->uuid();
 
         $this->createTenantWithProvisioning($user, $intent);
 
@@ -55,16 +54,14 @@ class TenantPersistenceConstraintsTest extends TestCase
 
     private function createTenantWithProvisioning(User $user, string $intent): void
     {
-        $tenantId = (string) Str::ulid();
-
         DB::table('tenant')->insert([
-            'id' => $tenantId,
             'displayName' => 'Tenant test',
             'state' => 'PROVISIONING',
         ]);
 
+        $tenantId = (int) DB::table('tenant')->max('id');
+
         DB::table('tenantProvisioning')->insert([
-            'id' => (string) Str::ulid(),
             'idTenant' => $tenantId,
             'idRequestedByUser' => $user->id,
             'idempotencyKey' => $intent,

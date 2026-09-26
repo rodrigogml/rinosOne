@@ -13,7 +13,7 @@ use Tests\TestCase;
 
 class TenantSchemaProvisionerTest extends TestCase
 {
-    private const TENANT_ID = '01J7M2X4P9K6V3Q8R5S0T1V2W3';
+    private const TENANT_ID = '42';
 
     public function test_it_applies_only_the_tenant_catalog_and_confirms_its_baseline(): void
     {
@@ -22,9 +22,9 @@ class TenantSchemaProvisionerTest extends TestCase
             ->once()
             ->with(
                 'SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?',
-                ['rinosone_01j7m2x4p9k6v3q8r5s0t1v2w3'],
+                ['rinosone_42'],
             )
-            ->andReturn((object) ['SCHEMA_NAME' => 'rinosone_01j7m2x4p9k6v3q8r5s0t1v2w3']);
+            ->andReturn((object) ['SCHEMA_NAME' => 'rinosone_42']);
         $serverConnection->shouldNotReceive('unprepared');
 
         $migrationQuery = Mockery::mock();

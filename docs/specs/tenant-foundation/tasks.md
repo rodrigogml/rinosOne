@@ -21,9 +21,9 @@ Escopo: criar a base global e física de tenants, disponibilizar sua API e conte
 
 Ref: [Constituição](../../constitution.md#vi-identidades-numéricas-e-referências-unidirecionais), [database-topology.md](../../architecture/database-topology.md), [data-model.md](data-model.md)
 
-- [ ] 0.1 Substituir o padrão de identificadores textuais existente por `BIGINT UNSIGNED AUTO_INCREMENT` nas migrations e entidades globais, preservando a consistência entre PKs e FKs.
-- [ ] 0.2 Substituir validações, rotas, contratos e geração de chaves de intenção ligados ao padrão anterior; `Idempotency-Key` deve usar UUID v4 e não se tornar PK de domínio.
-- [ ] 0.3 Atualizar testes de backend, frontend e integração afetados e validar a derivação segura de `rinosone_{tenantId}` a partir de um inteiro sem sinal.
+- [x] 0.1 Substituir o padrão de identificadores textuais existente por `BIGINT UNSIGNED AUTO_INCREMENT` nas migrations e entidades globais, preservando a consistência entre PKs e FKs.
+- [x] 0.2 Substituir validações, rotas, contratos e geração de chaves de intenção ligados ao padrão anterior; `Idempotency-Key` deve usar UUID v4 e não se tornar PK de domínio.
+- [x] 0.3 Atualizar testes de backend, frontend e integração afetados e validar a derivação segura de `rinosone_{tenantId}` a partir de um inteiro sem sinal.
 
 ---
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('user', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_user');
+            $table->id();
             $table->string('email')->unique('uk_user_email');
             $table->string('displayName')->nullable();
             $table->string('passwordHash')->nullable();
@@ -24,8 +24,8 @@ return new class extends Migration
 
         Schema::create('persistentAuthentication', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_persistent_authentication');
-            $table->char('idUser', 26);
+            $table->id();
+            $table->unsignedBigInteger('idUser');
             $table->string('secretHash')->unique('uk_persistent_authentication_secret_hash');
             $table->timestamp('createdAt')->useCurrent();
             $table->timestamp('revokedAt')->nullable();
@@ -41,8 +41,8 @@ return new class extends Migration
         Schema::create('session', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->string('id')->primary();
-            $table->char('idUser', 26)->nullable();
-            $table->char('idPersistentAuthentication', 26)->nullable();
+            $table->unsignedBigInteger('idUser')->nullable();
+            $table->unsignedBigInteger('idPersistentAuthentication')->nullable();
             $table->longText('payload');
             $table->timestamp('lastActivityAt')->useCurrent();
             $table->index('idUser', 'idx_session_user');
@@ -61,8 +61,8 @@ return new class extends Migration
 
         Schema::create('authenticationChallenge', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->ulid('id')->primary('pk_authentication_challenge');
-            $table->char('idUser', 26);
+            $table->id();
+            $table->unsignedBigInteger('idUser');
             $table->enum('purpose', ['email_verification', 'passwordless_login']);
             $table->string('secretHash');
             $table->timestamp('expiresAt');

@@ -6,15 +6,10 @@ use App\Domain\Tenant\TenantState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Str;
 
 class Tenant extends Model
 {
     protected $table = 'tenant';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
 
     public const CREATED_AT = 'createdAt';
 
@@ -42,10 +37,4 @@ class Tenant extends Model
         return $this->hasOne(TenantProvisioning::class, 'idTenant');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $tenant): void {
-            $tenant->id ??= (string) Str::ulid();
-        });
-    }
 }

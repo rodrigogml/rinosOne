@@ -10,7 +10,6 @@ use App\Mail\Access\EmailVerificationMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 final class RegistrationInitiationService
 {
@@ -29,10 +28,10 @@ final class RegistrationInitiationService
         if (! $decision->allowed) {
             $this->securityEvents->record(SecurityEvent::AuthenticationChallengeRejected, $existingUser?->id);
 
-            return new AuthenticationChallengeRequestResult($decision, (string) Str::ulid());
+            return new AuthenticationChallengeRequestResult($decision, random_int(1, PHP_INT_MAX));
         }
 
-        $challengeId = (string) Str::ulid();
+        $challengeId = random_int(1, PHP_INT_MAX);
 
         DB::transaction(function () use ($normalizedEmail, $displayName, $rememberMeRequested, &$challengeId): void {
             $user = User::query()->firstOrCreate(['email' => $normalizedEmail], ['displayName' => trim($displayName)]);

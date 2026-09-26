@@ -16,7 +16,7 @@ class ProvisionTenantSchema implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public readonly string $provisioningId) {}
+    public function __construct(public readonly int $provisioningId) {}
 
     public function handle(
         TenantProvisioningLifecycle $lifecycle,

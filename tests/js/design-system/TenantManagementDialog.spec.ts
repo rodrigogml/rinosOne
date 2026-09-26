@@ -8,7 +8,7 @@ import { i18n } from '../../../resources/js/i18n';
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 const http = axios as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-const activeTenant = { id: '01J00000000000000000000000', displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, role: 'OWNER' };
+const activeTenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, role: 'OWNER' };
 
 function mountDialog() {
     return mount(TenantManagementDialog, {
@@ -21,16 +21,16 @@ function mountDialog() {
 describe('tenant management dialog', () => {
     beforeEach(() => { vi.resetAllMocks(); i18n.global.locale.value = 'pt-BR'; document.body.replaceChildren(); });
 
-    it('creates a single intent with a client-generated ULID and presents its preparation state', async () => {
+    it('creates a single intent with a client-generated UUID and presents its preparation state', async () => {
         http.get.mockResolvedValue({ data: { tenants: [] } });
-        http.post.mockResolvedValue({ data: { tenant: { id: '01J00000000000000000000000', displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false }, provisioning: { id: '01J00000000000000000000001', state: 'QUEUED' } } });
+        http.post.mockResolvedValue({ data: { tenant: { id: 1, displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false }, provisioning: { id: 1, state: 'QUEUED' } } });
         const wrapper = mountDialog();
         await flushPromises();
         await wrapper.get('#tenant-display-name').setValue('Oficina Rubi');
         await wrapper.get('form').trigger('submit');
         await flushPromises();
 
-        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants', { displayName: 'Oficina Rubi' }, { headers: { 'Idempotency-Key': expect.stringMatching(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/) } });
+        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants', { displayName: 'Oficina Rubi' }, { headers: { 'Idempotency-Key': expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i) } });
         expect(wrapper.text()).toContain('A organização está sendo preparada.');
         expect(wrapper.text()).toContain('Preparando');
         wrapper.unmount();
@@ -46,7 +46,7 @@ describe('tenant management dialog', () => {
         await wrapper.get('[role="alertdialog"] button.ui-button--destructive').trigger('click');
         await flushPromises();
 
-        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants/01J00000000000000000000000/availability', { state: 'INACTIVE' });
+        expect(http.post).toHaveBeenCalledWith('/api/v1/tenants/1/availability', { state: 'INACTIVE' });
         expect(wrapper.text()).toContain('Desabilitada');
         wrapper.unmount();
     });

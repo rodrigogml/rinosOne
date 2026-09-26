@@ -24,7 +24,7 @@ describe('workspace runtime store', () => {
         const tenant = destination({ id: 'tenant.orders', scope: 'tenant', category: 'tenant' });
 
         expect(availableWorkspaceDestinations([personal, tenant], { tenantId: null })).toEqual([personal]);
-        expect(availableWorkspaceDestinations([personal, tenant], { tenantId: 'tenant-1' })).toEqual([personal, tenant]);
+        expect(availableWorkspaceDestinations([personal, tenant], { tenantId: 1 })).toEqual([personal, tenant]);
     });
 
     it('focuses the existing single instance and creates distinguishable multiple instances', () => {
@@ -50,7 +50,7 @@ describe('workspace runtime store', () => {
 
         expect(store.openDestination(tenant, { tenantId: null })).toBeNull();
 
-        const contextual = store.openDestination(tenant, { tenantId: 'tenant-1' });
+        const contextual = store.openDestination(tenant, { tenantId: 1 });
         store.clearTenantSurfaces();
 
         expect(store.surfaces.map((surface) => surface.id)).toEqual([personal?.id]);

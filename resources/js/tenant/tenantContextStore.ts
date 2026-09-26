@@ -10,14 +10,14 @@ import { useWorkspaceStore } from '../workspace/workspaceStore';
  */
 export const useTenantContextStore = defineStore('tenant-context', () => {
     const current = ref<TenantContext | null>(null);
-    const pendingTenantId = ref<string | null>(null);
+    const pendingTenantId = ref<number | null>(null);
     let requestVersion = 0;
 
     const context = computed(() => current.value);
     const hasContext = computed(() => current.value !== null);
     const isChanging = computed(() => pendingTenantId.value !== null);
 
-    async function select(tenantId: string): Promise<TenantContext> {
+    async function select(tenantId: number): Promise<TenantContext> {
         const version = ++requestVersion;
         pendingTenantId.value = tenantId;
 

@@ -13,6 +13,6 @@ class ConfirmPasswordlessSessionLinkRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['challengeId' => ['required', 'string', 'ulid'], 'token' => ['required', 'string']];
+        return ['challengeId' => ['required', 'integer', 'min:1'], 'token' => ['required', 'string']];
     }
 }

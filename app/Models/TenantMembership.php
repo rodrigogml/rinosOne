@@ -6,15 +6,10 @@ use App\Domain\Tenant\TenantMembershipRole;
 use App\Domain\Tenant\TenantMembershipState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class TenantMembership extends Model
 {
     protected $table = 'tenantMembership';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
 
     public const CREATED_AT = 'createdAt';
 
@@ -47,10 +42,4 @@ class TenantMembership extends Model
         return $this->belongsTo(User::class, 'idUser');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $membership): void {
-            $membership->id ??= (string) Str::ulid();
-        });
-    }
 }

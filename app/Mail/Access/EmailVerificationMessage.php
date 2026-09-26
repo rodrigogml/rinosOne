@@ -14,7 +14,7 @@ class EmailVerificationMessage extends Mailable implements ShouldBeEncrypted, Sh
     use Queueable;
 
     public function __construct(
-        public readonly string $challengeId,
+        public readonly int $challengeId,
         public readonly string $token,
         public readonly string $code,
     ) {
@@ -37,7 +37,7 @@ class EmailVerificationMessage extends Mailable implements ShouldBeEncrypted, Sh
     public function verificationUrl(): string
     {
         return rtrim((string) config('app.url'), '/')
-            .'/access/email-verification?challengeId='.rawurlencode($this->challengeId)
+            .'/access/email-verification?challengeId='.rawurlencode((string) $this->challengeId)
             .'&token='.rawurlencode($this->token);
     }
 }

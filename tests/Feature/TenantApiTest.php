@@ -11,7 +11,6 @@ use App\Models\TenantMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TenantApiTest extends TestCase
@@ -22,7 +21,7 @@ class TenantApiTest extends TestCase
     {
         Queue::fake();
         $user = User::factory()->create();
-        $key = (string) Str::ulid();
+        $key = (string) str()->uuid();
 
         $created = $this->actingAs($user)->postJson('/api/v1/tenants', ['displayName' => 'Acme'], ['Idempotency-Key' => $key])
             ->assertStatus(202)

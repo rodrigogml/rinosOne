@@ -28,10 +28,10 @@ class TenantDatabaseConnectionFactoryTest extends TestCase
         ]);
 
         $configuration = app(TenantDatabaseConnectionFactory::class)
-            ->configuration('01J7M2X4P9K6V3Q8R5S0T1V2W3');
+            ->configuration('42');
 
         $this->assertSame('tenant-db.example.test', $configuration['host']);
         $this->assertSame('tenant-runtime', $configuration['username']);
-        $this->assertSame('rinosone_01j7m2x4p9k6v3q8r5s0t1v2w3', $configuration['database']);
+        $this->assertSame('rinosone_42', $configuration['database']);
     }
 }

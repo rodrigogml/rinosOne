@@ -84,6 +84,26 @@ return [
             ]) : [],
         ],
 
+        'coreMigration' => [
+            'driver' => 'mysql',
+            'url' => env('CORE_MIGRATION_URL'),
+            'host' => env('CORE_MIGRATION_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('CORE_MIGRATION_PORT', env('DB_PORT', '3306')),
+            'database' => env('CORE_MIGRATION_DATABASE', env('RINOS_CORE_DATABASE', env('DB_DATABASE', 'rinosone'))),
+            'username' => env('CORE_MIGRATION_USERNAME'),
+            'password' => env('CORE_MIGRATION_PASSWORD'),
+            'unix_socket' => env('CORE_MIGRATION_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'tenant' => [
             'driver' => 'mysql',
             'host' => env('TENANT_RUNTIME_HOST', env('DB_HOST', '127.0.0.1')),

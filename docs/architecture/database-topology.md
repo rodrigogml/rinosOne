@@ -42,6 +42,11 @@ O modelo de configuração versionado deverá expor, sem valores sensíveis:
 ```dotenv
 RINOS_CORE_DATABASE=rinosone
 RINOS_TENANT_DATABASE_PREFIX=rinosone_
+CORE_MIGRATION_HOST=127.0.0.1
+CORE_MIGRATION_PORT=3306
+CORE_MIGRATION_DATABASE=rinosone
+CORE_MIGRATION_USERNAME=change-me
+CORE_MIGRATION_PASSWORD=change-me
 ```
 
-Credenciais de execução da aplicação e de provisionamento de schemas serão separadas quando o provisionamento for implementado. O usuário normal da aplicação não recebe permissão ampla para criar schemas.
+As credenciais de runtime global, migration global, runtime de tenant e provisionamento de schemas são distintas. O usuário normal da aplicação não recebe DDL; `migrate:global` usa exclusivamente a conexão `coreMigration`, limitada ao schema principal. Os privilégios mínimos de cada conexão estão em [tenant-provisioning.md](../operations/tenant-provisioning.md).

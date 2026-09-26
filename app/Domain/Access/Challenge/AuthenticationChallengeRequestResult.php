@@ -8,6 +8,6 @@ final readonly class AuthenticationChallengeRequestResult
 {
     public function __construct(
         public AccessRateLimitDecision $decision,
-        public string $challengeId,
+        public int $challengeId,
     ) {}
 }

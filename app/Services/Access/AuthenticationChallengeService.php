@@ -46,20 +46,20 @@ class AuthenticationChallengeService
         });
     }
 
-    public function consumeByLinkToken(string $challengeId, string $linkToken): ?ConsumedAuthenticationChallenge
+    public function consumeByLinkToken(int $challengeId, string $linkToken): ?ConsumedAuthenticationChallenge
     {
         return $this->consume($challengeId, $this->normalizeLinkToken($linkToken));
     }
 
     public function consumeByCode(
-        string $challengeId,
+        int $challengeId,
         string $code,
         string $origin = 'unknown',
     ): ?ConsumedAuthenticationChallenge {
         return $this->consume($challengeId, $this->normalizeCode($code), $origin, true);
     }
 
-    private function consume(string $challengeId, ?string $secret, ?string $origin = null, bool $isCode = false): ?ConsumedAuthenticationChallenge
+    private function consume(int $challengeId, ?string $secret, ?string $origin = null, bool $isCode = false): ?ConsumedAuthenticationChallenge
     {
         if ($secret === null) {
             return null;

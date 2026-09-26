@@ -13,6 +13,6 @@ class CompleteEmailVerificationRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['challengeId' => ['required', 'string', 'ulid'], 'code' => ['required', 'string', 'digits:6']];
+        return ['challengeId' => ['required', 'integer', 'min:1'], 'code' => ['required', 'string', 'digits:6']];
     }
 }

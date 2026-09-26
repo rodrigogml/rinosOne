@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import type { TenantSummary } from '../tenant/tenantTypes';
 import UiDialog from './UiDialog.vue';
 
-const props = defineProps<{ modelValue: boolean; tenants: TenantSummary[]; selectedTenantId?: string | null }>();
+const props = defineProps<{ modelValue: boolean; tenants: TenantSummary[]; selectedTenantId?: number | null }>();
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; select: [tenant: TenantSummary] }>();
 const { t } = useI18n();
 const filter = ref('');

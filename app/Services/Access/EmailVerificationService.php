@@ -11,12 +11,12 @@ final class EmailVerificationService
 {
     public function __construct(private readonly AuthenticationChallengeService $challenges) {}
 
-    public function confirmByCode(string $challengeId, string $code, string $origin): ?CompletedEmailVerification
+    public function confirmByCode(int $challengeId, string $code, string $origin): ?CompletedEmailVerification
     {
         return $this->confirm($this->challenges->consumeByCode($challengeId, $code, $origin));
     }
 
-    public function confirmByLink(string $challengeId, string $token): ?CompletedEmailVerification
+    public function confirmByLink(int $challengeId, string $token): ?CompletedEmailVerification
     {
         return $this->confirm($this->challenges->consumeByLinkToken($challengeId, $token));
     }

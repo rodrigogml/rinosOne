@@ -40,7 +40,7 @@ describe('email confirmation', () => {
     });
 
     it('confirms registration with a six-digit numeric code and the existing API contract', async () => {
-        http.post.mockResolvedValueOnce({ data: { challengeId: 'challenge-1' } }).mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
+        http.post.mockResolvedValueOnce({ data: { challengeId: 1 } }).mockResolvedValueOnce({ data: { user: { id: 1 } } });
         const wrapper = mountAccess();
         await flushPromises();
 
@@ -56,12 +56,12 @@ describe('email confirmation', () => {
         await wrapper.get('form').trigger('submit');
 
         expect(http.post).toHaveBeenLastCalledWith('/api/v1/auth/email-verifications', {
-            challengeId: 'challenge-1', code: '123456',
+            challengeId: 1, code: '123456',
         });
     });
 
     it('shows a neutral invalid-confirmation error and returns focus to the numeric input', async () => {
-        http.post.mockResolvedValueOnce({ data: { challengeId: 'challenge-1' } });
+        http.post.mockResolvedValueOnce({ data: { challengeId: 1 } });
         http.post.mockRejectedValueOnce({ response: { status: 400 } });
         http.isAxiosError.mockReturnValue(true);
         const wrapper = mountAccess();
@@ -80,7 +80,7 @@ describe('email confirmation', () => {
 
     it('expires an unconsumed code after the configured ten-minute confirmation window', async () => {
         vi.useFakeTimers();
-        http.post.mockResolvedValue({ data: { challengeId: 'challenge-1' } });
+        http.post.mockResolvedValue({ data: { challengeId: 1 } });
         const wrapper = mountAccess();
         await flushPromises();
 
@@ -94,7 +94,7 @@ describe('email confirmation', () => {
     });
 
     it('removes passwordless link secrets from the address before using the existing confirmation endpoint', async () => {
-        window.history.replaceState({}, '', '/access/passwordless?challengeId=challenge-2&token=secret-token');
+        window.history.replaceState({}, '', '/access/passwordless?challengeId=2&token=secret-token');
         http.post.mockResolvedValue({ data: { user: { id: 'user-1' } } });
         http.get.mockRejectedValueOnce(new Error('No authenticated session')).mockResolvedValueOnce({ data: { persistentAuthentication: false, user: { displayName: 'Person', passwordDefined: false } } });
 
@@ -103,12 +103,12 @@ describe('email confirmation', () => {
 
         expect(window.location.search).toBe('');
         expect(http.post).toHaveBeenCalledWith('/api/v1/auth/passwordless-sessions/link-confirmations', {
-            challengeId: 'challenge-2', token: 'secret-token',
+            challengeId: 2, token: 'secret-token',
         });
     });
 
     it('keeps an active confirmation on language changes without persisting its code or emitting another message', async () => {
-        http.post.mockResolvedValue({ data: { challengeId: 'challenge-1' } });
+        http.post.mockResolvedValue({ data: { challengeId: 1 } });
         const wrapper = mountAccess();
         await flushPromises();
 
@@ -129,7 +129,7 @@ describe('email confirmation', () => {
 
     it('presents an offline state and disables confirmation without issuing a request', async () => {
         Object.defineProperty(window.navigator, 'onLine', { configurable: true, value: false });
-        window.history.replaceState({}, '', '/access/passwordless?challengeId=challenge-2&token=secret-token');
+        window.history.replaceState({}, '', '/access/passwordless?challengeId=2&token=secret-token');
         const wrapper = mountAccess();
         await flushPromises();
 

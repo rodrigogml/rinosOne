@@ -13,7 +13,7 @@ class PasswordlessLoginMessage extends Mailable implements ShouldBeEncrypted, Sh
 {
     use Queueable;
 
-    public function __construct(public readonly string $challengeId, public readonly string $token, public readonly string $code)
+    public function __construct(public readonly int $challengeId, public readonly string $token, public readonly string $code)
     {
         $this->afterCommit();
     }
@@ -25,6 +25,6 @@ class PasswordlessLoginMessage extends Mailable implements ShouldBeEncrypted, Sh
 
     public function content(): Content
     {
-        return new Content(view: 'emails.access.passwordless-login', with: ['loginUrl' => rtrim((string) config('app.url'), '/').'/access/passwordless?challengeId='.rawurlencode($this->challengeId).'&token='.rawurlencode($this->token)]);
+        return new Content(view: 'emails.access.passwordless-login', with: ['loginUrl' => rtrim((string) config('app.url'), '/').'/access/passwordless?challengeId='.rawurlencode((string) $this->challengeId).'&token='.rawurlencode($this->token)]);
     }
 }

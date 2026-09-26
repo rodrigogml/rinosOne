@@ -31,7 +31,7 @@ describe('access entry and account creation', () => {
     });
 
     it('uses passwordless access when password is empty and password access when it is filled', async () => {
-        http.post.mockResolvedValue({ data: { challengeId: 'challenge-1' } });
+        http.post.mockResolvedValue({ data: { challengeId: 1 } });
         const wrapper = mount(App);
 
         await wrapper.get('#email').setValue('person@example.test');
@@ -66,7 +66,7 @@ describe('access entry and account creation', () => {
     it('persists the display name with the registration request and asks only for the code afterwards', async () => {
         const wrapper = mount(App);
         await wrapper.get('button.access-link').trigger('click');
-        http.post.mockResolvedValue({ data: { challengeId: 'challenge-1' } });
+        http.post.mockResolvedValue({ data: { challengeId: 1 } });
 
         await wrapper.get('#display-name').setValue('Person');
         await wrapper.get('#email').setValue('person@example.test');

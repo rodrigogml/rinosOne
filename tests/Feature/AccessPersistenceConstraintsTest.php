@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\Access\AuthenticationChallengeLifecycleService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AccessPersistenceConstraintsTest extends TestCase
@@ -34,7 +33,7 @@ class AccessPersistenceConstraintsTest extends TestCase
         $this->expectException(QueryException::class);
 
         AuthenticationChallenge::query()->create([
-            'idUser' => (string) Str::ulid(),
+            'idUser' => 999999,
             'purpose' => 'email_verification',
             'secretHash' => hash('sha256', 'unknown-user'),
             'expiresAt' => now()->addMinute(),
@@ -44,11 +43,10 @@ class AccessPersistenceConstraintsTest extends TestCase
     public function test_deleting_a_user_cascades_to_access_records(): void
     {
         $user = User::factory()->create();
-        $persistentAuthenticationId = (string) Str::ulid();
+        $persistentAuthenticationId = 1;
         $challenge = $this->createChallenge($user, 'email_verification');
 
         $this->app['db']->table('persistentAuthentication')->insert([
-            'id' => $persistentAuthenticationId,
             'idUser' => $user->id,
             'secretHash' => hash('sha256', 'persistent-authentication'),
             'lastUsedAt' => now(),

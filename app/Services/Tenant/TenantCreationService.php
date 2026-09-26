@@ -30,8 +30,8 @@ class TenantCreationService
             throw new InvalidArgumentException('The tenant display name is invalid.');
         }
 
-        if (! Str::isUlid($idempotencyKey)) {
-            throw new InvalidArgumentException('The idempotency key must be a valid ULID.');
+        if (! Str::isUuid($idempotencyKey)) {
+            throw new InvalidArgumentException('The idempotency key must be a valid UUID.');
         }
 
         try {
@@ -82,7 +82,7 @@ class TenantCreationService
         }
     }
 
-    private function findExisting(string $creatorId, string $idempotencyKey, bool $lock = false): ?TenantProvisioning
+    private function findExisting(int $creatorId, string $idempotencyKey, bool $lock = false): ?TenantProvisioning
     {
         $query = TenantProvisioning::query()
             ->with('tenant')

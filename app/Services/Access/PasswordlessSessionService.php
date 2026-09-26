@@ -9,7 +9,6 @@ use App\Domain\Access\Email\EmailNormalizer;
 use App\Mail\Access\PasswordlessLoginMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 final class PasswordlessSessionService
 {
@@ -21,11 +20,11 @@ final class PasswordlessSessionService
         $user = User::query()->where('email', $email)->first();
         $decision = $this->limits->attemptEmailEmission($email, $origin, $user?->id);
         if (! $decision->allowed) {
-            return new AuthenticationChallengeRequestResult($decision, (string) Str::ulid());
+            return new AuthenticationChallengeRequestResult($decision, random_int(1, PHP_INT_MAX));
         }
 
         if ($user === null || ! $this->eligibility->canAuthenticate($user)) {
-            return new AuthenticationChallengeRequestResult($decision, (string) Str::ulid());
+            return new AuthenticationChallengeRequestResult($decision, random_int(1, PHP_INT_MAX));
         }
 
         $issued = $this->challenges->issue($user, AuthenticationChallengePurpose::PasswordlessLogin, $remember);
@@ -34,12 +33,12 @@ final class PasswordlessSessionService
         return new AuthenticationChallengeRequestResult($decision, $issued->challengeId);
     }
 
-    public function confirmCode(string $id, string $code, string $origin): ?array
+    public function confirmCode(int $id, string $code, string $origin): ?array
     {
         return $this->confirm($this->challenges->consumeByCode($id, $code, $origin));
     }
 
-    public function confirmLink(string $id, string $token): ?array
+    public function confirmLink(int $id, string $token): ?array
     {
         return $this->confirm($this->challenges->consumeByLinkToken($id, $token));
     }

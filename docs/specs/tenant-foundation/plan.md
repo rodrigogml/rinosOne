@@ -41,7 +41,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 | III. Identidade e acesso seguros por padrão | PASS | Todo contexto revalida usuário, vínculo e estado; identificador conhecido não concede acesso. |
 | IV. Dados mínimos, sessões controladas e configuração segura | PASS | Contexto não entra na sessão; schemas e credenciais seguem separação por ambiente. |
 | V. Mudanças verificáveis e documentação alinhada | PASS | Contratos, quickstart e cenários backend, frontend e E2E são definidos antes das tarefas. |
-| VI. Identidades numéricas e referências unidirecionais | PENDENTE | A documentação adota `BIGINT UNSIGNED`; a migração de código, migrations e testes está registrada na Fase 0. |
+| VI. Identidades numéricas e referências unidirecionais | PASS | Código, migrations, contratos e testes usam `BIGINT UNSIGNED`; a migration incremental aplicada preserva os dados globais existentes. |
 
 ## Desenho da Arquitetura
 
@@ -66,7 +66,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 - O catálogo legado `database/migrations/` permanece inalterado.
 - Novas migrations globais ficam em `database/migrations/core/` e são executadas junto do catálogo legado por um comando de migração global dedicado.
 - Migrations de tenant ficam em `database/migrations/tenant/` e são aplicadas uma vez por schema de tenant por um comando dedicado.
-- O runtime possui conexão global padrão e conexão de tenant construída somente a partir de um identificador validado.
+- O runtime possui conexão global padrão, uma conexão `coreMigration` exclusiva para o catálogo global e uma conexão de tenant construída somente a partir de um identificador validado.
 - A credencial de provisionamento é uma conexão independente, configurada exclusivamente por ambiente, com permissões mínimas para criar e preparar schemas. A credencial de runtime não recebe permissão ampla de criação.
 - Deploy executa migrations globais antes de disponibilizar a versão da aplicação; migrations de tenant percorrem tenants ativos e inativos de forma isolada. Falha em um tenant o mantém indisponível e não autoriza uso parcial.
 

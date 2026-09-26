@@ -12,7 +12,6 @@ use App\Services\Tenant\TenantCreationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TenantCreationServiceTest extends TestCase
@@ -23,7 +22,7 @@ class TenantCreationServiceTest extends TestCase
     {
         Queue::fake();
         $creator = User::factory()->create();
-        $idempotencyKey = (string) Str::ulid();
+        $idempotencyKey = (string) str()->uuid();
 
         $result = app(TenantCreationService::class)->create($creator, 'Acme Serviços', $idempotencyKey);
 
@@ -46,7 +45,7 @@ class TenantCreationServiceTest extends TestCase
     {
         Queue::fake();
         $creator = User::factory()->create();
-        $idempotencyKey = (string) Str::ulid();
+        $idempotencyKey = (string) str()->uuid();
         $service = app(TenantCreationService::class);
 
         $first = $service->create($creator, 'Acme Serviços', $idempotencyKey);
@@ -66,10 +65,10 @@ class TenantCreationServiceTest extends TestCase
     {
         Queue::fake();
         $creator = new User;
-        $creator->id = (string) Str::ulid();
+        $creator->id = 999999;
 
         try {
-            app(TenantCreationService::class)->create($creator, 'Acme Serviços', (string) Str::ulid());
+            app(TenantCreationService::class)->create($creator, 'Acme Serviços', (string) str()->uuid());
             $this->fail('Expected a database constraint violation.');
         } catch (QueryException) {
             $this->assertDatabaseCount('tenant', 0);
@@ -83,6 +82,6 @@ class TenantCreationServiceTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        app(TenantCreationService::class)->create(User::factory()->create(), 'Acme Serviços', 'not-a-ulid');
+        app(TenantCreationService::class)->create(User::factory()->create(), 'Acme Serviços', 'not-a-uuid');
     }
 }

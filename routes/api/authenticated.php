@@ -16,6 +16,6 @@ Route::get('/auth/session', CurrentSessionController::class);
 
 Route::get('/tenants', [TenantController::class, 'index']);
 Route::post('/tenants', [TenantController::class, 'store']);
-Route::post('/tenants/{tenantId}/contexts', [TenantController::class, 'startContext'])->whereUlid('tenantId');
-Route::delete('/tenants/{tenantId}/contexts', [TenantController::class, 'endContext'])->whereUlid('tenantId');
-Route::post('/tenants/{tenantId}/availability', [TenantController::class, 'changeAvailability'])->whereUlid('tenantId');
+Route::post('/tenants/{tenantId}/contexts', [TenantController::class, 'startContext'])->whereNumber('tenantId');
+Route::delete('/tenants/{tenantId}/contexts', [TenantController::class, 'endContext'])->whereNumber('tenantId');
+Route::post('/tenants/{tenantId}/availability', [TenantController::class, 'changeAvailability'])->whereNumber('tenantId');

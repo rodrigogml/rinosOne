@@ -18,7 +18,7 @@ class CreateTenantRequest extends TenantRequest
     {
         return [
             'displayName' => ['required', 'string', 'max:120', 'not_regex:/^\s*$/u'],
-            'idempotencyKey' => ['required', 'string', 'ulid'],
+            'idempotencyKey' => ['required', 'string', 'uuid'],
         ];
     }
 }
