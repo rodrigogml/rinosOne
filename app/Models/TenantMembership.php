@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Domain\Tenant\TenantMembershipRole;
 use App\Domain\Tenant\TenantMembershipState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +17,6 @@ class TenantMembership extends Model
     protected $fillable = [
         'idTenant',
         'idUser',
-        'role',
         'state',
         'lastContextSelectedAt',
     ];
@@ -26,7 +24,6 @@ class TenantMembership extends Model
     protected function casts(): array
     {
         return [
-            'role' => TenantMembershipRole::class,
             'state' => TenantMembershipState::class,
             'lastContextSelectedAt' => 'datetime',
         ];
@@ -41,5 +38,4 @@ class TenantMembership extends Model
     {
         return $this->belongsTo(User::class, 'idUser');
     }
-
 }

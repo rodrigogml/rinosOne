@@ -8,7 +8,7 @@ import { i18n } from '../../../resources/js/i18n';
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 const http = axios as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-const activeTenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, role: 'OWNER' };
+const activeTenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, canManageAvailability: true };
 
 function mountDialog() {
     return mount(TenantManagementDialog, {
@@ -23,7 +23,7 @@ describe('tenant management dialog', () => {
 
     it('creates a single intent with a client-generated UUID and presents its preparation state', async () => {
         http.get.mockResolvedValue({ data: { tenants: [] } });
-        http.post.mockResolvedValue({ data: { tenant: { id: 1, displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false }, provisioning: { id: 1, state: 'QUEUED' } } });
+        http.post.mockResolvedValue({ data: { tenant: { id: 1, displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false, canManageAvailability: false }, provisioning: { id: 1, state: 'QUEUED' } } });
         const wrapper = mountDialog();
         await flushPromises();
         await wrapper.get('#tenant-display-name').setValue('Oficina Rubi');
@@ -36,9 +36,9 @@ describe('tenant management dialog', () => {
         wrapper.unmount();
     });
 
-    it('shows owner-only availability actions and applies the returned state', async () => {
+    it('shows availability actions only when the capability is present and applies the returned state', async () => {
         http.get.mockResolvedValue({ data: { tenants: [activeTenant] } });
-        http.post.mockResolvedValue({ data: { tenant: { ...activeTenant, state: 'INACTIVE', selectable: false } } });
+        http.post.mockResolvedValue({ data: { tenant: { ...activeTenant, state: 'INACTIVE', selectable: false, canManageAvailability: false } } });
         const wrapper = mountDialog();
         await flushPromises();
         await wrapper.get('button.ui-button--secondary').trigger('click');
@@ -48,6 +48,37 @@ describe('tenant management dialog', () => {
 
         expect(http.post).toHaveBeenCalledWith('/api/v1/tenants/1/availability', { state: 'INACTIVE' });
         expect(wrapper.text()).toContain('Desabilitada');
+        wrapper.unmount();
+    });
+
+    it('does not present availability actions when the current capability is revoked', async () => {
+        http.get.mockResolvedValue({ data: { tenants: [{ ...activeTenant, canManageAvailability: false }] } });
+        const wrapper = mountDialog();
+        await flushPromises();
+
+        expect(wrapper.find('button.ui-button--secondary').exists()).toBe(false);
+
+        wrapper.unmount();
+    });
+
+    it('uses a native availability button and keeps localized failure feedback safe', async () => {
+        i18n.global.locale.value = 'en';
+        http.get.mockResolvedValue({ data: { tenants: [activeTenant] } });
+        http.post.mockRejectedValue(new Error('internal authorization detail'));
+        const wrapper = mountDialog();
+        await flushPromises();
+        const action = wrapper.get('button.ui-button--secondary');
+
+        expect(action.element).toBeInstanceOf(HTMLButtonElement);
+        expect(action.attributes('type')).toBe('button');
+        expect(action.text()).toBe('Disable');
+
+        await action.trigger('click');
+        await wrapper.get('[role="alertdialog"] button.ui-button--destructive').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('We could not update availability.');
+        expect(wrapper.text()).not.toContain('internal authorization detail');
         wrapper.unmount();
     });
 

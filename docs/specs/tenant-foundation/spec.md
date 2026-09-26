@@ -36,12 +36,12 @@ Como usuário validado, quero criar uma organização com um nome para poder com
 **Por que esta prioridade**: sem criação segura de tenant, não existe base para os futuros módulos organizacionais.
 
 **Teste independente**: uma pessoa autenticada cria uma organização, acompanha sua disponibilidade e, quando ela fica
-ativa, encontra-se como sua única proprietária inicial.
+ativa, encontra-se com membership ativa e a atribuição administrativa inicial.
 
 **Cenários de aceitação**:
 
 1. **Dado** que sou usuário autenticado e validado, **quando** informo um nome válido para uma nova organização,
-   **então** o sistema aceita uma única solicitação de criação e me associa a ela como proprietário inicial.
+   **então** o sistema aceita uma única solicitação de criação, cria minha membership ativa e me atribui a role administrativa protegida.
 2. **Dado** que criei uma organização, **quando** sua preparação ainda não terminou, **então** vejo seu estado sem poder
    utilizá-la como contexto de trabalho.
 3. **Dado** que a preparação terminou com sucesso, **quando** a organização é habilitada, **então** ela se torna
@@ -105,7 +105,7 @@ troca, dados e recursos de uma não modificam nem aparecem na outra.
 
 ### User Story 4 - Trocar, encerrar ou desabilitar um contexto (Prioridade: P2)
 
-Como usuário, quero trocar ou encerrar o tenant atual de forma clara e, como proprietário inicial, quero poder
+Como usuário, quero trocar ou encerrar o tenant atual de forma clara e, quando possuir a capability necessária, quero poder
 desabilitar a organização sem apagar seus dados.
 
 **Por que esta prioridade**: a mudança precisa deixar o workspace coerente e impedir que uma organização indisponível
@@ -145,7 +145,7 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
 - **FR-TEN-001**: O sistema DEVE permitir que qualquer usuário autenticado e validado inicie a criação de um tenant
   informando seu nome de exibição obrigatório.
 - **FR-TEN-002**: O sistema DEVE atribuir a cada tenant uma identidade estável e independente de seu nome de exibição.
-- **FR-TEN-003**: Ao criar um tenant, o sistema DEVE associar o criador como seu único proprietário inicial.
+- **FR-TEN-003**: Ao criar um tenant, o sistema DEVE criar uma membership ativa para o criador e atribuir-lhe diretamente a role administrativa protegida.
 - **FR-TEN-004**: O sistema DEVE manter o tenant indisponível para operações contextuais até que sua preparação seja
   concluída com sucesso.
 - **FR-TEN-005**: O sistema DEVE informar de maneira clara e segura se um tenant está em preparação, ativo,
@@ -167,7 +167,7 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
   sejam apresentados, reutilizados ou aplicados em outro tenant.
 - **FR-TEN-014**: O sistema DEVE impedir uma nova ação contextual quando o usuário, sua associação ou o tenant deixar
   de satisfazer as condições de uso.
-- **FR-TEN-015**: O proprietário inicial DEVE poder desabilitar o tenant sem apagar sua identidade, associação ou
+- **FR-TEN-015**: A pessoa que possui a capability administrativa aplicável DEVE poder desabilitar o tenant sem apagar sua identidade, membership ou
   dados, e um tenant desabilitado NÃO DEVE aceitar novos contextos operacionais.
 - **FR-TEN-016**: O sistema DEVE iniciar a preparação de uma criação aceita sem exigir que o usuário execute uma etapa
   manual posterior.
@@ -175,7 +175,7 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
   tenants, identidades ou preparações duplicadas.
 - **FR-TEN-018**: O sistema DEVE registrar eventos de criação, mudança de disponibilidade, seleção, troca,
   encerramento e tentativa negada de contexto sem incluir dados do tenant além do necessário para segurança e suporte.
-- **FR-TEN-019**: A feature NÃO DEVE introduzir, nesta fase, convites, gestão de membros, papéis além do proprietário
+- **FR-TEN-019**: A feature NÃO DEVE introduzir, nesta fase, convites, gestão de membros, roles além da administrativa protegida
   inicial, permissões detalhadas, módulos de negócio ou exclusão definitiva de tenant.
 - **FR-TEN-020**: O sistema DEVE registrar a recência de uma seleção contextual somente após validação bem-sucedida e
   usá-la para ordenar a lista pessoal de organizações, sem armazenar ou restaurar o tenant ativo da aba.
@@ -185,7 +185,7 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
 - **Tenant**: organização identificada de forma estável, com nome de exibição, estado de disponibilidade e ciclo de
   vida próprio.
 - **Associação ao tenant**: vínculo entre uma pessoa usuária e uma organização, que determina se ela pode estabelecer
-  seu contexto. Nesta fase, a única associação criada é a de proprietário inicial.
+  seu contexto. Na criação, a membership ativa e a atribuição administrativa protegida são criadas para a mesma pessoa.
 - **Contexto de tenant**: seleção temporária e explícita de uma organização em uma única área de trabalho, adicional
   às funcionalidades pessoais da pessoa autenticada.
 - **Preparação do tenant**: processo que torna a organização apta ao uso e comunica seu estado até que possa ser
@@ -196,7 +196,7 @@ organização desabilitada deixa de poder ser selecionada, enquanto suas informa
 ### Resultados Mensuráveis
 
 - **SC-TEN-001**: 100% das criações concluídas com sucesso resultam em um tenant ativo associado ao seu criador como
-  proprietário inicial, sem associação adicional criada automaticamente.
+  membership ativa e atribuição administrativa protegida ao criador, sem associação adicional criada automaticamente.
 - **SC-TEN-002**: 100% dos testes aprovados sem tenant selecionado demonstram que funcionalidades pessoais continuam
   disponíveis e funcionalidades contextuais permanecem indisponíveis.
 - **SC-TEN-003**: 100% dos testes aprovados com duas abas e dois tenants distintos demonstram que uma seleção, troca ou

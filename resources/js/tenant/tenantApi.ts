@@ -1,6 +1,6 @@
 import axios from 'axios';
-import type { TenantContext, TenantCreation, TenantProvisioning, TenantRole, TenantState, TenantSummary } from './tenantTypes';
-import { TENANT_ROLES, TENANT_STATES } from './tenantTypes';
+import type { TenantContext, TenantCreation, TenantProvisioning, TenantState, TenantSummary } from './tenantTypes';
+import { TENANT_STATES } from './tenantTypes';
 
 const PROVISIONING_STATES = ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED'] as const;
 
@@ -37,34 +37,33 @@ function requiredObject(value: unknown): Record<string, unknown> {
     return parsed;
 }
 
-export function parseTenantSummary(value: unknown, requiresRole = true): TenantSummary {
+export function parseTenantSummary(value: unknown): TenantSummary {
     const source = requiredObject(value);
     const id = positiveInteger(source.id);
     const displayName = nonEmptyString(source.displayName);
     const state = oneOf(source.state, TENANT_STATES) as TenantState | null;
-    const role = oneOf(source.role, TENANT_ROLES) as TenantRole | null;
 
-    if (!id || !displayName || !state || typeof source.selectable !== 'boolean' || (requiresRole && !role)) {
+    if (!id || !displayName || !state || typeof source.selectable !== 'boolean' || typeof source.canManageAvailability !== 'boolean') {
         throw new TenantResponseShapeError();
     }
 
-    return { id, displayName, state, selectable: source.selectable, ...(role ? { role } : {}) };
+    return { id, displayName, state, selectable: source.selectable, canManageAvailability: source.canManageAvailability };
 }
 
 export function parseTenantContext(value: unknown): TenantContext {
     const source = requiredObject(value);
     const tenant = requiredObject(source.tenant);
     const membership = requiredObject(source.membership);
+    const capabilities = requiredObject(source.capabilities);
     const id = positiveInteger(tenant.id);
     const displayName = nonEmptyString(tenant.displayName);
     const membershipId = positiveInteger(membership.id);
-    const role = oneOf(membership.role, TENANT_ROLES) as TenantRole | null;
 
-    if (!id || !displayName || !membershipId || !role || !Array.isArray(source.availableModules) || !source.availableModules.every((module) => typeof module === 'string')) {
+    if (!id || !displayName || !membershipId || typeof capabilities.canManageAvailability !== 'boolean' || !Array.isArray(source.availableModules) || !source.availableModules.every((module) => typeof module === 'string')) {
         throw new TenantResponseShapeError();
     }
 
-    return { tenant: { id, displayName }, membership: { id: membershipId, role }, availableModules: [...source.availableModules] };
+    return { tenant: { id: id, displayName }, membership: { id: membershipId }, capabilities: { canManageAvailability: capabilities.canManageAvailability }, availableModules: [...source.availableModules] };
 }
 
 function parseProvisioning(value: unknown): TenantProvisioning {
@@ -88,7 +87,7 @@ export function parseTenantList(value: unknown): TenantSummary[] {
 export function parseTenantCreation(value: unknown): TenantCreation {
     const source = requiredObject(value);
 
-    return { tenant: parseTenantSummary(source.tenant, false), provisioning: parseProvisioning(source.provisioning) };
+    return { tenant: parseTenantSummary(source.tenant), provisioning: parseProvisioning(source.provisioning) };
 }
 
 export const tenantApi = {
@@ -111,6 +110,6 @@ export const tenantApi = {
         const response = await axios.post(`/api/v1/tenants/${encodeURIComponent(tenantId)}/availability`, { state });
         const source = requiredObject(response.data);
 
-        return parseTenantSummary(source.tenant, false);
+        return parseTenantSummary(source.tenant);
     },
 };

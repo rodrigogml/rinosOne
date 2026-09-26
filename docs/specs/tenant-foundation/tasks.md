@@ -67,11 +67,11 @@ Ref: [plan.md](plan.md#Fluxo-de-criação-e-provisionamento), [data-model.md](da
 
 Ref: [spec.md](spec.md#requisitos), [data-model.md](data-model.md), [research.md](research.md#decision-5-associação-mínima-sem-antecipar-gestão-de-acesso)
 
-- [x] 2.1.1 Criar modelos e tipos de domínio para tenant, associação, papel `OWNER`, disponibilidade e provisionamento.
-- [x] 2.1.2 Criar serviço transacional que reserva uma criação idempotente, insere tenant, associação OWNER e preparação em uma única confirmação global.
+- [x] 2.1.1 Criar modelos e tipos de domínio para tenant, membership, role administrativa protegida, disponibilidade e provisionamento.
+- [x] 2.1.2 Criar serviço transacional que reserva uma criação idempotente, insere tenant, membership, atribuição administrativa e preparação em uma única confirmação global.
 - [x] 2.1.3 Garantir que reenvio com a mesma chave e mesmo criador recupere a mesma intenção, tenant e operação.
 - [x] 2.1.4 Impedir criação, associação ou disponibilidade de módulos, membros e papéis não autorizados por esta feature.
-- [x] 2.1.5 Criar testes unitários e de feature para estados, idempotência, criador OWNER e transações revertidas.
+- [x] 2.1.5 Criar testes unitários e de feature para estados, idempotência, atribuição administrativa inicial e transações revertidas.
 
 ### 2.2 API versionada de tenants `[A]`
 
@@ -80,7 +80,7 @@ Ref: [tenant-context.md](contracts/tenant-context.md), [plan.md](plan.md#Conven�
 - [x] 2.2.1 Implementar listagem dos tenants associados ao usuário autenticado com estado, papel e seleção permitida.
 - [x] 2.2.2 Implementar criação autenticada por `POST /api/v1/tenants`, incluindo validação de nome e `Idempotency-Key`.
 - [x] 2.2.3 Implementar validação/início e encerramento explícitos de contexto sem gravar tenant na sessão server-side.
-- [x] 2.2.4 Implementar alteração de disponibilidade restrita ao `OWNER`, com confirmação de transição de estado.
+- [x] 2.2.4 Implementar alteração de disponibilidade protegida pela permission correspondente, com confirmação de transição de estado.
 - [x] 2.2.5 Padronizar todas as falhas previstas no envelope seguro `error.code`, `error.message` e `fields` quando aplicável.
 - [x] 2.2.6 Criar testes de contrato para todos os endpoints, payloads camelCase, códigos HTTP e não enumeração de tenant.
 
@@ -125,7 +125,7 @@ Ref: [interface-spec.md](interface-spec.md#int-web-003--criação-e-gestão-bás
 - [x] 3.3.1 Implementar diálogo reutilizável de organizações com formulário de nome, validação local e feedback seguro de criação.
 - [x] 3.3.2 Gerar e reutilizar chave de intenção somente para repetição da mesma criação em andamento.
 - [x] 3.3.3 Exibir estados de preparação, ativo, inativo e falha sem disponibilizar tenants não operacionais no seletor.
-- [x] 3.3.4 Implementar ativação/desabilitação exclusiva de OWNER com confirmação acessível e preservação de dados.
+- [x] 3.3.4 Implementar ativação/desabilitação para quem possui capability com confirmação acessível e preservação de dados.
 - [x] 3.3.5 Adicionar textos e rótulos acessíveis nos quatro idiomas, respeitando tokens, densidades, temas e telas estreitas.
 - [x] 3.3.6 Criar testes de componente para todos os estados, erro, offline, foco, confirmação e atualização de lista.
 
@@ -138,7 +138,7 @@ Ref: [interface-spec.md](interface-spec.md#int-web-003--criação-e-gestão-bás
 Ref: [quickstart.md](quickstart.md), [spec.md](spec.md#critérios-de-sucesso), [tenant-context.md](contracts/tenant-context.md)
 
 - [x] 4.1.1 Executar e ampliar testes unitários para estado, identidade física e classificação de falhas.
-- [x] 4.1.2 Executar e ampliar testes de feature para criação, idempotência, OWNER, disponibilidade e contexto negado.
+- [x] 4.1.2 Executar e ampliar testes de feature para criação, idempotência, administração, disponibilidade e contexto negado.
 - [x] 4.1.3 Validar o roundtrip real de cada endpoint contra o contrato e parser consumido pela interface.
 - [x] 4.1.4 Verificar que toda operação contextual revalida o tenant e que uma resposta antiga não reaplica contexto inválido.
 - [x] 4.1.5 Executar as suítes de backend, formatação e análise estática configuradas e registrar resultados.
@@ -230,7 +230,7 @@ flowchart TD
 | Item | Descrição | Fase |
 | --- | --- | --- |
 | TEN-FOUND-01 | Schemas, migrations, conexões e provisionamento seguro por tenant. | 1 |
-| TEN-FOUND-02 | Entidades, associação OWNER, estados, API e contexto explícito. | 2 |
+| TEN-FOUND-02 | Entidades, membership, atribuição administrativa, estados, API e contexto explícito. | 2 |
 | TEN-FOUND-03 | Avatar, seletor, criação, gestão e troca responsiva por aba. | 3 |
 | TEN-FOUND-04 | Evidências de qualidade, integração MySQL e operação. | 4 |
 | TEN-FOUND-05 | Recência persistida e seletor limitado com busca acessível. | 5 |

@@ -8,7 +8,7 @@
 
 - [x] CHK001 - A criação e o uso contextual exigem usuário autenticado e validado? [Cobertura, Spec §FR-TEN-001 e FR-TEN-009] {auto}
 - [x] CHK002 - A ausência, ambiguidade ou manipulação de identificador de tenant resulta em negação segura? [Deny-by-default, Spec §FR-TEN-009, FR-TEN-010 e FR-TEN-014] {auto}
-- [x] CHK003 - O modelo mínimo de associação e o papel OWNER estão definidos sem antecipar RBAC ou gestão de membros? [Escopo, Data Model §tenantMembership; Research §Decision 5] {auto}
+- [x] CHK003 - O modelo mínimo de membership e a role administrativa protegida estão definidos sem confundir elegibilidade contextual com autorização? [Escopo, Data Model §tenantMembership; Research §Decision 5] {auto}
 - [x] CHK004 - Uma sessão autenticada compartilhada não compartilha implicitamente o tenant entre abas? [Isolamento, Spec §FR-TEN-011; Research §Decision 2] {auto}
 
 ## Dados, Infraestrutura e Entrada

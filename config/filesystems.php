@@ -38,6 +38,13 @@ return [
             'report' => false,
         ],
 
+        'file-private' => [
+            'driver' => 'local',
+            'root' => env('FILE_STORAGE_LOCAL_PRIVATE_PATH') ?: storage_path('app/file-storage'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

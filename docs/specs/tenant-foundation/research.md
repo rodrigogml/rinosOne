@@ -20,7 +20,7 @@ Este documento resolve as decisões técnicas necessárias antes do desenho da f
 
 ## Decision 3: Preparação assíncrona, idempotente e com privilégios separados
 
-**Decision**: a criação persiste o tenant, seu vínculo de proprietário e uma operação de provisionamento na mesma confirmação global. Depois da confirmação, um trabalho assíncrono cria o schema, aplica as migrations de tenant e só então promove o tenant a `ACTIVE`. Reenvios da mesma criação usam uma chave de idempotência vinculada ao criador.
+**Decision**: a criação persiste o tenant, sua membership inicial, a atribuição administrativa protegida e uma operação de provisionamento na mesma confirmação global. Depois da confirmação, um trabalho assíncrono cria o schema, aplica as migrations de tenant e só então promove o tenant a `ACTIVE`. Reenvios da mesma criação usam uma chave de idempotência vinculada ao criador.
 
 **Rationale**: criar schema e aplicar migrations não deve prolongar a requisição da interface nem deixar tenant ativo antes de sua estrutura existir. A fila persistida já disponível no projeto permite retentativas sem duplicar a organização. A credencial de provisionamento permanece distinta da credencial normal de execução.
 
@@ -36,7 +36,7 @@ Este documento resolve as decisões técnicas necessárias antes do desenho da f
 
 ## Decision 5: Associação mínima, sem antecipar gestão de acesso
 
-**Decision**: a fundação criará somente uma associação ativa `OWNER` para o criador. A validação contextual será feita contra esse vínculo global; convites, reativação de membros, grupos, permissões e catálogo de módulos não serão criados.
+**Decision**: a fundação criará uma associação ativa para o criador e lhe atribuirá diretamente a role protegida `tenant.administrator`. A validação contextual será feita contra a membership; decisões de capacidade usam a role e permission aplicáveis. Convites, reativação de membros, grupos e catálogo de módulos continuam adiados.
 
 **Rationale**: o vínculo é indispensável para impedir seleção por conhecimento de identificador, mas uma gestão completa de acesso ampliaria indevidamente a fase atual.
 

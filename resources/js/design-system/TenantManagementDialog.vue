@@ -54,10 +54,10 @@ async function create() {
     idempotencyKey ??= createTenantIdempotencyKey();
     try {
         const creation = await tenantApi.create(displayName.value.trim(), idempotencyKey);
-        const ownerTenant: TenantSummary = { ...creation.tenant, role: 'OWNER' };
-        const existingIndex = tenants.value.findIndex((tenant) => tenant.id === ownerTenant.id);
-        if (existingIndex === -1) tenants.value = [ownerTenant, ...tenants.value];
-        else tenants.value.splice(existingIndex, 1, ownerTenant);
+        const administratorTenant: TenantSummary = creation.tenant;
+        const existingIndex = tenants.value.findIndex((tenant) => tenant.id === administratorTenant.id);
+        if (existingIndex === -1) tenants.value = [administratorTenant, ...tenants.value];
+        else tenants.value.splice(existingIndex, 1, administratorTenant);
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => { if (open.value) void refresh(); }, 10_000);
         displayName.value = ''; idempotencyKey = null;
@@ -66,14 +66,14 @@ async function create() {
     finally { creating.value = false; }
 }
 async function changeAvailability(tenant: TenantSummary) {
-    if (tenant.role !== 'OWNER' || changingTenantId.value) return;
+    if (!tenant.canManageAvailability || changingTenantId.value) return;
     if (!navigator.onLine) { feedback.value = t('access.tenant.offline'); return; }
     changingTenantId.value = tenant.id; feedback.value = '';
     const state = tenant.state === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
         const updated = await tenantApi.changeAvailability(tenant.id, state);
         const index = tenants.value.findIndex((candidate) => candidate.id === tenant.id);
-        if (index !== -1) tenants.value.splice(index, 1, { ...updated, role: tenant.role });
+        if (index !== -1) tenants.value.splice(index, 1, updated);
         feedback.value = t('access.tenant.availabilityChanged');
     } catch { feedback.value = t('access.tenant.availabilityFailed'); }
     finally { changingTenantId.value = null; }
@@ -108,7 +108,7 @@ onBeforeUnmount(() => { window.clearTimeout(refreshTimer); window.removeEventLis
             <p v-else-if="!tenants.length">{{ t('access.tenant.empty') }}</p>
             <article v-for="tenant in tenants" v-else :key="tenant.id" class="tenant-management__item">
                 <div><strong>{{ tenant.displayName }}</strong><TenantStatusBadge :state="tenant.state" /></div>
-                <UiButton v-if="tenant.role === 'OWNER' && (tenant.state === 'ACTIVE' || tenant.state === 'INACTIVE')" variant="secondary" :loading="changingTenantId === tenant.id" @click="requestAvailabilityChange(tenant)">{{ tenant.state === 'ACTIVE' ? t('access.tenant.disable') : t('access.tenant.enable') }}</UiButton>
+                <UiButton v-if="tenant.canManageAvailability && (tenant.state === 'ACTIVE' || tenant.state === 'INACTIVE')" variant="secondary" :loading="changingTenantId === tenant.id" @click="requestAvailabilityChange(tenant)">{{ tenant.state === 'ACTIVE' ? t('access.tenant.disable') : t('access.tenant.enable') }}</UiButton>
             </article>
         </section>
     </UiDialog>

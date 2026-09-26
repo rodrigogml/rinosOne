@@ -16,7 +16,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 **Tipo de projeto**: monólito modular com SPA web e API.
 **Comportamento de execução**: a validação de contexto e a listagem não bloqueiam a interface; o provisionamento informa progresso de forma assíncrona. Metas numéricas de desempenho serão definidas junto aos cenários de carga e à capacidade de cada ambiente.
 **Restrições**: sessão de autenticação server-side, tenant nunca persistido nela, credenciais reais por ambiente, credencial de provisionamento separada e nenhum módulo de negócio nesta fase.
-**Escopo**: criar, preparar, ativar, desabilitar e selecionar tenants; uma única associação `OWNER` por criação.
+**Escopo**: criar, preparar, ativar, desabilitar e selecionar tenants; uma associação ativa ao criador e a atribuição direta da role protegida `tenant.administrator`.
 
 **Política de retentativa de provisionamento**: até três tentativas automáticas para falhas transitórias de conexão, indisponibilidade temporária ou bloqueio de banco, aguardando por padrão 1, 5 e 15 minutos. Permissão insuficiente, identificador físico inválido e migration incompatível falham definitivamente. Limite, intervalos e classificação operacional ficam configuráveis por ambiente. Limites de quantidade de tenants por usuário ou origem estão explicitamente adiados para a futura feature de limites e contratação.
 
@@ -36,7 +36,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 
 | Princípio | Status | Notas |
 | --- | --- | --- |
-| I. Simplicidade incremental e escopo autorizado | PASS | Cria somente proprietário inicial e estrutura necessária; membros, permissões e módulos continuam adiados. |
+| I. Simplicidade incremental e escopo autorizado | PASS | Cria somente membership e atribuição administrativa iniciais, além da estrutura necessária; gestão de membros, demais permissions e módulos continuam adiados. |
 | II. Fronteira API e domínio independente da interface | PASS | A seleção é validada por contrato JSON; regras não pertencem a componentes web. |
 | III. Identidade e acesso seguros por padrão | PASS | Todo contexto revalida usuário, vínculo e estado; identificador conhecido não concede acesso. |
 | IV. Dados mínimos, sessões controladas e configuração segura | PASS | Contexto não entra na sessão; schemas e credenciais seguem separação por ambiente. |
@@ -47,7 +47,7 @@ Implementar o plano de controle de tenants no schema principal, provisionar um s
 
 ### Fluxo de criação e provisionamento
 
-1. A API valida usuário e nome, reserva a intenção idempotente, cria `tenant`, `tenantMembership(OWNER)` e `tenantProvisioning(QUEUED)` na transação global.
+1. A API valida usuário e nome, reserva a intenção idempotente, cria `tenant`, `tenantMembership(ACTIVE)`, atribuição direta de `tenant.administrator` e `tenantProvisioning(QUEUED)` na transação global.
 2. Após a confirmação, a fila persistida executa o provisionamento com a credencial própria de infraestrutura.
 3. O worker deriva e valida o nome físico do schema a partir do `BIGINT UNSIGNED` do tenant, cria o schema e aplica exclusivamente o catálogo de migrations de tenant.
 4. Somente após confirmar a versão esperada, o worker marca a operação `SUCCEEDED` e o tenant `ACTIVE`.
@@ -136,7 +136,7 @@ tests/
 ## Validação Planejada
 
 - Testes unitários para derivação de schema, máquina de estados, idempotência e decisão de seleção.
-- Testes de feature para criação, associação `OWNER`, transações, falhas de provisionamento, indisponibilidade e revalidação de cada operação contextual.
+- Testes de feature para criação, membership, atribuição de administrador, transações, falhas de provisionamento, indisponibilidade e revalidação de cada operação contextual.
 - Testes de integração MySQL descartáveis para criação de schema, catálogo de migrations e separação de credenciais.
 - Testes de interface para avatar de tenant, seletor, estados de criação e limpeza de store contextual.
 - Testes E2E para criação, troca em uma aba, isolamento entre abas, perda de contexto em reinício e preservação das funções pessoais.

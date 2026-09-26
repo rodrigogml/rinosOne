@@ -6,7 +6,7 @@
 
 ## Completude e Escopo
 
-- [x] CHK001 - Estão definidos criação, proprietário inicial, preparação, seleção, troca, encerramento e desabilitação? [Completude, Spec §Cenários de Usuário e Testes] {auto}
+- [x] CHK001 - Estão definidos criação, membership e atribuição administrativa iniciais, preparação, seleção, troca, encerramento e desabilitação? [Completude, Spec §Cenários de Usuário e Testes] {auto}
 - [x] CHK002 - Estão explícitos os limites de escopo para convites, membros, papéis detalhados, módulos e exclusão? [Completude, Spec §FR-TEN-019] {auto}
 - [x] CHK003 - A separação entre funcionalidades pessoais sempre acessíveis e recursos contextuais condicionais está definida? [Clareza, Spec §Direção de Produto; FR-TEN-006 a FR-TEN-008] {auto}
 - [x] CHK004 - O ciclo de vida do tenant e as condições de disponibilidade possuem estados e transições definidos? [Completude, Data Model §tenant; §tenantProvisioning] {auto}

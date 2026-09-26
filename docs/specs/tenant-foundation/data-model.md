@@ -20,8 +20,8 @@ O nome físico é derivado exclusivamente de `id`: `rinosone_{id}`. Ele não é 
 PROVISIONING -> ACTIVE
 PROVISIONING -> FAILED
 FAILED -> PROVISIONING       (nova tentativa autorizada)
-ACTIVE -> INACTIVE           (desabilitação pelo proprietário)
-INACTIVE -> ACTIVE           (reativação pelo proprietário)
+ACTIVE -> INACTIVE           (desabilitação por capability administrativa)
+INACTIVE -> ACTIVE           (reativação por capability administrativa)
 ```
 
 Somente `ACTIVE` pode estabelecer novo contexto operacional.
@@ -33,13 +33,12 @@ Somente `ACTIVE` pode estabelecer novo contexto operacional.
 | `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Identidade do vínculo. |
 | `idTenant` | BIGINT UNSIGNED | FK obrigatória para `tenant.id` | Tenant a que o vínculo pertence. |
 | `idUser` | BIGINT UNSIGNED | FK obrigatória para `user.id` | Pessoa associada. |
-| `role` | VARCHAR(16) | obrigatório, valor inicial `OWNER` | Reservado à evolução de acesso. |
 | `state` | VARCHAR(16) | obrigatório, valor inicial `ACTIVE` | Impede uso contextual quando não ativo. |
 | `lastContextSelectedAt` | TIMESTAMP | nulo, indexado com usuário e estado | Última seleção contextual concluída; ordena a lista pessoal de organizações, sem restaurar contexto em uma aba. |
 | `createdAt` | TIMESTAMP | obrigatório | Instante de associação. |
 | `updatedAt` | TIMESTAMP | obrigatório | Última alteração do vínculo. |
 
-Há unicidade em `(idTenant, idUser)`. Nesta fase somente a associação `OWNER` do criador é inserida; a estrutura não autoriza tela, convite ou operação de gestão de membros.
+Há unicidade em `(idTenant, idUser)`. A associação registra somente elegibilidade contextual; a autorização é concedida por roles separadas. Na criação, o criador recebe diretamente a role protegida `tenant.administrator`.
 
 ## Entidade: `tenantProvisioning`
 

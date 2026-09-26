@@ -32,7 +32,7 @@ database/migrations/tenant/  # executadas uma vez para cada rinosone_{tenantId}
 Cada schema conserva seu próprio controle de migrations. O worker de provisionamento cria o schema, aplica integralmente as migrations de tenant e confirma o histórico esperado antes de disponibilizá-lo para uso. O dispatch desse worker ocorre junto ao fluxo de criação do tenant.
 
 > [!IMPORTANT]
-> A fundação de tenants autoriza a criação do schema, sua preparação e a associação inicial do proprietário. Ela não
+> A fundação de tenants autoriza a criação do schema, sua preparação, a membership inicial e a atribuição administrativa inicial. Ela não
 > autoriza módulos de negócio, convites, gestão de membros, papéis detalhados ou relações entre dados de domínio.
 
 ## Configuração por Ambiente

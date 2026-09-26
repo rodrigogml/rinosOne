@@ -81,6 +81,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'file-storage' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/file-storage.log'),
+            'level' => env('FILE_STORAGE_LOG_LEVEL', 'warning'),
+            'days' => (int) env('FILE_STORAGE_LOG_RETENTION_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

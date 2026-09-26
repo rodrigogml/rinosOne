@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Infrastructure\FinancialInstitution\BcbFinancialInstitutionSource;
+use App\Infrastructure\FinancialInstitution\FinancialInstitutionSource;
 use App\Infrastructure\Session\DatabaseSessionHandler;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(FinancialInstitutionSource::class, BcbFinancialInstitutionSource::class);
     }
 
     /**

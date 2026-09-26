@@ -30,7 +30,7 @@ Erros de validação podem acrescentar `fields`, mapeando nomes `camelCase` a me
 | `tenants[].displayName` | string | Nome visível. |
 | `tenants[].state` | string | Estado atual de disponibilidade. |
 | `tenants[].selectable` | boolean | Indica se pode iniciar contexto operacional. |
-| `tenants[].role` | string | `OWNER` nesta fase. |
+| `tenants[].canManageAvailability` | boolean | Indica a capability de alterar a disponibilidade do tenant. |
 
 ## Criar tenant
 
@@ -72,7 +72,6 @@ O endpoint não grava o tenant ativo na sessão. Ele valida explicitamente a ass
 | `context.tenant.id` | integer | Tenant validado. |
 | `context.tenant.displayName` | string | Nome para identificação persistente na interface. |
 | `context.membership.id` | integer | Vínculo validado. |
-| `context.membership.role` | string | `OWNER` nesta fase. |
 | `context.availableModules` | array | Vazio enquanto não houver módulos aprovados. |
 
 ### Erros
@@ -108,7 +107,7 @@ O endpoint não grava o tenant ativo na sessão. Ele valida explicitamente a ass
 
 | Status | Código | Descrição |
 | --- | --- | --- |
-| 403 | `TENANT_OWNER_REQUIRED` | A pessoa não é proprietária do tenant. |
+| 403 | `TENANT_ADMINISTRATOR_REQUIRED` | A pessoa não possui a capability administrativa exigida. |
 | 404 | `TENANT_NOT_AVAILABLE` | Tenant não encontrado ou não associado. |
 | 409 | `TENANT_STATE_CONFLICT` | A transição solicitada não é válida. |
 

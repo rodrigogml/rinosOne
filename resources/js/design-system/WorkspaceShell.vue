@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
@@ -29,8 +30,9 @@ const windowArea = ref<HTMLElement | null>(null);
 const activeCategoryId = ref<string | null>(null);
 const megaMenuTop = ref('0px');
 const mobileNavigationVisible = ref(props.mobileNavigationOpen);
+const maintenanceVisible = ref(false);
 const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null }));
-const destinations = computed(() => availableWorkspaceDestinations(workspaceDestinations, context.value));
+const destinations = computed(() => availableWorkspaceDestinations(workspaceDestinations.filter((destination) => destination.id !== 'platform.maintenance' || maintenanceVisible.value), context.value));
 const activeCategory = computed(() => workspaceNavigationCategories.find((category) => category.id === activeCategoryId.value) ?? null);
 const activeDestinations = computed(() => destinations.value.filter((destination) => destination.category === activeCategoryId.value));
 
@@ -161,6 +163,7 @@ watch(() => destinations.value, () => {
     }
 });
 onMounted(() => {
+    void axios.get('/api/v1/platform/maintenance/routines').then((response) => { maintenanceVisible.value = Array.isArray(response.data?.routines) && response.data.routines.length > 0; }).catch(() => { maintenanceVisible.value = false; });
     document.addEventListener('pointerdown', onDocumentPointerDown);
     document.addEventListener('keydown', onDocumentKeydown);
     window.addEventListener('resize', updateMegaMenuPosition);

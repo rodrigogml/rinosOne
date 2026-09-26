@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Tenant\TenantMembershipRole;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Domain\Tenant\TenantProvisioningState;
 use App\Domain\Tenant\TenantState;
 use App\Jobs\ProvisionTenantSchema;
+use App\Models\AuthorizationRole;
 use App\Models\User;
 use App\Services\Tenant\TenantCreationService;
 use Illuminate\Database\QueryException;
@@ -18,7 +18,7 @@ class TenantCreationServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_creates_a_provisioning_tenant_and_its_only_owner_membership(): void
+    public function test_it_creates_a_provisioning_tenant_membership_and_administrator_assignment(): void
     {
         Queue::fake();
         $creator = User::factory()->create();
@@ -32,10 +32,14 @@ class TenantCreationServiceTest extends TestCase
         $this->assertDatabaseHas('tenantMembership', [
             'idTenant' => $result->tenant->id,
             'idUser' => $creator->id,
-            'role' => TenantMembershipRole::Owner->value,
             'state' => TenantMembershipState::Active->value,
         ]);
         $this->assertDatabaseCount('tenantMembership', 1);
+        $this->assertDatabaseHas('auth_role_assignment', [
+            'idUser' => $creator->id,
+            'idTenant' => $result->tenant->id,
+            'state' => 'ACTIVE',
+        ]);
         Queue::assertPushed(ProvisionTenantSchema::class, function (ProvisionTenantSchema $job) use ($result): bool {
             return $job->provisioningId === $result->provisioning->id;
         });
@@ -83,5 +87,22 @@ class TenantCreationServiceTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         app(TenantCreationService::class)->create(User::factory()->create(), 'Acme Serviços', 'not-a-uuid');
+    }
+
+    public function test_tenant_creation_does_not_assign_a_platform_role(): void
+    {
+        Queue::fake();
+        $creator = User::factory()->create();
+        $platformRole = AuthorizationRole::query()->firstOrCreate(
+            ['key' => 'platform.administrator'],
+            [
+                'displayName' => 'Platform administrator', 'description' => 'Platform.',
+                'scope' => 'PLATFORM', 'type' => 'SYSTEM', 'systemManaged' => true, 'active' => true,
+            ],
+        );
+
+        app(TenantCreationService::class)->create($creator, 'Acme Serviços', (string) str()->uuid());
+
+        $this->assertDatabaseMissing('auth_role_assignment', ['idRole' => $platformRole->id, 'idUser' => $creator->id]);
     }
 }

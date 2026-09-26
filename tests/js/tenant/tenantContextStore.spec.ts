@@ -15,7 +15,8 @@ const http = axios as unknown as {
 
 const tenantContext = {
     tenant: { id: 1, displayName: 'Oficina Rubi' },
-    membership: { id: 1, role: 'OWNER' },
+    membership: { id: 1 },
+    capabilities: { canManageAvailability: true },
     availableModules: [],
 };
 
@@ -61,6 +62,14 @@ describe('tenant context store', () => {
         await expect(store.select(2)).rejects.toBeInstanceOf(TenantResponseShapeError);
         expect(store.context).toEqual(tenantContext);
         expect(store.pendingTenantId).toBeNull();
+    });
+
+    it('rejects a context that omits its authorization capabilities', async () => {
+        const store = useTenantContextStore();
+        http.post.mockResolvedValueOnce({ data: { context: { tenant: tenantContext.tenant, membership: tenantContext.membership, availableModules: [] } } });
+
+        await expect(store.select(tenantContext.tenant.id)).rejects.toBeInstanceOf(TenantResponseShapeError);
+        expect(store.context).toBeNull();
     });
 
     it('clears only contextual workspace surfaces after a successful context change', async () => {

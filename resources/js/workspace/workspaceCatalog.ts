@@ -35,6 +35,7 @@ function demoDestination(id: string, category: string, titleKey: string, groupKe
 }
 
 export const workspaceDestinations: readonly WorkspaceDestination[] = [
+    { id: 'platform.maintenance', scope: 'personal', category: 'overview', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'settings', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'settings' }) },
     demoDestination('home', 'overview', 'Painel executivo', 'Acompanhamento'),
     demoDestination('agenda', 'overview', 'Agenda de trabalho', 'Acompanhamento', 'multiple'),
     demoDestination('cashflow', 'finance', 'Fluxo de caixa', 'Operações'),

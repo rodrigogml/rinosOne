@@ -26,7 +26,6 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('idTenant');
             $table->unsignedBigInteger('idUser');
-            $table->enum('role', ['OWNER']);
             $table->enum('state', ['ACTIVE', 'INACTIVE']);
             $table->timestamp('createdAt')->useCurrent();
             $table->timestamp('updatedAt')->useCurrent()->useCurrentOnUpdate();

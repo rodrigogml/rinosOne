@@ -5,7 +5,7 @@
 1. Autenticar uma pessoa com e-mail validado.
 2. Gerar uma chave de intenção e solicitar a criação de um tenant com nome válido.
 3. Consultar a lista de tenants até a preparação ser concluída.
-4. **Esperado**: há exatamente um tenant associado como `OWNER`; ele só fica selecionável depois de `ACTIVE`.
+4. **Esperado**: há uma membership ativa para o criador e uma atribuição direta de `tenant.administrator`; o tenant só fica selecionável depois de `ACTIVE`.
 
 ## Cenário 2: Reenvio idempotente
 
@@ -30,7 +30,7 @@
 
 ## Cenário 5: Desabilitação
 
-1. Com um tenant ativo, a pessoa proprietária solicita sua desabilitação.
+1. Com um tenant ativo, uma pessoa com a capability administrativa solicita sua desabilitação.
 2. Tenta iniciar novo contexto e executar uma nova ação contextual.
 3. **Esperado**: o tenant deixa de ser selecionável e novas ações são negadas, sem excluir sua identidade ou dados.
 

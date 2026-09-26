@@ -1,25 +1,20 @@
 export const TENANT_STATES = ['PROVISIONING', 'ACTIVE', 'INACTIVE', 'FAILED'] as const;
-export const TENANT_ROLES = ['OWNER'] as const;
-
 export type TenantState = (typeof TENANT_STATES)[number];
-export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export interface TenantSummary {
     id: number;
     displayName: string;
     state: TenantState;
     selectable: boolean;
-    role?: TenantRole;
+    canManageAvailability: boolean;
 }
 
-export interface TenantMembershipContext {
-    id: number;
-    role: TenantRole;
-}
+export interface TenantMembershipContext { id: number; }
 
 export interface TenantContext {
     tenant: Pick<TenantSummary, 'id' | 'displayName'>;
     membership: TenantMembershipContext;
+    capabilities: Pick<TenantSummary, 'canManageAvailability'>;
     availableModules: string[];
 }
 

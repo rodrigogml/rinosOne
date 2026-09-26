@@ -109,8 +109,8 @@
 **Surface**: SURF-WEB-ACCESS
 **Surface Type**: WEB
 **Change Type**: NEW
-**Purpose**: permitir criar uma organização, acompanhar sua preparação e habilitar ou desabilitar as organizações das quais a pessoa é proprietária inicial.
-**Actors and Permissions**: usuário autenticado e validado cria organizações; somente `OWNER` vê ações de disponibilidade do próprio tenant. Nesta fase toda organização listada pertence ao seu criador.
+**Purpose**: permitir criar uma organização, acompanhar sua preparação e alterar a disponibilidade de organizações quando a pessoa possuir a capability administrativa aplicável.
+**Actors and Permissions**: usuário autenticado e validado cria organizações; somente quem possui a capability de administrar disponibilidade vê essa ação. Nesta fase toda organização listada pertence ao seu criador.
 **Entry and Navigation**: abre pelo seletor; fecha de volta ao seletor, mantendo sua lista atualizada. Não cria uma página pessoal separada nem remove a área pessoal.
 **Content and Data**: título “Organizações”; formulário com campo obrigatório “Nome da organização” e ação “Criar organização”; lista de tenants próprios com avatar, nome, estado e ação compatível. Estados em preparação e falha são exibidos aqui, mas não no seletor operacional.
 **Actions and Behavior**: criar envia uma única intenção; o botão bloqueia reenvio enquanto processa. Após aceitação, mantém o nome e mostra o item em preparação. A pessoa pode fechar o diálogo enquanto a preparação continua. Em tenant ativo, “Desabilitar” pede confirmação clara; em inativo, “Habilitar” reativa sem criar novo tenant. Não há exclusão, edição de nome, convite ou administração de membros.

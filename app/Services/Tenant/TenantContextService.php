@@ -2,7 +2,6 @@
 
 namespace App\Services\Tenant;
 
-use App\Domain\Tenant\TenantMembershipRole;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Domain\Tenant\TenantState;
 use App\Models\TenantMembership;
@@ -22,19 +21,16 @@ class TenantContextService
     }
 
     /**
-     * @return array{tenant: array{id: string, displayName: string}, membership: array{id: string, role: string}, availableModules: array<never, never>}
+     * @param  array{canManageAvailability: bool}  $capabilities
+     * @return array{tenant: array{id: int, displayName: string}, membership: array{id: int}, capabilities: array{canManageAvailability: bool}, availableModules: array<never, never>}
      */
-    public function context(TenantMembership $membership): array
+    public function context(TenantMembership $membership, array $capabilities): array
     {
         return [
             'tenant' => ['id' => $membership->tenant->id, 'displayName' => $membership->tenant->displayName],
-            'membership' => ['id' => $membership->id, 'role' => $membership->role->value],
+            'membership' => ['id' => $membership->id],
+            'capabilities' => $capabilities,
             'availableModules' => [],
         ];
-    }
-
-    public function isOwner(TenantMembership $membership): bool
-    {
-        return $membership->role === TenantMembershipRole::Owner;
     }
 }

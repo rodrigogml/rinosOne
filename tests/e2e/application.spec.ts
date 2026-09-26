@@ -107,12 +107,12 @@ test('continues passwordless access from an e-mail link in a new tab', async ({ 
             : { contentType: 'application/json', status: 401, body: JSON.stringify({ code: 'UNAUTHENTICATED' }) });
     });
     await page.route('**/api/v1/auth/passwordless-sessions/link-confirmations', async (route) => {
-        expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-3', token: 'secret-token' });
+        expect(route.request().postDataJSON()).toEqual({ challengeId: 3, token: 'secret-token' });
         authenticated = true;
         await route.fulfill({ contentType: 'application/json', status: 201, body: JSON.stringify({ user }) });
     });
 
-    await page.goto('/access/passwordless?challengeId=challenge-3&token=secret-token');
+    await page.goto('/access/passwordless?challengeId=3&token=secret-token');
     await expect(page).toHaveURL(/\/access\/passwordless$/);
     await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
 });
@@ -125,12 +125,12 @@ test('confirms a registration link directly without requesting name or code agai
             : { contentType: 'application/json', status: 401, body: JSON.stringify({ code: 'UNAUTHENTICATED' }) });
     });
     await page.route('**/api/v1/auth/email-verifications/link-confirmations', async (route) => {
-        expect(route.request().postDataJSON()).toEqual({ challengeId: 'challenge-registration-link', token: 'secret-token' });
+        expect(route.request().postDataJSON()).toEqual({ challengeId: 4, token: 'secret-token' });
         authenticated = true;
         await route.fulfill({ contentType: 'application/json', status: 201, body: JSON.stringify({ user }) });
     });
 
-    await page.goto('/access/email-verification?challengeId=challenge-registration-link&token=secret-token');
+    await page.goto('/access/email-verification?challengeId=4&token=secret-token');
     await expect(page.getByRole('main', { name: 'Área de trabalho', exact: true })).toBeVisible();
     await expect(page.getByLabel('Código de confirmação')).toHaveCount(0);
     await expect(page.getByLabel('Nome')).toHaveCount(0);
@@ -179,8 +179,8 @@ test('keeps the authenticated shell controls keyboard accessible', async ({ page
 
 test('keeps tenant context isolated by tab and clears it after a page reload', async ({ page, context }) => {
     const tenants = [
-        { id: '01J00000000000000000000000', displayName: 'Ateliê Norte', state: 'ACTIVE', selectable: true, role: 'OWNER' },
-        { id: '01J00000000000000000000001', displayName: 'Ateliê Sul', state: 'ACTIVE', selectable: true, role: 'OWNER' },
+        { id: 1, displayName: 'Ateliê Norte', state: 'ACTIVE', selectable: true, canManageAvailability: true },
+        { id: 2, displayName: 'Ateliê Sul', state: 'ACTIVE', selectable: true, canManageAvailability: true },
     ];
 
     await context.route('**/api/v1/auth/session', async (route) => {
@@ -191,9 +191,10 @@ test('keeps tenant context isolated by tab and clears it after a page reload', a
     });
     await context.route('**/api/v1/tenants/*/contexts', async (route) => {
         if (route.request().method() === 'DELETE') { await route.fulfill({ status: 204 }); return; }
-        const tenant = tenants.find((candidate) => route.request().url().includes(candidate.id));
+        const tenantId = Number(new URL(route.request().url()).pathname.match(/\/tenants\/(\d+)\/contexts$/)?.[1]);
+        const tenant = tenants.find((candidate) => candidate.id === tenantId);
         await route.fulfill(tenant
-            ? { contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: `membership-${tenant.id}`, role: 'OWNER' }, availableModules: [] } }) }
+            ? { contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: tenant.id }, capabilities: { canManageAvailability: tenant.canManageAvailability }, availableModules: [] } }) }
             : { contentType: 'application/json', status: 404, body: JSON.stringify({ error: { code: 'TENANT_NOT_AVAILABLE', message: 'Unavailable' } }) });
     });
 
@@ -217,6 +218,44 @@ test('keeps tenant context isolated by tab and clears it after a page reload', a
     await secondTab.reload();
     await expect(secondTab.getByRole('button', { name: 'Selecionar organização' })).toBeVisible();
     await secondTab.close();
+});
+
+test('revalidates a revoked tenant capability before the next browser operation', async ({ page }) => {
+    let grantActive = true;
+    const tenant = { id: 1, displayName: 'Ateliê Norte', state: 'ACTIVE', selectable: true };
+
+    await mockAuthenticatedSession(page);
+    await page.route('**/api/v1/tenants', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tenants: [{ ...tenant, canManageAvailability: grantActive }] }) });
+    });
+    await page.route('**/api/v1/tenants/1/contexts', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: grantActive }, availableModules: [] } }) });
+    });
+    await page.route('**/api/v1/tenants/1/availability', async (route) => {
+        expect(route.request().method()).toBe('POST');
+        expect(route.request().postDataJSON()).toEqual({ state: 'INACTIVE' });
+        await route.fulfill(grantActive
+            ? { contentType: 'application/json', body: JSON.stringify({ tenant: { ...tenant, state: 'INACTIVE', selectable: false, canManageAvailability: true } }) }
+            : { contentType: 'application/json', status: 403, body: JSON.stringify({ error: { code: 'TENANT_ADMINISTRATOR_REQUIRED', message: 'Unavailable' } }) });
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Selecionar organização' }).click();
+    await page.getByRole('button', { name: tenant.displayName, exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Organização atual: Ateliê Norte' })).toBeVisible();
+
+    grantActive = false;
+    const result = await page.evaluate(async () => {
+        const response = await fetch('/api/v1/tenants/1/availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: 'INACTIVE' }),
+        });
+
+        return { status: response.status, body: await response.json() };
+    });
+
+    expect(result).toEqual({ status: 403, body: { error: { code: 'TENANT_ADMINISTRATOR_REQUIRED', message: 'Unavailable' } } });
 });
 
 test('anchors hover mega menus and demonstrates window, application and notification layers', async ({ page }) => {

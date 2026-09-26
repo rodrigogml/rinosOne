@@ -3,7 +3,6 @@
 namespace App\Services\Tenant;
 
 use App\Domain\Tenant\TenantCreationResult;
-use App\Domain\Tenant\TenantMembershipRole;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Domain\Tenant\TenantProvisioningState;
 use App\Domain\Tenant\TenantSecurityEvent;
@@ -13,6 +12,8 @@ use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\TenantProvisioning;
 use App\Models\User;
+use App\Services\Authorization\AuthorizationAuditLogger;
+use App\Services\Authorization\AuthorizationRoleAssignmentService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,7 +21,11 @@ use InvalidArgumentException;
 
 class TenantCreationService
 {
-    public function __construct(private readonly TenantSecurityEventLogger $securityEvents) {}
+    public function __construct(
+        private readonly TenantSecurityEventLogger $securityEvents,
+        private readonly AuthorizationRoleAssignmentService $roleAssignments,
+        private readonly AuthorizationAuditLogger $authorizationAudit,
+    ) {}
 
     public function create(User $creator, string $displayName, string $idempotencyKey): TenantCreationResult
     {
@@ -47,12 +52,22 @@ class TenantCreationService
                     'state' => TenantState::Provisioning,
                 ]);
 
-                TenantMembership::query()->create([
+                $membership = TenantMembership::query()->create([
                     'idTenant' => $tenant->id,
                     'idUser' => $creator->id,
-                    'role' => TenantMembershipRole::Owner,
                     'state' => TenantMembershipState::Active,
                 ]);
+                $this->authorizationAudit->record(
+                    'authorization.tenant_membership.activated',
+                    'tenant.membership',
+                    $membership->id,
+                    actorUserId: $creator->id,
+                    tenantId: $tenant->id,
+                    after: ['idUser' => $creator->id, 'state' => $membership->state->value],
+                    correlationId: $idempotencyKey,
+                );
+
+                $this->roleAssignments->assignTenantAdministrator($creator, $tenant->id, $creator->id, $idempotencyKey);
 
                 $provisioning = TenantProvisioning::query()->create([
                     'idTenant' => $tenant->id,

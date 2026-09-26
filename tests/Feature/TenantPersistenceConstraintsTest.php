@@ -35,7 +35,6 @@ class TenantPersistenceConstraintsTest extends TestCase
             'id' => 1,
             'idTenant' => 999999,
             'idUser' => 999999,
-            'role' => 'OWNER',
             'state' => 'ACTIVE',
         ]);
     }
