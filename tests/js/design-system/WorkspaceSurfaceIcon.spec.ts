@@ -23,4 +23,11 @@ describe('WorkspaceSurfaceIcon', () => {
         expect(wrapper.get('img').attributes()).toMatchObject({ src: '/assets/icons/rinoUser-tweek_48.png', alt: '' });
         expect(wrapper.get('img').classes()).toContain('workspace-surface-icon--lg');
     });
+
+    it('renders the approved raster asset for platform maintenance', () => {
+        const wrapper = mount(WorkspaceSurfaceIcon, { props: { name: 'maintenance' } });
+
+        expect(wrapper.find('svg').exists()).toBe(false);
+        expect(wrapper.get('img').attributes()).toMatchObject({ src: '/assets/icons/maintenance_32.png', alt: '' });
+    });
 });

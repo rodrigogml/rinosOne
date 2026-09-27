@@ -31,6 +31,7 @@ O diretório `etc/Icon Treatment/output/` é uma área local e descartável de r
 | `theme` | Abrir preferências visuais locais | Botão de aparência no menu pessoal |
 | `rinoUser-tweek` | Configurações da conta do usuário | Ação Configurações do usuário no menu pessoal |
 | `taskbar2` | Alternar janelas abertas | Botão de alternância de janelas na topbar responsiva |
+| `maintenance` | Central de Manutenções da plataforma | Menu, cabeçalho da janela e taskbar da Central de Manutenções |
 
 ## Acessibilidade e cor
 

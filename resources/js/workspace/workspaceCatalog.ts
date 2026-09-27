@@ -8,7 +8,7 @@ export const workspaceNavigationCategories: readonly WorkspaceNavigationCategory
 
 export const workspaceDestinations: readonly WorkspaceDestination[] = [
     { id: 'personal.workspace-folders', scope: 'personal', category: 'documents', groupKey: 'access.workspace.navigation.title', groupLabel: 'Consulta', titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments' }) },
-    { id: 'platform.maintenance', scope: 'personal', category: 'overview', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'settings', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'settings' }) },
+    { id: 'platform.maintenance', scope: 'personal', category: 'overview', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'maintenance', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'maintenance' }) },
     { id: 'tenant.authorization-administration', scope: 'tenant', category: 'security', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings' }) },
 ];
 

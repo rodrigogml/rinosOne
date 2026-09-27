@@ -17,6 +17,11 @@ const paths: Record<string, string[]> = {
     settings: ['M24 17.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z', 'M24 7v4M24 37v4M41 24h-4M11 24H7m29-12-2.8 2.8M14.8 33.2 12 36m24 0-2.8-2.8M14.8 14.8 12 12M31.4 16.6l2.8-2.8M16.6 31.4l-2.8 2.8m19.4 0-2.8-2.8M16.6 16.6l-2.8-2.8'],
 };
 const rasterSources: Record<string, Record<'sm' | 'md' | 'lg', string>> = {
+    maintenance: {
+        sm: '/assets/icons/maintenance_24.png',
+        md: '/assets/icons/maintenance_32.png',
+        lg: '/assets/icons/maintenance_48.png',
+    },
     'rinoUser-tweek': {
         sm: '/assets/icons/rinoUser-tweek_24.png',
         md: '/assets/icons/rinoUser-tweek_32.png',
