@@ -10,6 +10,16 @@ interface FileStorageV1
     public function storeManagedVersion(StoreManagedVersionRequest $request): StoredManagedVersion;
 
     /**
+     * Releases the active system-managed possession of a user binding without exposing it to generic workspace operations.
+     */
+    public function releaseManagedBinding(ReleaseManagedBindingRequest $request): void;
+
+    /**
+     * Returns the minimal active-state projection for a managed user binding without exposing its file identifiers.
+     */
+    public function managedBindingStatus(ManagedBindingStatusRequest $request): ManagedBindingStatus;
+
+    /**
      * Moves an authorized workspace possession to the private trash while it continues consuming quota.
      */
     public function trashPossession(FilePossessionOperationRequest $request): FilePossessionLifecycleResult;

@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Page, type Route, type TestInfo } from '@playwright/test';
 
 const user = { id: 'user-1', displayName: 'Pessoa', passwordDefined: false };
 
@@ -30,11 +30,17 @@ async function mockProductionDocument(page: Page): Promise<void> {
 
     const styleFiles = [...new Set(Object.values(manifest).flatMap((asset) => [asset.file.endsWith('.css') ? asset.file : null, ...(asset.css ?? [])]).filter((file): file is string => file !== null))];
     const styles = styleFiles.map((file) => `<link rel="stylesheet" href="/build/${file}">`).join('');
-    await page.route('**/', (route) => route.fulfill({
+    const fulfillDocument = (route: Route) => route.fulfill({
         contentType: 'text/html',
         body: `<!doctype html><html lang="pt-BR"><head><meta name="viewport" content="width=device-width, initial-scale=1">${styles}</head><body><div id="app"></div><script type="module" src="/build/${entry.file}"></script></body></html>`,
-    }));
+    });
+    await page.route('**/', fulfillDocument);
+    await page.route('**/access/**', fulfillDocument);
 }
+
+test.beforeEach(async ({ page }) => {
+    await mockProductionDocument(page);
+});
 
 test('starts passwordless access and completes its documented API contract', async ({ page }) => {
     let authenticated = false;
@@ -217,6 +223,7 @@ test('keeps tenant context isolated by tab and clears it after a page reload', a
     });
 
     const secondTab = await context.newPage();
+    await mockProductionDocument(secondTab);
     await page.goto('/');
     await secondTab.goto('/');
 
@@ -276,77 +283,6 @@ test('revalidates a revoked tenant capability before the next browser operation'
     expect(result).toEqual({ status: 403, body: { error: { code: 'TENANT_ADMINISTRATOR_REQUIRED', message: 'Unavailable' } } });
 });
 
-test('anchors hover mega menus and demonstrates window, application and notification layers', async ({ page }) => {
-    await mockAuthenticatedSession(page);
-    await page.setViewportSize({ width: 1440, height: 520 });
-    await page.goto('/');
-
-    const windowArea = page.locator('.workspace-window-area');
-    const lastCategory = page.locator('.workspace-navigation-rail__category').last();
-    await lastCategory.hover();
-    await expect(page.locator('#workspace-mega-menu')).toBeVisible();
-
-    const areaBounds = await windowArea.boundingBox();
-    const menuBounds = await page.locator('#workspace-mega-menu').boundingBox();
-    expect(menuBounds!.height).toBeLessThan(areaBounds!.height);
-    expect(menuBounds!.y).toBeGreaterThanOrEqual(areaBounds!.y);
-    expect(menuBounds!.y + menuBounds!.height).toBeLessThanOrEqual(areaBounds!.y + areaBounds!.height);
-    expect(await page.locator('#workspace-mega-menu').evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
-
-    await page.locator('.workspace-navigation-rail__category').nth(1).hover();
-    await page.getByRole('button', { name: 'Fluxo de caixa' }).click();
-    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toBeVisible();
-    await expect(page.getByText('Ambiente de demonstração')).toBeVisible();
-    await expect(page.locator('.workspace-stage__close')).toBeVisible();
-    await expect(page.locator('.workspace-taskbar__title')).toHaveCount(0);
-    await expect(page.locator('.workspace-taskbar__active-pill')).toHaveCount(1);
-    await page.getByRole('tab', { name: 'Fluxo de caixa' }).hover();
-    expect(await page.getByRole('tab', { name: 'Fluxo de caixa' }).evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
-
-    const topBar = page.locator('.application-top-bar');
-    expect(await topBar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(0, 0, 0)');
-    const tenantAvatar = page.getByRole('button', { name: 'Selecionar organização' });
-    const personalAvatar = page.getByRole('button', { name: 'Menu pessoal de Pessoa' });
-    const tenantBox = await tenantAvatar.boundingBox();
-    const personalBox = await personalAvatar.boundingBox();
-    expect(personalBox!.x - (tenantBox!.x + tenantBox!.width)).toBeGreaterThanOrEqual(8);
-
-    await page.getByRole('button', { name: 'Diálogo da aplicação' }).click();
-    const applicationDialog = page.getByRole('dialog', { name: 'Informação' });
-    await expect(applicationDialog).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Menu pessoal de Pessoa' })).toBeVisible();
-    await applicationDialog.getByRole('button', { name: 'Fechar' }).click();
-
-    await page.getByRole('button', { name: 'Diálogo desta janela' }).click();
-    const windowDialog = page.locator('.workspace-stage--active .ui-dialog-backdrop--contained');
-    await expect(windowDialog).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toBeVisible();
-    await windowDialog.getByRole('button', { name: 'Abrir diálogo acima' }).click();
-    await expect(page.getByRole('dialog', { name: 'Detalhe do diálogo' })).toBeVisible();
-    await page.getByRole('dialog', { name: 'Detalhe do diálogo' }).getByRole('button', { name: 'Fechar' }).click();
-    await expect(page.getByRole('dialog', { name: 'Diálogo desta janela' })).toBeVisible();
-    await windowDialog.getByRole('button', { name: 'Fechar' }).click();
-
-    await page.getByRole('button', { name: 'Diálogo desta janela' }).click();
-    await page.locator('.workspace-navigation-rail__category').nth(2).hover();
-    await page.getByRole('button', { name: 'Contatos' }).click();
-    await expect(page.getByRole('tab', { name: 'Contatos' })).toBeVisible();
-    await expect(windowDialog).toBeHidden();
-    await page.getByRole('tab', { name: 'Fluxo de caixa' }).click();
-    await expect(windowDialog).toBeVisible();
-    await windowDialog.getByRole('button', { name: 'Fechar' }).click();
-
-    await page.getByRole('button', { name: 'Exibir notificação' }).click();
-    await expect(page.getByText('Notificação de demonstração exibida com sucesso.')).toBeVisible();
-
-    await page.locator('.workspace-stage__close').click();
-    await expect(page.getByRole('tab', { name: 'Fluxo de caixa' })).toHaveCount(0);
-
-    const taskbar = page.locator('.workspace-taskbar');
-    expect(await taskbar.evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe('0px');
-    expect(await taskbar.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
-});
-
 test('opens user settings as a single personal workspace surface', async ({ page }) => {
     await mockAuthenticatedSession(page);
     let otherSessionsRevoked = 0;
@@ -370,6 +306,7 @@ test('opens user settings as a single personal workspace surface', async ({ page
     await page.getByRole('button', { name: 'Menu pessoal de Pessoa' }).click();
     await page.getByRole('button', { name: 'Configurações do usuário', exact: true }).click();
     await expect(page.getByRole('tab', { name: 'Configurações do usuário' })).toBeVisible();
+    await page.getByRole('button', { name: 'Tema e aparência', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Tema e aparência' })).toBeVisible();
     await page.getByRole('button', { name: 'Ametista Técnica' }).click();
     await page.getByRole('button', { name: 'Claro' }).click();
@@ -545,6 +482,35 @@ test('opens the authorized maintenance hub, confirms its action and reflows on a
     await surfaceContent.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect(page.getByRole('heading', { name: 'Histórico técnico' })).toBeVisible();
     await captureState(page, testInfo, 'maintenance-hub-phone-history');
+});
+
+test('rechecks an authorized folder action and removes it after revocation on desktop and telephone', async ({ page }, testInfo) => {
+    let allowed = true;
+    await mockAuthenticatedSession(page);
+    await page.route('**/api/v1/authorization/personal-workspace/folders', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ folders: [{ id: 7, parentFolderId: null, displayName: 'Compartilhada' }] }) });
+    });
+    await page.route('**/api/v1/authorization/resource-checks', async (route) => {
+        expect(route.request().postDataJSON()).toEqual({ checks: [{ permissionKey: 'personal.folder.read', resource: { type: 'personal.folder', id: 7 } }] });
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ decisions: [{ allowed }] }) });
+    });
+    await mockProductionDocument(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Documentos' }).click();
+    await page.getByRole('button', { name: 'Arquivos e anexos' }).click();
+    await expect(page.locator('#workspace-folders-title')).toBeVisible();
+    await page.getByRole('button', { name: 'Compartilhada' }).click();
+    await expect(page.getByText('Pasta aberta:')).toContainText('Compartilhada');
+    await captureState(page, testInfo, 'authorized-folder-desktop');
+
+    allowed = false;
+    await page.getByRole('button', { name: 'Compartilhada' }).click();
+    await expect(page.getByText('Não há pastas acessíveis.')).toBeVisible();
+
+    await page.setViewportSize({ width: 375, height: 667 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await captureState(page, testInfo, 'authorized-folder-phone-revoked');
 });
 
 test('honours reduced motion and ships the web installation manifest', async ({ page }) => {

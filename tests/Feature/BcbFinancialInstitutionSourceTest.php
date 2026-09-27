@@ -37,6 +37,18 @@ class BcbFinancialInstitutionSourceTest extends TestCase
         app(BcbFinancialInstitutionSource::class)->fetch(CarbonImmutable::parse('2026-09-25'));
     }
 
+    public function test_accepts_an_official_record_without_an_institution_classification(): void
+    {
+        $payload = $this->payload();
+        unset($payload['codigoTipoEntidadeSupervisionada'], $payload['descricaoTipoEntidadeSupervisionada']);
+        Http::fake(['*' => Http::response(['value' => [$payload]])]);
+
+        $record = app(BcbFinancialInstitutionSource::class)->fetch(CarbonImmutable::parse('2026-09-25'))[0];
+
+        $this->assertNull($record->institutionTypeCode);
+        $this->assertNull($record->institutionTypeName);
+    }
+
     /** @return array<string, string> */
     private function payload(string $identifier = 'BCB-EXAMPLE'): array
     {

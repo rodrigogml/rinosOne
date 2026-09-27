@@ -12,6 +12,9 @@ Esta feature adiciona relações explícitas entre pessoas ou grupos e recursos 
 
 O primeiro caso de uso é o compartilhamento de objetos pessoais, como pastas e arquivos. O mesmo mecanismo deve suportar depois recursos de tenant, como uma conta financeira específica, sem conceder acesso a outros objetos do tenant.
 
+> [!IMPORTANT]
+> Para pastas e arquivos, o recurso pertence ao workspace, não ao ator que o criou. O usuário titular de um workspace pessoal possui acesso-base à própria árvore. Uma relation amplia acesso de terceiros e pode ser herdada por descendentes; ela não altera o vínculo do recurso com o workspace nem cria propriedade individual.
+
 ## Cobertura de Interfaces
 
 | Superfície | Tipo | Atores | Cobertura | Comportamento funcional | Comportamento excluído ou adiado |
@@ -111,6 +114,7 @@ Como pessoa usuária, quero que uma lista de recursos mostre somente os itens ao
 - **FR-RA-013**: O sistema DEVE responder falhas de recurso de forma consistente por operação, sem confirmar a existência de recurso fora do contexto autorizado.
 - **FR-RA-014**: O sistema NÃO DEVE introduzir condições contextuais, limites numéricos, delegation ou editor visual genérico de relation nesta feature.
 - **FR-RA-015**: A feature NÃO DEVE depender de agendamento, credencial externa, rotação de chaves ou persistência de decisão na sessão.
+- **FR-RA-016**: O titular de um workspace pessoal DEVE possuir acesso-base à sua própria árvore; relations ampliam o acesso de terceiros e são herdadas somente para descendentes declarados pelo tipo de recurso.
 
 ### Entidades Principais
 

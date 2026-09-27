@@ -14,5 +14,6 @@ class StoreFileVersionMetadataRequest
         public readonly string $metadataKey,
         public readonly array $metadataValue,
         public readonly string $source,
+        public readonly ?int $principalUserId = null,
     ) {}
 }

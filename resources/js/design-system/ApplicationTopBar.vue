@@ -5,6 +5,7 @@ import UserMenu from './UserMenu.vue';
 
 defineProps<{
     displayName?: string | null;
+    avatarUrl?: string | null;
     brandLabel: string;
     mobileNavigationLabel: string;
     mobileTasksLabel: string;
@@ -31,7 +32,7 @@ const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openMobileTask
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M8 10h7m0 0-2-2m2 2-2 2M16 14H9m0 0 2-2m-2 2m2 2-2 2" /></svg>
             </button>
             <TenantSelector @changed="emit('openPersonalMenu')" />
-            <UserMenu :display-name="displayName" :avatar-label="avatarLabel" :menu-label="menuLabel" :settings-label="settingsLabel" :sign-out-label="signOutLabel" @sign-out="emit('signOut')" @open-settings="emit('openSettings')" @opened="emit('openPersonalMenu')" />
+            <UserMenu :display-name="displayName" :avatar-url="avatarUrl" :avatar-label="avatarLabel" :menu-label="menuLabel" :settings-label="settingsLabel" :sign-out-label="signOutLabel" @sign-out="emit('signOut')" @open-settings="emit('openSettings')" @opened="emit('openPersonalMenu')" />
         </div>
     </header>
 </template>

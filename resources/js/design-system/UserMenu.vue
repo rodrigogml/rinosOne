@@ -6,6 +6,7 @@ import VisualPreferencesPopover from './VisualPreferencesPopover.vue';
 
 defineProps<{
     displayName?: string | null;
+    avatarUrl?: string | null;
     avatarLabel: string;
     menuLabel: string;
     settingsLabel: string;
@@ -41,7 +42,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerD
 <template>
     <div ref="root" class="user-menu">
         <button ref="opener" class="user-menu__trigger" type="button" :aria-label="avatarLabel" :aria-expanded="open" aria-haspopup="dialog" @click="toggle">
-            <UserAvatar :display-name="displayName" :label="avatarLabel" />
+            <UserAvatar :display-name="displayName" :image-src="avatarUrl" :label="avatarLabel" />
         </button>
         <section v-if="open" ref="panel" class="user-menu__panel" role="dialog" :aria-label="menuLabel" tabindex="-1" @keydown="handleKeydown">
             <button class="user-menu__settings" type="button" @click="openSettings">{{ settingsLabel }}</button>

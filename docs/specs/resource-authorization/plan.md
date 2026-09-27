@@ -32,7 +32,7 @@ Laravel/PHP, MySQL e API JSON; workspace Vue 3 existente. Depende de fundação 
 
 1. `ResourceReference(type, id, scope, tenantId?)` é validada por um registry de adaptadores de recurso.
 2. `auth_resource_relation` armazena subject, tipo/referência lógica, relation, escopo, tenant, estado e auditoria; IDs usam BIGINT UNSIGNED quando persistidos.
-3. A decisão aplica contrato canônico: contexto, restriction, grant, relation exigida e allow.
+3. A decisão aplica contrato canônico: contexto, restriction, acesso-base do titular quando aplicável, grant/relation exigida e allow.
 4. Repositórios de módulos fornecem consultas de listagem autorizada; não há loop de decisão individual.
 
 ## Estrutura do Projeto

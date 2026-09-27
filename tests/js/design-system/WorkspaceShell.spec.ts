@@ -26,10 +26,10 @@ describe('WorkspaceShell', () => {
 
     it('opens the preview menu and closes it with Escape, returning focus to its trigger', async () => {
         const { wrapper } = mountShell();
-        const trigger = wrapper.get('.workspace-navigation-rail__category');
+        const trigger = wrapper.findAll('.workspace-navigation-rail__category')[1]!;
 
         await trigger.trigger('click');
-        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Painel executivo');
+        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos e anexos');
 
         await wrapper.get('.workspace-shell').trigger('keydown', { key: 'Escape' });
 
@@ -40,17 +40,17 @@ describe('WorkspaceShell', () => {
 
     it('opens a category preview on hover without requiring a click', async () => {
         const { wrapper } = mountShell();
-        const trigger = wrapper.findAll('.workspace-navigation-rail__category')[1]!;
+        const trigger = wrapper.findAll('.workspace-navigation-rail__category')[0]!;
 
         await trigger.trigger('mouseenter');
 
-        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Fluxo de caixa');
+        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Nenhuma área está disponível nesta etapa.');
         wrapper.unmount();
     });
 
     it('closes navigation when the person clicks the workspace stage', async () => {
         const { wrapper } = mountShell();
-        await wrapper.get('.workspace-navigation-rail__category').trigger('click');
+        await wrapper.findAll('.workspace-navigation-rail__category')[1]!.trigger('click');
 
         await wrapper.get('.workspace-stage').trigger('pointerdown');
 
@@ -60,7 +60,7 @@ describe('WorkspaceShell', () => {
 
     it('keeps the mega menu inside the window area instead of the content flow', async () => {
         const { wrapper } = mountShell();
-        await wrapper.get('.workspace-navigation-rail__category').trigger('click');
+        await wrapper.findAll('.workspace-navigation-rail__category')[1]!.trigger('click');
 
         expect(wrapper.find('.workspace-window-area > #workspace-mega-menu').exists()).toBe(true);
         expect(wrapper.get('.workspace-stage--empty').text()).toBe('');

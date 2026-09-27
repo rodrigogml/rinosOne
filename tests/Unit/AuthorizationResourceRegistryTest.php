@@ -40,6 +40,11 @@ class AuthorizationResourceRegistryTest extends TestCase
             {
                 return [$resource->id];
             }
+
+            public function isWorkspacePrincipal(ResourceReference $resource, int $userId): bool
+            {
+                return false;
+            }
         });
 
         $registry->assertAvailable(new ResourceReference('personal.folder', 7, AuthorizationScope::Personal));

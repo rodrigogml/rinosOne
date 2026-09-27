@@ -26,8 +26,8 @@ return new class extends Migration
             $table->string('acronym', 64)->nullable();
             $table->string('bcbStatusCode', 16);
             $table->string('bcbStatusName', 128);
-            $table->string('institutionTypeCode', 16);
-            $table->string('institutionTypeName', 128);
+            $table->string('institutionTypeCode', 16)->nullable();
+            $table->string('institutionTypeName', 128)->nullable();
             $table->boolean('activeForSelection');
             $table->dateTime('lastSynchronizedAt', 6);
             $table->dateTime('createdAt', 6)->useCurrent();

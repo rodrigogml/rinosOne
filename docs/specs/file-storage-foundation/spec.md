@@ -22,6 +22,9 @@ própria versão atual, ciclo de vida e consumo lógico.
 
 O primeiro consumidor será o Perfil. A extensão de drive cria somente a árvore lógica de pastas, sem navegador visual, álbum, interface de compartilhamento, thumbnail ou catálogo navegável de arquivos.
 
+> [!IMPORTANT]
+> Os nomes técnicos legados que contenham `possession`, `owner` ou “posse” identificam somente o vínculo de um arquivo com seu workspace e sua versão atual. Não existe proprietário individual de arquivo ou pasta, nem `createdBy` com efeito de autorização. A pasta e o arquivo pertencem exclusivamente ao workspace pessoal (`idUser`) ou organizacional (`idTenant`); o titular do workspace tem acesso-base, e terceiros recebem acesso somente por relations de autorização.
+
 ## Clarificações
 
 ### Sessão 2026-09-26

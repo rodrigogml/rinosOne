@@ -2,16 +2,17 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { WorkspaceSurface } from '../workspace/workspaceTypes';
-import WorkspaceDemoSurface from './WorkspaceDemoSurface.vue';
 import WorkspaceSettingsSurface from './WorkspaceSettingsSurface.vue';
 import MaintenanceHubSurface from '../maintenance/MaintenanceHubSurface.vue';
+import WorkspaceFoldersSurface from '../workspace/WorkspaceFoldersSurface.vue';
 import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
+import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 
 const props = defineProps<{
     surface: WorkspaceSurface | null;
     surfaces?: readonly WorkspaceSurface[];
 }>();
-const emit = defineEmits<{ openWorkspaceDialog: [surfaceId: string]; notify: [surfaceId: string]; requestClose: [surfaceId: string] }>();
+const emit = defineEmits<{ requestClose: [surfaceId: string]; profileUpdated: [profile: ProfilePresentation] }>();
 
 const { t } = useI18n();
 const mountedSurfaces = computed(() => props.surfaces?.length
@@ -36,9 +37,10 @@ const mountedSurfaces = computed(() => props.surfaces?.length
         <div class="workspace-stage__surface-content">
             <slot name="surface" :surface="surface">
                 <div v-for="mountedSurface in mountedSurfaces" :key="mountedSurface.id" v-show="mountedSurface.id === surface.id" class="workspace-stage__surface-instance">
-                    <WorkspaceSettingsSurface v-if="mountedSurface.destinationId === 'personal.settings'" :surface="mountedSurface" />
+                    <WorkspaceSettingsSurface v-if="mountedSurface.destinationId === 'personal.settings'" :surface="mountedSurface" @profile-updated="emit('profileUpdated', $event)" />
                     <MaintenanceHubSurface v-else-if="mountedSurface.destinationId === 'platform.maintenance'" />
-                    <WorkspaceDemoSurface v-else :surface="mountedSurface" @open-workspace-dialog="emit('openWorkspaceDialog', $event)" @notify="emit('notify', $event)" />
+                    <WorkspaceFoldersSurface v-else-if="mountedSurface.destinationId === 'personal.workspace-folders'" />
+                    <p v-else class="workspace-stage__empty-content">{{ t('access.workspace.surface.unavailableDescription') }}</p>
                 </div>
             </slot>
         </div>

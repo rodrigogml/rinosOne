@@ -53,6 +53,9 @@ class AuthorizationService
             }
 
             if (in_array($permissionKey, $adapter->supportedActions(), true)) {
+                if ($adapter->isWorkspacePrincipal($resource, $principal->id)) {
+                    return new AuthorizationDecision(true, 'WORKSPACE_PRINCIPAL_APPLIES');
+                }
                 $relationKey = str_ends_with($permissionKey, '.edit') ? 'EDIT' : 'READ';
                 $resourceIds = $adapter->inheritedResourceIds($resource);
                 $directRelationApplies = DB::table('auth_resource_relation')
@@ -66,25 +69,14 @@ class AuthorizationService
                     ->where('auth_resource_relation.active', true)
                     ->when($scope === AuthorizationScope::Tenant, fn ($query) => $query->where('auth_resource_relation.idTenant', $tenantId), fn ($query) => $query->whereNull('auth_resource_relation.idTenant'))
                     ->exists();
-                $groupRelationApplies = DB::table('auth_resource_relation')
-                    ->join('auth_resource_type', 'auth_resource_type.id', '=', 'auth_resource_relation.idResourceType')
-                    ->join('auth_group_user', 'auth_group_user.idGroup', '=', 'auth_resource_relation.idGroup')
-                    ->join('auth_group', 'auth_group.id', '=', 'auth_resource_relation.idGroup')
-                    ->where('auth_group_user.idUser', $principal->id)
-                    ->where('auth_group.active', true)
-                    ->where('auth_group.scope', $scope->value)
-                    ->where('auth_resource_type.key', $resource->type)
-                    ->where('auth_resource_type.active', true)
-                    ->whereIn('auth_resource_relation.resourceId', $resourceIds)
-                    ->where('auth_resource_relation.scope', $scope->value)
-                    ->where('auth_resource_relation.relationKey', $relationKey)
-                    ->where('auth_resource_relation.active', true)
-                    ->when($scope === AuthorizationScope::Tenant, function ($query) use ($tenantId): void {
-                        $query->where('auth_group.idTenant', $tenantId)->where('auth_resource_relation.idTenant', $tenantId);
-                    }, function ($query): void {
-                        $query->whereNull('auth_group.idTenant')->whereNull('auth_resource_relation.idTenant');
-                    })
-                    ->exists();
+                $groupRelationApplies = $this->groupResourceRelationApplies(
+                    $principal->id,
+                    $resource->type,
+                    $resourceIds,
+                    $relationKey,
+                    $scope,
+                    $tenantId,
+                );
                 $allowed = $directRelationApplies || $groupRelationApplies;
 
                 return new AuthorizationDecision($allowed, $allowed ? 'RESOURCE_RELATION_APPLIES' : 'RESOURCE_RELATION_REQUIRED');
@@ -169,6 +161,76 @@ class AuthorizationService
                     AND auth_permission.key = ?
                     AND auth_permission.scope = ?
                     {$assignmentTenantPredicate}
+            ) AS allowed",
+            $bindings,
+        );
+
+        return (bool) $result->allowed;
+    }
+
+    /**
+     * Applies resource relations granted to a direct group or any active ancestor group.
+     *
+     * @param  list<int>  $resourceIds
+     */
+    private function groupResourceRelationApplies(int $userId, string $resourceType, array $resourceIds, string $relationKey, AuthorizationScope $scope, ?int $tenantId): bool
+    {
+        if ($resourceIds === []) {
+            return false;
+        }
+
+        $isTenantScope = $scope === AuthorizationScope::Tenant;
+        $groupTenantPredicate = $isTenantScope ? 'AND direct_group.idTenant = ?' : 'AND direct_group.idTenant IS NULL';
+        $parentTenantPredicate = $isTenantScope ? 'AND parent_group.idTenant = ?' : 'AND parent_group.idTenant IS NULL';
+        $relationTenantPredicate = $isTenantScope ? 'AND auth_resource_relation.idTenant = ?' : 'AND auth_resource_relation.idTenant IS NULL';
+        $resourcePlaceholders = implode(', ', array_fill(0, count($resourceIds), '?'));
+        $bindings = [$userId, $scope->value];
+
+        if ($isTenantScope) {
+            $bindings[] = $tenantId;
+        }
+        $bindings[] = $scope->value;
+        if ($isTenantScope) {
+            $bindings[] = $tenantId;
+        }
+        $bindings[] = $resourceType;
+        array_push($bindings, ...$resourceIds);
+        $bindings[] = $scope->value;
+        $bindings[] = $relationKey;
+        if ($isTenantScope) {
+            $bindings[] = $tenantId;
+        }
+
+        $result = DB::selectOne(
+            "WITH RECURSIVE eligible_group(id) AS (
+                SELECT direct_group.id
+                FROM auth_group_user
+                INNER JOIN auth_group direct_group ON direct_group.id = auth_group_user.idGroup
+                WHERE auth_group_user.idUser = ?
+                    AND direct_group.active = 1
+                    AND direct_group.scope = ?
+                    {$groupTenantPredicate}
+                UNION
+                SELECT relation.idParentGroup
+                FROM auth_group_group relation
+                INNER JOIN eligible_group ON eligible_group.id = relation.idChildGroup
+                INNER JOIN auth_group parent_group ON parent_group.id = relation.idParentGroup
+                WHERE parent_group.active = 1
+                    AND parent_group.scope = ?
+                    {$parentTenantPredicate}
+            )
+            SELECT EXISTS(
+                SELECT 1
+                FROM eligible_group
+                INNER JOIN auth_resource_relation ON auth_resource_relation.idGroup = eligible_group.id
+                INNER JOIN auth_resource_type ON auth_resource_type.id = auth_resource_relation.idResourceType
+                WHERE auth_resource_type.key = ?
+                    AND auth_resource_type.active = 1
+                    AND auth_resource_relation.resourceId IN ({$resourcePlaceholders})
+                    AND auth_resource_relation.scope = ?
+                    AND auth_resource_relation.relationKey = ?
+                    AND auth_resource_relation.active = 1
+                    {$relationTenantPredicate}
             ) AS allowed",
             $bindings,
         );

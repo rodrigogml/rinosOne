@@ -8,6 +8,9 @@ use App\Contracts\FileStorage\V1\FilePossessionOperationRequest;
 use App\Contracts\FileStorage\V1\FilePrivateReadRequest;
 use App\Contracts\FileStorage\V1\FileStorageOwnerType;
 use App\Contracts\FileStorage\V1\FileStorageV1;
+use App\Contracts\FileStorage\V1\ManagedBindingStatus;
+use App\Contracts\FileStorage\V1\ManagedBindingStatusRequest;
+use App\Contracts\FileStorage\V1\ReleaseManagedBindingRequest;
 use App\Contracts\FileStorage\V1\ReserveFileVersionDerivativeRequest;
 use App\Contracts\FileStorage\V1\StoredManagedVersion;
 use App\Contracts\FileStorage\V1\StoreFileVersionMetadataRequest;
@@ -70,7 +73,12 @@ class FileStorageV1Service implements FileStorageV1
 
                 $this->replaceBinding($binding, $possession);
                 $this->releaseReplacedPossession($replacedPossession);
-                $this->adjustOwnerUsage($request, $ingestedContent->logicalSizeBytes, $replacedPossession?->logicalSizeBytes ?? 0);
+                $this->adjustOwnerUsage(
+                    $request->ownerType,
+                    $request->ownerId,
+                    $ingestedContent->logicalSizeBytes,
+                    $replacedPossession?->logicalSizeBytes ?? 0,
+                );
 
                 return new StoredManagedVersion(
                     fileId: $file->id,
@@ -86,6 +94,78 @@ class FileStorageV1Service implements FileStorageV1
         } catch (Throwable $exception) {
             throw new FileStorageVersionException('The managed file version could not be stored.', previous: $exception);
         }
+    }
+
+    /** {@inheritDoc} */
+    public function releaseManagedBinding(ReleaseManagedBindingRequest $request): void
+    {
+        if ($request->ownerId < 1 || trim($request->bindingKey) === '' || trim($request->purpose) === '') {
+            throw new FileStorageVersionException('The managed file binding release request is invalid.');
+        }
+
+        DB::transaction(function () use ($request): void {
+            $binding = StoredFileSystemBinding::query()
+                ->where('idUser', $request->ownerId)
+                ->where('bindingKey', $request->bindingKey)
+                ->lockForUpdate()
+                ->first();
+
+            if ($binding?->idFilePossession === null) {
+                return;
+            }
+
+            $possession = StoredFilePossession::query()
+                ->whereKey($binding->idFilePossession)
+                ->where('idUser', $request->ownerId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($possession === null
+                || $possession->storageArea !== 'SYSTEM_MANAGED'
+                || $possession->purpose !== $request->purpose
+                || $possession->state !== 'ACTIVE') {
+                throw new FileStorageVersionException('The managed file binding does not reference an active matching possession.');
+            }
+
+            $binding->forceFill(['idFilePossession' => null])->save();
+            $this->possessionLifecycleService->releaseSupersededSystemPossession($possession);
+            $this->adjustOwnerUsage(
+                FileStorageOwnerType::User,
+                $request->ownerId,
+                0,
+                $possession->logicalSizeBytes,
+            );
+        });
+    }
+
+    /** {@inheritDoc} */
+    public function managedBindingStatus(ManagedBindingStatusRequest $request): ManagedBindingStatus
+    {
+        if ($request->ownerId < 1 || trim($request->bindingKey) === '' || trim($request->purpose) === '') {
+            throw new FileStorageVersionException('The managed file binding status request is invalid.');
+        }
+
+        $binding = StoredFileSystemBinding::query()
+            ->where('idUser', $request->ownerId)
+            ->where('bindingKey', $request->bindingKey)
+            ->first();
+
+        if ($binding?->idFilePossession === null) {
+            return new ManagedBindingStatus(false, null);
+        }
+
+        $possession = StoredFilePossession::query()
+            ->whereKey($binding->idFilePossession)
+            ->where('idUser', $request->ownerId)
+            ->where('storageArea', 'SYSTEM_MANAGED')
+            ->where('purpose', $request->purpose)
+            ->where('state', 'ACTIVE')
+            ->first();
+
+        return new ManagedBindingStatus(
+            available: $possession !== null,
+            updatedAt: $possession?->createdAt?->toImmutable(),
+        );
     }
 
     /** {@inheritDoc} */
@@ -233,9 +313,9 @@ class FileStorageV1Service implements FileStorageV1
         $this->possessionLifecycleService->releaseSupersededSystemPossession($replacedPossession);
     }
 
-    private function adjustOwnerUsage(StoreManagedVersionRequest $request, int $newSizeBytes, int $replacedSizeBytes): void
+    private function adjustOwnerUsage(FileStorageOwnerType $ownerType, int $ownerId, int $newSizeBytes, int $replacedSizeBytes): void
     {
-        $usage = $this->resolveOwnerUsage($request);
+        $usage = $this->resolveOwnerUsage($ownerType, $ownerId);
         $delta = $newSizeBytes - $replacedSizeBytes;
 
         $usage->forceFill([
@@ -244,10 +324,10 @@ class FileStorageV1Service implements FileStorageV1
         ])->save();
     }
 
-    private function resolveOwnerUsage(StoreManagedVersionRequest $request): StoredFileOwnerUsage
+    private function resolveOwnerUsage(FileStorageOwnerType $ownerType, int $ownerId): StoredFileOwnerUsage
     {
-        $ownerColumn = $request->ownerType === FileStorageOwnerType::User ? 'idUser' : 'idTenant';
-        $usage = StoredFileOwnerUsage::query()->where($ownerColumn, $request->ownerId)->lockForUpdate()->first();
+        $ownerColumn = $ownerType === FileStorageOwnerType::User ? 'idUser' : 'idTenant';
+        $usage = StoredFileOwnerUsage::query()->where($ownerColumn, $ownerId)->lockForUpdate()->first();
 
         if ($usage !== null) {
             return $usage;
@@ -255,14 +335,14 @@ class FileStorageV1Service implements FileStorageV1
 
         try {
             return StoredFileOwnerUsage::query()->create([
-                $ownerColumn => $request->ownerId,
+                $ownerColumn => $ownerId,
                 'workspaceBytes' => 0,
                 'systemManagedBytes' => 0,
                 'trashBytes' => 0,
                 'totalBytes' => 0,
             ]);
         } catch (QueryException) {
-            return StoredFileOwnerUsage::query()->where($ownerColumn, $request->ownerId)->lockForUpdate()->firstOrFail();
+            return StoredFileOwnerUsage::query()->where($ownerColumn, $ownerId)->lockForUpdate()->firstOrFail();
         }
     }
 }

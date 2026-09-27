@@ -21,7 +21,7 @@ Ref: US-RA-001, FR-RA-002/008.
 
 - [x] 1.2.1 Registrar actions e relations de leitura/edição para pasta pessoal. <!-- WorkspaceFolderAuthorizationResourceAdapter em 2026-09-26 -->
 - [x] 1.2.2 Resolver proprietário/disponibilidade sem confiança no cliente. <!-- adaptadores pessoal e tenant consultam file_workspaceFolder em 2026-09-26 -->
-- [~] 1.2.3 Cobrir compartilhamento e isolamento entre pastas em testes de feature. <!-- isolamento de tipo, estado e tenant coberto; compartilhamento depende do motor de relation da fase 2 -->
+- [x] 1.2.3 Cobrir compartilhamento e isolamento entre pastas em testes de feature. <!-- compartilhamento, herança e isolamento entre pastas cobertos em AuthorizationResourceRelationServiceTest e ResourceAuthorizationApiTest em 2026-09-26 -->
 
 ## FASE 2 - Motor, Relation e Listagem
 
@@ -31,21 +31,21 @@ Ref: Spec FR-RA-005 a 009, contrato da fundação.
 
 - [x] 2.1.1 Exigir relation quando action/tipo a declarar necessária. <!-- AuthorizationService e adapters de pasta em 2026-09-26 -->
 - [x] 2.1.2 Aplicar restriction antes de grants/relation e negar por recurso inválido. <!-- fluxo canônico em AuthorizationService em 2026-09-26 -->
-- [~] 2.1.3 Testar revogação imediata, grupo e `tenant.administrator` sem bypass. <!-- grupo coberto; faltam cenários de revogação na decisão e administrador tenant -->
+- [x] 2.1.3 Testar revogação imediata, grupo e `tenant.administrator` sem bypass. <!-- revogação e grupos direto/hierárquico cobertos em AuthorizationResourceRelationServiceTest; restriction sobre tenant.administrator coberta em TenantApiTest -->
 
 ### 2.2 Expor lote e listagem autorizada `[C]`
 
 Ref: Spec FR-RA-010 a 013.
 
-- [ ] 2.2.1 Criar contrato/endpoint protegido para lista e check em lote.
-- [ ] 2.2.2 Implementar consulta agregada sem loop de decisão individual.
-- [ ] 2.2.3 Testar anti-IDOR, paginação e equivalência com check de referência.
+- [x] 2.2.1 Criar contrato/endpoint protegido para lista e check em lote. <!-- endpoints /authorization/resource-checks e /authorization/personal-workspace/folders em 2026-09-26 -->
+- [x] 2.2.2 Implementar consulta agregada sem loop de decisão individual. <!-- AuthorizedPersonalWorkspaceFolderQuery usa CTE para relation, grupo e descendência em 2026-09-26 -->
+- [x] 2.2.3 Testar anti-IDOR, paginação e equivalência com check de referência. <!-- ResourceAuthorizationApiTest valida isolamento, páginas e decisões de referência em 2026-09-26 -->
 
 ### 2.3 Auditar mudanças de relation `[A]`
 
 Ref: Spec FR-RA-002/009/012.
 
-- [~] 2.3.1 Criar serviços transacionais para criar, alterar, desativar e remover relation. <!-- criação, reativação, desativação e remoção implementadas; alteração explícita de relation pendente -->
+- [x] 2.3.1 Criar serviços transacionais para criar, alterar, desativar e remover relation. <!-- AuthorizationResourceRelationService cobre ciclo completo em 2026-09-26 -->
 - [x] 2.3.2 Registrar evento seguro na mesma transação. <!-- AuthorizationResourceRelationService em 2026-09-26 -->
 - [x] 2.3.3 Validar imutabilidade e ausência de conteúdo sensível em teste. <!-- snapshots de relation e audit event imutável cobertos em 2026-09-26 -->
 
@@ -55,25 +55,25 @@ Ref: Spec FR-RA-002/009/012.
 
 Ref: `interface-spec.md` INT-WEB-RESOURCE-001.
 
-- [ ] 3.1.1 Integrar lista real e parser TypeScript do contrato.
-- [ ] 3.1.2 Cobrir loading, vazio, erro, offline/stale e acesso negado.
-- [ ] 3.1.3 Verificar teclado, leitor de tela e viewport desktop/mobile.
+- [x] 3.1.1 Integrar lista real e parser TypeScript do contrato. <!-- WorkspaceFoldersSurface e authorizedFoldersApi validado em 2026-09-26 -->
+- [x] 3.1.2 Cobrir loading, vazio, erro, offline/stale e acesso negado. <!-- WorkspaceFoldersSurface.spec cobre lista, vazio, erro/stale, offline e negação segura em 2026-09-26 -->
+- [x] 3.1.3 Verificar teclado, leitor de tela e viewport desktop/mobile. <!-- landmarks, aria-live e controles nativos cobertos em WorkspaceFoldersSurface.spec; CSS possui breakpoint mobile de 700px em 2026-09-26 -->
 
 ### 3.2 Implementar INT-WEB-RESOURCE-002 `[A]`
 
 Ref: `interface-spec.md` INT-WEB-RESOURCE-002.
 
-- [ ] 3.2.1 Associar ações de detalhe à resposta protegida da API.
-- [ ] 3.2.2 Remover ação/item após negação ou revogação confirmada.
-- [ ] 3.2.3 Criar E2E com recurso real e inspeção visual responsiva.
+- [x] 3.2.1 Associar ações de detalhe à resposta protegida da API. <!-- WorkspaceFoldersSurface revalida personal.folder.read antes de abrir em 2026-09-26 -->
+- [x] 3.2.2 Remover ação/item após negação ou revogação confirmada. <!-- WorkspaceFoldersSurface remove o item e fecha o detalhe quando a decisão atual nega em 2026-09-26 -->
+- [x] 3.2.3 Criar E2E com recurso real e inspeção visual responsiva. <!-- application.spec valida ação permitida, revogação e ausência de overflow em telefone usando Chrome local em 2026-09-26 -->
 
 ### 3.3 Consolidar qualidade `[C]`
 
 Ref: Spec SC-RA-001 a 005, `quickstart.md`.
 
-- [ ] 3.3.1 Mapear FR/SC para testes unitários, feature, contrato e E2E.
-- [ ] 3.3.2 Executar formatação, testes backend/frontend, tipos e build.
-- [ ] 3.3.3 Verificar que core não possui FK para dados de tenant.
+- [x] 3.3.1 Mapear FR/SC para testes unitários, feature, contrato e E2E. <!-- matriz registrada em validation.md em 2026-09-26 -->
+- [x] 3.3.2 Executar formatação, testes backend/frontend, tipos e build. <!-- Pint global, testes PHP/JS, tipos, build e 19 cenários E2E aprovados em 2026-09-26 -->
+- [x] 3.3.3 Verificar que core não possui FK para dados de tenant. <!-- migration 000010 mantém resourceId lógico e FKs apenas para catálogos globais em 2026-09-26 -->
 
 ## Matriz de Dependências
 

@@ -9,14 +9,21 @@ use App\Contracts\FileStorage\V1\ReserveFileVersionDerivativeRequest;
 use App\Contracts\FileStorage\V1\StoredManagedVersion;
 use App\Contracts\FileStorage\V1\StoreFileVersionMetadataRequest;
 use App\Contracts\FileStorage\V1\StoreManagedVersionRequest;
+use App\Domain\Authorization\AuthorizationScope;
+use App\Domain\Authorization\Resource\ResourceReference;
 use App\Domain\FileStorage\Exception\FileStorageAccessException;
 use App\Domain\FileStorage\Exception\FileStorageDerivativeException;
+use App\Models\FileStorage\StoredFile;
 use App\Models\FileStorage\StoredFileContent;
+use App\Models\FileStorage\StoredFilePossession;
 use App\Models\FileStorage\StoredFileStorageBackend;
 use App\Models\FileStorage\StoredFileStorageObject;
+use App\Models\FileStorage\StoredFileVersion;
 use App\Models\FileStorage\StoredFileVersionDerivative;
 use App\Models\FileStorage\StoredFileVersionMetadata;
+use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\User;
+use App\Services\Authorization\Resource\AuthorizationResourceRelationService;
 use App\Services\FileStorage\FileStorageReconciliationService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -97,6 +104,76 @@ class FileStoragePrivateOperationsTest extends TestCase
         $this->assertSame($stored->versionId, $metadata->idFileVersion);
         $this->assertSame(['takenAt' => '2026-01-01T10:00:00Z', 'orientation' => 1], $metadata->metadataValue);
         $this->assertSame('EXTRACTED', $metadata->source);
+    }
+
+    public function test_a_collaborator_can_read_a_workspace_file_through_an_inherited_folder_relation(): void
+    {
+        $owner = User::factory()->create();
+        $collaborator = User::factory()->create();
+        $folder = WorkspaceFolder::query()->create(['idUser' => $owner->id, 'displayName' => 'Shared', 'state' => 'ACTIVE']);
+        $content = $this->content('shared-workspace-file');
+        $file = StoredFile::query()->create(['fileUuid' => (string) str()->uuid()]);
+        $version = StoredFileVersion::query()->create(['idFile' => $file->id, 'idFileContent' => $content->id, 'versionNumber' => 1]);
+        $possession = StoredFilePossession::query()->create([
+            'idFile' => $file->id,
+            'idCurrentFileVersion' => $version->id,
+            'idUser' => $owner->id,
+            'idWorkspaceFolder' => $folder->id,
+            'storageArea' => 'WORKSPACE',
+            'displayName' => 'shared.txt',
+            'state' => 'ACTIVE',
+            'logicalSizeBytes' => $content->logicalSizeBytes,
+        ]);
+        $backend = StoredFileStorageBackend::query()->create(['backendKey' => 'local-private', 'state' => 'ACTIVE']);
+        $object = StoredFileStorageObject::query()->create([
+            'idFileContent' => $content->id,
+            'idStorageBackend' => $backend->id,
+            'storedSha256' => $content->logicalSha256,
+            'storageKey' => 'objects/test/shared-workspace-file.blob',
+            'encoding' => 'IDENTITY',
+            'storedSizeBytes' => $content->logicalSizeBytes,
+            'state' => 'ACTIVE',
+        ]);
+        Storage::disk('file-private')->put($object->storageKey, 'shared-workspace-file');
+        app(AuthorizationResourceRelationService::class)->create(
+            new ResourceReference('personal.folder', $folder->id, AuthorizationScope::Personal),
+            'READ',
+            $collaborator,
+        );
+
+        $read = app(FileStorageV1::class)->authorizePrivateRead(new FilePrivateReadRequest(
+            ownerType: FileStorageOwnerType::User,
+            ownerId: $owner->id,
+            possessionId: $possession->id,
+            principalUserId: $collaborator->id,
+        ));
+        $stream = $read->openStream();
+
+        $this->assertSame('shared-workspace-file', stream_get_contents($stream));
+        fclose($stream);
+    }
+
+    public function test_a_collaborator_requires_edit_relation_to_write_workspace_file_metadata_and_loses_it_when_revoked(): void
+    {
+        $owner = User::factory()->create();
+        $collaborator = User::factory()->create();
+        $folder = WorkspaceFolder::query()->create(['idUser' => $owner->id, 'displayName' => 'Shared', 'state' => 'ACTIVE']);
+        $content = $this->content('shared-edit-file');
+        $file = StoredFile::query()->create(['fileUuid' => (string) str()->uuid()]);
+        $version = StoredFileVersion::query()->create(['idFile' => $file->id, 'idFileContent' => $content->id, 'versionNumber' => 1]);
+        $possession = StoredFilePossession::query()->create(['idFile' => $file->id, 'idCurrentFileVersion' => $version->id, 'idUser' => $owner->id, 'idWorkspaceFolder' => $folder->id, 'storageArea' => 'WORKSPACE', 'displayName' => 'editable.txt', 'state' => 'ACTIVE', 'logicalSizeBytes' => $content->logicalSizeBytes]);
+        $relations = app(AuthorizationResourceRelationService::class);
+        $resource = new ResourceReference('personal.folder', $folder->id, AuthorizationScope::Personal);
+        $edit = $relations->create($resource, 'EDIT', $collaborator);
+
+        app(FileStorageV1::class)->storeVersionMetadata(new StoreFileVersionMetadataRequest(
+            FileStorageOwnerType::User, $owner->id, $possession->id, 'collaborative-edit', ['approved' => true], 'DECLARED', $collaborator->id,
+        ));
+        $this->assertDatabaseHas('file_versionMetadata', ['idFileVersion' => $version->id, 'metadataKey' => 'collaborative-edit']);
+
+        $relations->deactivate($edit);
+        $this->expectException(FileStorageAccessException::class);
+        app(FileStorageV1::class)->authorizePrivateRead(new FilePrivateReadRequest(FileStorageOwnerType::User, $owner->id, $possession->id, null, $collaborator->id));
     }
 
     public function test_it_reserves_a_derivative_relation_without_generating_or_exposing_a_thumbnail(): void

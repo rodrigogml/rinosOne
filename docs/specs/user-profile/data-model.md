@@ -18,8 +18,10 @@ Não será criada tabela de perfil dedicada nesta fase.
 | Campo | Regra |
 | --- | --- |
 | `image` | JPEG, PNG ou WebP; máximo 10 MB. |
-| `cropX` | Número normalizado entre 0 e 1. |
-| `cropY` | Número normalizado entre 0 e 1. |
-| `cropSize` | Fração positiva, dentro dos limites da imagem. |
+| `cropX` | Número entre 0 e 1: canto esquerdo do recorte, normalizado pela largura integral da origem. |
+| `cropY` | Número entre 0 e 1: canto superior do recorte, normalizado pela altura integral da origem. |
+| `cropSize` | Número maior que zero e até 1: lado do quadrado como fração do menor lado da origem. |
 
 Antes de persistir, o servidor obtém largura e altura da origem. Se uma das dimensões for menor que 400 px, rejeita o pedido; não há upscale. O recorte final sempre é reamostrado para 400 × 400 px.
+
+O servidor calcula os pixels pela parte inteira inferior de cada valor normalizado e rejeita a solicitação quando o quadrado resultante ultrapassa qualquer borda da origem. O processamento devolve bytes finais e metadados do resultado; ele não preserva nem propaga o caminho da imagem transitória.

@@ -5,16 +5,24 @@ namespace App\Services\FileStorage;
 use App\Contracts\FileStorage\V1\AuthorizedPrivateFileRead;
 use App\Contracts\FileStorage\V1\FilePrivateReadRequest;
 use App\Contracts\FileStorage\V1\FileStorageOwnerType;
+use App\Domain\Authorization\AuthorizationScope;
+use App\Domain\Authorization\Resource\ResourceReference;
 use App\Domain\FileStorage\Exception\FileStorageAccessException;
 use App\Infrastructure\FileStorage\FileStorageBackendResolver;
 use App\Models\FileStorage\StoredFilePossession;
 use App\Models\FileStorage\StoredFileStorageObject;
 use App\Models\FileStorage\StoredFileSystemBinding;
+use App\Models\FileStorage\WorkspaceFolder;
+use App\Models\User;
+use App\Services\Authorization\AuthorizationService;
 use Throwable;
 
 class FileStoragePrivateReadService
 {
-    public function __construct(private readonly FileStorageBackendResolver $backendResolver) {}
+    public function __construct(
+        private readonly FileStorageBackendResolver $backendResolver,
+        private readonly AuthorizationService $authorization,
+    ) {}
 
     /**
      * Resolves a private byte stream for an owner without returning a backend, path, or public URL.
@@ -81,8 +89,38 @@ class FileStoragePrivateReadService
         if ($possession === null || ! in_array($possession->state, ['ACTIVE', 'TRASHED'], true)) {
             throw new FileStorageAccessException('The requested private file content is unavailable.');
         }
+        $this->assertPrincipalCanRead($request, $possession);
 
         return $possession;
+    }
+
+    private function assertPrincipalCanRead(FilePrivateReadRequest $request, StoredFilePossession $possession): void
+    {
+        if ($request->principalUserId === null) {
+            return;
+        }
+        $principal = User::query()->find($request->principalUserId);
+        if ($principal === null) {
+            throw new FileStorageAccessException('The requested private file content is unavailable.');
+        }
+        if ($possession->idUser === $principal->id) {
+            return;
+        }
+        $folder = $possession->idWorkspaceFolder === null ? null : WorkspaceFolder::query()->find($possession->idWorkspaceFolder);
+        if ($folder === null) {
+            throw new FileStorageAccessException('The requested private file content is unavailable.');
+        }
+        $scope = $folder->idUser === null ? AuthorizationScope::Tenant : AuthorizationScope::Personal;
+        $resource = new ResourceReference(
+            $scope === AuthorizationScope::Tenant ? 'tenant.folder' : 'personal.folder',
+            $folder->id,
+            $scope,
+            $folder->idTenant,
+        );
+        $decision = $this->authorization->check($principal, $resource->type.'.read', $scope, $folder->idTenant, $resource);
+        if (! $decision->allowed) {
+            throw new FileStorageAccessException('The requested private file content is unavailable.');
+        }
     }
 
     private function resolveDirectPossession(FilePrivateReadRequest $request): ?StoredFilePossession

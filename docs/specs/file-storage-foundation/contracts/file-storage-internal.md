@@ -2,6 +2,9 @@
 
 Este é o contrato `FileStorageV1`. Ele não expõe endpoints de drive nesta fase; define uma porta interna versionada a ser consumida por módulos autenticados, sem acoplamento a HTTP, Vue ou caminhos físicos.
 
+> [!IMPORTANT]
+> `file_filePossession` e os DTOs com `ownerType`/`ownerId` são nomes técnicos legados. No contrato funcional, representam a entrada de arquivo vinculada ao workspace indicado por `idUser` ou `idTenant`. Eles não registram propriedade autônoma de arquivo, pasta ou criador. Um ator com relation de escrita pode operar em uma pasta compartilhada, mas o arquivo resultante continua vinculado ao workspace original.
+
 ## Versionamento e compatibilidade
 
 - Implementações e consumidores usam a fronteira `FileStorageV1` e seus DTOs no namespace de contrato `V1`.
@@ -31,6 +34,14 @@ Retorna `possessionId`, `fileId`, `versionId`, `contentId`, `logicalSizeBytes` e
 - `releasePossession`: remove a propriedade de forma irreversível, atualiza consumo e agenda retenção de versões ou objetos sem referências.
 
 Os comandos recusam posses `SYSTEM_MANAGED` pela API genérica de drive; somente o recurso responsável pode liberá-las.
+
+## `releaseManagedBinding`
+
+Desfaz de forma idempotente uma binding de usuário para uma finalidade `SYSTEM_MANAGED` específica. A operação valida que a posse ativa pertence ao usuário e à finalidade solicitada, remove a referência da binding, libera a posse, atualiza o consumo lógico e inicia a retenção técnica no mesmo fluxo transacional. Não aceita tenant nem expõe a posse à API genérica de workspace.
+
+## `managedBindingStatus`
+
+Retorna apenas disponibilidade e data da posse ativa de uma binding gerenciada de usuário, validada pela finalidade indicada. Não retorna identificadores de arquivo, versão, posse, conteúdo, backend, chave ou caminho; consumidores usam essa projeção para compor interfaces privadas sem consultar tabelas de armazenamento.
 
 ## `authorizePrivateRead`
 

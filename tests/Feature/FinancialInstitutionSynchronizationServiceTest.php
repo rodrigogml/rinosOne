@@ -82,6 +82,18 @@ class FinancialInstitutionSynchronizationServiceTest extends TestCase
         $this->assertTrue(FinancialInstitution::sole()->activeForSelection);
     }
 
+    public function test_persists_an_official_record_without_an_institution_classification(): void
+    {
+        $record = $this->record(institutionTypeCode: null, institutionTypeName: null);
+
+        $result = (new FinancialInstitutionSynchronizationService($this->source([$record])))
+            ->synchronize(CarbonImmutable::parse('2026-09-25'));
+
+        $this->assertTrue($result->succeeded);
+        $this->assertNull(FinancialInstitution::sole()->institutionTypeCode);
+        $this->assertNull(FinancialInstitution::sole()->institutionTypeName);
+    }
+
     public function test_source_failure_preserves_catalog_and_returns_a_safe_logged_result(): void
     {
         (new FinancialInstitutionSynchronizationService($this->source([$this->record()])))
@@ -132,6 +144,8 @@ class FinancialInstitutionSynchronizationServiceTest extends TestCase
         string $statusCode = '3',
         string $statusName = 'Autorizada em Atividade',
         string $reducedName = 'Instituição exemplo',
+        ?string $institutionTypeCode = '1',
+        ?string $institutionTypeName = 'Banco',
     ): FinancialInstitutionSourceRecord {
         return new FinancialInstitutionSourceRecord(
             bcbEntityIdentifier: 'BCB-EXAMPLE',
@@ -144,8 +158,8 @@ class FinancialInstitutionSynchronizationServiceTest extends TestCase
             acronym: 'IESA',
             bcbStatusCode: $statusCode,
             bcbStatusName: $statusName,
-            institutionTypeCode: '1',
-            institutionTypeName: 'Banco',
+            institutionTypeCode: $institutionTypeCode,
+            institutionTypeName: $institutionTypeName,
         );
     }
 }

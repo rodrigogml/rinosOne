@@ -16,4 +16,6 @@ interface AuthorizationResourceAdapter
 
     /** @return list<int> IDs do recurso avaliado e de seus ancestrais autorizáveis. */
     public function inheritedResourceIds(ResourceReference $resource): array;
+
+    public function isWorkspacePrincipal(ResourceReference $resource, int $userId): bool;
 }

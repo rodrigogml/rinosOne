@@ -36,5 +36,4 @@ class Tenant extends Model
     {
         return $this->hasOne(TenantProvisioning::class, 'idTenant');
     }
-
 }

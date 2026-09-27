@@ -7,6 +7,7 @@ use App\Domain\Authorization\Resource\ResourceReference;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Models\AuthorizationGroup;
 use App\Models\AuthorizationResourceRelation;
+use App\Models\AuthorizationResourceType;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationAuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,25 @@ class AuthorizationResourceRelationService
             $before = $this->snapshot($relation);
             $relation->forceFill(['active' => false])->save();
             $this->audit->record('authorization.resource_relation.deactivated', 'authorization.resource_relation', $relation->id, actorUserId: $actorUserId, tenantId: $relation->idTenant, before: $before, after: $this->snapshot($relation), correlationId: $correlationId);
+        });
+    }
+
+    public function updateRelationKey(AuthorizationResourceRelation $relation, string $relationKey, ?int $actorUserId = null, ?string $correlationId = null): void
+    {
+        DB::transaction(function () use ($relation, $relationKey, $actorUserId, $correlationId): void {
+            $relation = AuthorizationResourceRelation::query()->lockForUpdate()->findOrFail($relation->id);
+            $type = AuthorizationResourceType::query()->findOrFail($relation->idResourceType);
+            $resource = new ResourceReference($type->key, $relation->resourceId, AuthorizationScope::from($relation->scope), $relation->idTenant);
+            $adapter = $this->registry->adapterFor($resource);
+            if (! in_array($relationKey, $adapter->supportedRelations(), true)) {
+                throw new LogicException('The resource relation is not supported by this resource type.');
+            }
+            if ($relation->relationKey === $relationKey) {
+                return;
+            }
+            $before = $this->snapshot($relation);
+            $relation->forceFill(['relationKey' => $relationKey])->save();
+            $this->audit->record('authorization.resource_relation.updated', 'authorization.resource_relation', $relation->id, actorUserId: $actorUserId, tenantId: $relation->idTenant, before: $before, after: $this->snapshot($relation), correlationId: $correlationId);
         });
     }
 

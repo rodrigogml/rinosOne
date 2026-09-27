@@ -16,10 +16,17 @@ final class BcbFinancialInstitutionSource implements FinancialInstitutionSource
         $records = [];
 
         do {
-            $response = $this->http
+            $request = $this->http
                 ->acceptJson()
                 ->timeout(config('financial-institutions.bcb.timeout_seconds'))
-                ->retry(2, 250)
+                ->retry(2, 250);
+            $caBundle = $this->caBundle();
+
+            if (is_string($caBundle) && $caBundle !== '') {
+                $request = $request->withOptions(['verify' => $caBundle]);
+            }
+
+            $response = $request
                 ->get($url)
                 ->throw();
 
@@ -49,5 +56,18 @@ final class BcbFinancialInstitutionSource implements FinancialInstitutionSource
         $baseUrl = rtrim((string) config('financial-institutions.bcb.base_url'), '/');
 
         return $baseUrl.'/EntidadesSupervisionadas(dataBase=\''.$referenceDate->format('m-d-Y').'\')?$format=json';
+    }
+
+    private function caBundle(): ?string
+    {
+        $configuredBundle = config('financial-institutions.bcb.ca_bundle');
+
+        if (is_string($configuredBundle) && $configuredBundle !== '') {
+            return $configuredBundle;
+        }
+
+        $localBundle = storage_path('app/certificates/cacert.pem');
+
+        return is_file($localBundle) ? $localBundle : null;
     }
 }

@@ -61,4 +61,10 @@ class WorkspaceFolderAuthorizationResourceAdapter implements AuthorizationResour
 
         return $ids;
     }
+
+    public function isWorkspacePrincipal(ResourceReference $resource, int $userId): bool
+    {
+        return $this->scope === AuthorizationScope::Personal
+            && WorkspaceFolder::query()->whereKey($resource->id)->where('idUser', $userId)->where('state', 'ACTIVE')->exists();
+    }
 }

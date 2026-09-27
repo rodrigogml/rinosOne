@@ -37,9 +37,9 @@ Retorna o perfil atualizado. O nome validado atualiza de imediato os componentes
 | Campo | Tipo |
 | --- | --- |
 | `image` | arquivo de imagem aceito |
-| `cropX` | decimal normalizado |
-| `cropY` | decimal normalizado |
-| `cropSize` | decimal normalizado |
+| `cropX` | decimal de 0 a 1 para o canto esquerdo, normalizado pela largura da origem |
+| `cropY` | decimal de 0 a 1 para o canto superior, normalizado pela altura da origem |
+| `cropSize` | decimal maior que zero e até 1 para o lado quadrado, relativo ao menor lado da origem |
 
 Resposta `201 Created` com a mesma representação de perfil. O servidor produz e guarda apenas o arquivo final de 400 × 400 px.
 

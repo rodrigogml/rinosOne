@@ -19,8 +19,8 @@ Todos os campos abaixo pertencem ao schema global `rinosone`. A tabela não poss
 | `acronym` | VARCHAR(64) | opcional | Sigla publicada pelo BCB. |
 | `bcbStatusCode` | VARCHAR(16) | obrigatório | Código oficial da situação de funcionamento. |
 | `bcbStatusName` | VARCHAR(128) | obrigatório | Descrição oficial da situação. |
-| `institutionTypeCode` | VARCHAR(16) | obrigatório | Código oficial do segmento da entidade. |
-| `institutionTypeName` | VARCHAR(128) | obrigatório | Descrição oficial do segmento. |
+| `institutionTypeCode` | VARCHAR(16) | opcional | Código oficial do segmento, quando publicado pelo BCB. |
+| `institutionTypeName` | VARCHAR(128) | opcional | Descrição oficial do segmento, quando publicada pelo BCB. |
 | `activeForSelection` | BOOLEAN | obrigatório | Derivado exclusivamente de `bcbStatusCode`; verdadeiro somente para a situação oficial autorizada em atividade. |
 | `lastSynchronizedAt` | DATETIME(6) | obrigatório | Momento da última atualização bem-sucedida do registro. |
 | `createdAt` | DATETIME(6) | obrigatório | Criação local. |

@@ -33,13 +33,17 @@ class AuthorizationResourceRelationServiceTest extends TestCase
         $this->assertDatabaseHas('auth_resource_relation', ['id' => $relation->id, 'idUser' => $collaborator->id, 'relationKey' => 'READ', 'active' => true]);
         $this->assertDatabaseHas('auth_audit_event', ['operation' => 'authorization.resource_relation.activated', 'targetId' => $relation->id, 'correlationId' => 'share-1']);
 
+        $service->updateRelationKey($relation, 'EDIT', $owner->id);
+        $this->assertSame('EDIT', $relation->fresh()->relationKey);
+        $this->assertDatabaseHas('auth_audit_event', ['operation' => 'authorization.resource_relation.updated', 'targetId' => $relation->id]);
+
         $service->deactivate($relation, $owner->id);
         $this->assertFalse($relation->fresh()->active);
         $this->assertDatabaseHas('auth_audit_event', ['operation' => 'authorization.resource_relation.deactivated', 'targetId' => $relation->id]);
 
         $service->remove($relation, $owner->id);
         $this->assertDatabaseMissing('auth_resource_relation', ['id' => $relation->id]);
-        $this->assertSame(3, AuthorizationAuditEvent::query()->count());
+        $this->assertSame(4, AuthorizationAuditEvent::query()->count());
     }
 
     public function test_it_rejects_an_unsupported_relation_without_persisting_it(): void
@@ -120,5 +124,45 @@ class AuthorizationResourceRelationServiceTest extends TestCase
 
         $this->assertTrue($decision->allowed);
         $this->assertSame('RESOURCE_RELATION_APPLIES', $decision->reasonCode);
+    }
+
+    public function test_a_relation_assigned_to_an_ancestor_group_applies_to_a_member_of_its_child_group(): void
+    {
+        $owner = User::factory()->create();
+        $collaborator = User::factory()->create();
+        $folder = WorkspaceFolder::query()->create(['idUser' => $owner->id, 'displayName' => 'Documents', 'state' => 'ACTIVE']);
+        $parentGroup = AuthorizationGroup::query()->create(['displayName' => 'Organization', 'scope' => AuthorizationScope::Personal->value, 'active' => true]);
+        $childGroup = AuthorizationGroup::query()->create(['displayName' => 'Collaborators', 'scope' => AuthorizationScope::Personal->value, 'active' => true]);
+        DB::table('auth_group_user')->insert(['idGroup' => $childGroup->id, 'idUser' => $collaborator->id]);
+        DB::table('auth_group_group')->insert(['idParentGroup' => $parentGroup->id, 'idChildGroup' => $childGroup->id]);
+        app(AuthorizationResourceRelationService::class)->create(
+            new ResourceReference('personal.folder', $folder->id, AuthorizationScope::Personal),
+            'READ',
+            group: $parentGroup,
+        );
+
+        $decision = app(AuthorizationService::class)->check(
+            $collaborator,
+            'personal.folder.read',
+            AuthorizationScope::Personal,
+            resource: new ResourceReference('personal.folder', $folder->id, AuthorizationScope::Personal),
+        );
+
+        $this->assertTrue($decision->allowed);
+    }
+
+    public function test_workspace_principal_has_baseline_access_without_a_relation(): void
+    {
+        $owner = User::factory()->create();
+        $folder = WorkspaceFolder::query()->create(['idUser' => $owner->id, 'displayName' => 'Documents', 'state' => 'ACTIVE']);
+        $decision = app(AuthorizationService::class)->check(
+            $owner,
+            'personal.folder.edit',
+            AuthorizationScope::Personal,
+            resource: new ResourceReference('personal.folder', $folder->id, AuthorizationScope::Personal),
+        );
+
+        $this->assertTrue($decision->allowed);
+        $this->assertSame('WORKSPACE_PRINCIPAL_APPLIES', $decision->reasonCode);
     }
 }

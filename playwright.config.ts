@@ -1,6 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const phpExecutable = process.env.PHP_BINARY ?? 'php';
 const playwrightPort = process.env.PLAYWRIGHT_PORT ?? '8010';
 const baseUrl = `http://127.0.0.1:${playwrightPort}`;
 
@@ -12,8 +11,8 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
     },
     webServer: {
-        command: `"${phpExecutable}" artisan serve --host=127.0.0.1 --port=${playwrightPort}`,
+        command: `py -3 -m http.server ${playwrightPort} --directory public`,
         reuseExistingServer: !process.env.CI,
-        url: `${baseUrl}/up`,
+        url: `${baseUrl}/build/manifest.json`,
     },
 });

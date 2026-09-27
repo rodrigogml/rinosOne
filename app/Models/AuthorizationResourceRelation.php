@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 
 class AuthorizationResourceRelation extends Model
 {
@@ -17,5 +18,14 @@ class AuthorizationResourceRelation extends Model
     protected function casts(): array
     {
         return ['active' => 'boolean'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $relation): void {
+            if (($relation->idUser === null) === ($relation->idGroup === null)) {
+                throw new LogicException('A resource relation must have exactly one subject.');
+            }
+        });
     }
 }

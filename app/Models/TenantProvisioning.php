@@ -42,5 +42,4 @@ class TenantProvisioning extends Model
     {
         return $this->belongsTo(User::class, 'idRequestedByUser');
     }
-
 }

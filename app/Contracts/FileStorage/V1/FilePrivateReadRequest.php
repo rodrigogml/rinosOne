@@ -9,5 +9,6 @@ class FilePrivateReadRequest
         public readonly int $ownerId,
         public readonly ?int $possessionId = null,
         public readonly ?string $bindingKey = null,
+        public readonly ?int $principalUserId = null,
     ) {}
 }

@@ -126,15 +126,15 @@ Ref: [spec.md](spec.md) FR-WS-001, FR-WS-003, FR-WS-008 e FR-WS-011; [interface-
 
 ---
 
-## FASE 6 - Validação visual com fixtures `[x]`
+## FASE 6 - Validação visual do shell `[x]`
 
 Ref: [spec.md](spec.md) FR-WS-003, FR-WS-006, FR-WS-008 e FR-WS-011; [interface-spec.md](interface-spec.md) INT-WEB-WORKSPACE-002 e 003.
 
 - [x] 6.1 Fazer o mega menu abrir por hover, manter clique/teclado e calcular o posicionamento vertical a partir do item acionador, respeitando os limites do canvas.
 - [x] 6.2 Aplicar altura intrínseca e remover a rolagem própria do mega menu.
-- [x] 6.3 Criar fixtures temporárias de navegação e janelas para testar categorias, grupos, instância única/múltipla e taskbar, sem criar módulos ou dados reais.
-- [x] 6.4 Criar controles de demonstração para notificação, diálogo da área de trabalho e diálogo local de janela.
-- [x] 6.5 Validar hover, posicionamento, limites verticais, diálogos e taskbar em navegador e nos testes de componente. <!-- Playwright: cenário de hover, limites do canvas e dois escopos de diálogo aprovado; regressões desktop e tablet aprovadas. -->
+- [x] 6.3 Validar categorias e destinos reais do catálogo, respeitando a elegibilidade do usuário e a política de instância de cada módulo.
+- [x] 6.4 Remover destinos, superfícies e controles de demonstração depois da disponibilidade dos módulos reais.
+- [x] 6.5 Validar hover, posicionamento, limites verticais e taskbar em navegador e nos testes de componente. <!-- Vitest: cobertura de componentes aprovada; Vite build: aprovado. -->
 
 ---
 

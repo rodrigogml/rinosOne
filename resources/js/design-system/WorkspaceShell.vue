@@ -15,12 +15,13 @@ import WorkspaceOverlayHost from './WorkspaceOverlayHost.vue';
 import WorkspaceStage from './WorkspaceStage.vue';
 import WorkspaceTaskbar from './WorkspaceTaskbar.vue';
 import WorkspaceMobileTaskPanel from './WorkspaceMobileTaskPanel.vue';
+import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 
 const props = withDefaults(defineProps<{
     mobileNavigationOpen?: boolean;
     brandLabel?: string;
 }>(), { mobileNavigationOpen: false, brandLabel: '' });
-const emit = defineEmits<{ 'update:mobileNavigationOpen': [value: boolean] }>();
+const emit = defineEmits<{ 'update:mobileNavigationOpen': [value: boolean]; profileUpdated: [profile: ProfilePresentation] }>();
 
 const { t } = useI18n();
 const tenantContext = useTenantContextStore();
@@ -93,14 +94,6 @@ function requestCloseSurface(surfaceId: string): boolean {
     if (result === 'closed' && !workspace.surfaces.length) workspace.menuCollapsed = false;
     if (!workspace.surfaces.length) workspace.mobileTaskPanelOpen = false;
     return result !== 'not-found';
-}
-
-function openWorkspaceDialog(surfaceId: string): void {
-    workspace.openDialog({ kind: 'information', closePolicy: 'dismissible', originSurfaceId: surfaceId });
-}
-
-function notify(surfaceId: string): void {
-    workspace.enqueueNotification({ kind: 'success', messageKey: 'access.workspace.notification.demoReady' });
 }
 
 function activateAdjacentSurface(direction: -1 | 1): boolean {
@@ -197,7 +190,7 @@ onBeforeUnmount(() => {
                         :position-top="megaMenuTop"
                         @open-destination="openDestination"
                     />
-                    <WorkspaceStage :surface="workspace.activeSurface" :surfaces="workspace.surfaces" @open-workspace-dialog="openWorkspaceDialog" @notify="notify" @request-close="requestCloseSurface" />
+                    <WorkspaceStage :surface="workspace.activeSurface" :surfaces="workspace.surfaces" @request-close="requestCloseSurface" @profile-updated="emit('profileUpdated', $event)" />
                 </div>
                 <WorkspaceTaskbar
                     :surfaces="workspace.surfaces"

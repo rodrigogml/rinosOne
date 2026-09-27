@@ -124,7 +124,7 @@ Ref: resource-authorization FR-RA-002/004/009; Plan §Drive e pastas lógicas.
 
 - [x] 5.3.1 Registrar adaptadores `personal.folder` e `tenant.folder` no registry de recursos. <!-- WorkspaceFolderAuthorizationResourceAdapter em 2026-09-26 -->
 - [x] 5.3.2 Validar existência, proprietário e herança de relation para descendentes sem confiar no cliente. <!-- adapter e decisão canônica validam recurso e herança em 2026-09-26 -->
-- [x] 5.3.3 Cobrir compartilhamento de leitura/escrita, herança e revogação em testes de integração. <!-- AuthorizationResourceRelationServiceTest cobre READ/EDIT herdados e revogação independente em 2026-09-26 -->
+- [~] 5.3.3 Cobrir compartilhamento de leitura/escrita, herança e revogação em testes de integração. <!-- relações de pasta cobertas; leitura e escrita de posses de arquivo compartilhadas ainda requerem cobertura integrada -->
 
 ---
 

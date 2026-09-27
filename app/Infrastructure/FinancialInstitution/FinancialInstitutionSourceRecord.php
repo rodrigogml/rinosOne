@@ -18,8 +18,8 @@ final readonly class FinancialInstitutionSourceRecord
         public ?string $acronym,
         public string $bcbStatusCode,
         public string $bcbStatusName,
-        public string $institutionTypeCode,
-        public string $institutionTypeName,
+        public ?string $institutionTypeCode,
+        public ?string $institutionTypeName,
     ) {}
 
     /**
@@ -40,8 +40,8 @@ final readonly class FinancialInstitutionSourceRecord
             acronym: self::optional($payload, 'siglaDaPessoaJuridica'),
             bcbStatusCode: self::required($payload, 'codigoTipoSituacaoPessoaJuridica'),
             bcbStatusName: self::required($payload, 'descricaoTipoSituacaoPessoaJuridica'),
-            institutionTypeCode: self::required($payload, 'codigoTipoEntidadeSupervisionada'),
-            institutionTypeName: self::required($payload, 'descricaoTipoEntidadeSupervisionada'),
+            institutionTypeCode: self::optional($payload, 'codigoTipoEntidadeSupervisionada'),
+            institutionTypeName: self::optional($payload, 'descricaoTipoEntidadeSupervisionada'),
         );
     }
 
