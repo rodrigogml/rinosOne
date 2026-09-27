@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     saveName: [displayName: string];
     requestRemoveAvatar: [];
+    requestEditAvatar: [];
     dirtyChanged: [dirty: boolean];
     retryLoad: [];
     retryName: [displayName: string];
@@ -45,6 +46,12 @@ const displayName = ref('');
 const nameChanged = computed(() => displayName.value.trim() !== (props.profile?.user.displayName ?? ''));
 const nameEmpty = computed(() => nameChanged.value && !displayName.value.trim());
 const describedBy = computed(() => nameEmpty.value || props.nameError ? 'profile-display-name-error' : undefined);
+const avatarImageSource = computed(() => {
+    const avatar = props.profile?.avatar;
+    if (!avatar?.available || !avatar.url) return null;
+
+    return avatar.updatedAt ? `${avatar.url}?v=${encodeURIComponent(avatar.updatedAt)}` : avatar.url;
+});
 watch(() => props.profile?.user.displayName, (value) => { displayName.value = value ?? ''; }, { immediate: true });
 watch(nameChanged, (dirty) => emit('dirtyChanged', dirty), { immediate: true });
 function saveName(): void {
@@ -69,7 +76,7 @@ function saveName(): void {
         <section class="workspace-settings__panel profile-settings-panel__identity" :aria-label="t('access.profile.identity')">
             <UserAvatar
                 :display-name="profile?.user.displayName"
-                :image-src="profile?.avatar.url"
+                :image-src="avatarImageSource"
                 :label="profile?.avatar.available ? t('access.profile.avatarCurrent') : t('access.profile.avatarMissing')"
             />
             <div>
@@ -77,7 +84,7 @@ function saveName(): void {
                 <p>{{ profile?.avatar.available ? t('access.profile.imageCurrent') : t('access.profile.noImage') }}</p>
             </div>
             <div class="workspace-settings__setting-actions">
-                <UiButton variant="secondary" disabled>{{ profile?.avatar.available ? t('access.profile.changeImage') : t('access.profile.addImage') }}</UiButton>
+                <UiButton variant="secondary" @click="emit('requestEditAvatar')">{{ profile?.avatar.available ? t('access.profile.changeImage') : t('access.profile.addImage') }}</UiButton>
                 <UiButton v-if="profile.avatar.available" variant="destructive" :loading="removingAvatar" @click="emit('requestRemoveAvatar')">{{ t('access.profile.removeImage') }}</UiButton>
             </div>
         </section>

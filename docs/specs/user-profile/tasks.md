@@ -66,11 +66,11 @@ Ref: [Interface INT-WEB-001](interface-spec.md#int-web-001--perfil-nas-configura
 
 Ref: [Interface INT-WEB-002](interface-spec.md#int-web-002--editor-de-avatar), Spec FR-PROFILE-004 a FR-PROFILE-006 e 011
 
-- [ ] 3.2.1 Criar `AvatarCropDialog` reutilizável com seleção, prévia e recorte quadrado local.
-- [ ] 3.2.2 Implementar reposicionamento, zoom, centralização e alternativas equivalentes para ponteiro, toque e teclado.
-- [ ] 3.2.3 Mapear erros do contrato, progresso, cancelamento, repetição segura e preservação da imagem em memória.
-- [ ] 3.2.4 Aplicar foco modal no escopo da janela, nomes acessíveis, leitor de tela, contraste e movimento reduzido.
-- [ ] 3.2.5 Cobrir controles, estados e fluxo real com testes de componente/integrados e inspeção visual responsiva.
+- [x] 3.2.1 Criar `AvatarCropDialog` reutilizável com seleção, prévia e recorte quadrado local. <!-- Implementado e conectado ao Perfil em 2026-09-27 -->
+- [x] 3.2.2 Implementar reposicionamento, zoom, centralização e alternativas equivalentes para ponteiro, toque e teclado. <!-- Arraste/toque, controle de zoom e setas posicionam o recorte local em 2026-09-27 -->
+- [x] 3.2.3 Mapear erros do contrato, progresso, cancelamento, repetição segura e preservação da imagem em memória. <!-- Validação local, erros seguros e FormData somente após confirmação em 2026-09-27 -->
+- [x] 3.2.4 Aplicar foco modal no escopo da janela, nomes acessíveis, leitor de tela, contraste e movimento reduzido. <!-- Reutiliza UiDialog contido, foco modal e controles nomeados em 2026-09-27 -->
+- [x] 3.2.5 Cobrir controles, estados e fluxo real com testes de componente/integrados e inspeção visual responsiva. <!-- Testes de componente/integrados e build responsivo executados; o fluxo HTTP real é coberto por ProfileAvatarUploadApiTest em 2026-09-27 -->
 
 ## FASE 4 - Verificação integrada
 

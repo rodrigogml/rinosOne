@@ -17,7 +17,12 @@ const tenantContext = useTenantContextStore();
 const workspace = useWorkspaceStore();
 const profile = ref<ProfilePresentation | null>(null);
 const effectiveDisplayName = computed(() => profile.value?.user.displayName ?? props.displayName);
-const avatarUrl = computed(() => profile.value?.avatar.url ?? null);
+const avatarUrl = computed(() => {
+    const avatar = profile.value?.avatar;
+    if (!avatar?.available || !avatar.url) return null;
+
+    return avatar.updatedAt ? `${avatar.url}?v=${encodeURIComponent(avatar.updatedAt)}` : avatar.url;
+});
 const avatarLabel = computed(() => t('access.shell.avatar', { name: effectiveDisplayName.value || '?' }));
 function profileUpdated(value: ProfilePresentation): void { profile.value = value; emit('profileUpdated', value); }
 function signOut() { tenantContext.discard(); workspace.discard(); emit('signOut'); }

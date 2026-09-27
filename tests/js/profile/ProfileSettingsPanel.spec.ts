@@ -4,7 +4,7 @@ import ProfileSettingsPanel from '../../../resources/js/profile/ProfileSettingsP
 import { i18n } from '../../../resources/js/i18n';
 
 describe('ProfileSettingsPanel', () => {
-    it('presents the profile identity structure and enables only changed name and avatar removal', async () => {
+    it('presents the profile identity structure and enables its avatar editor action', async () => {
         const wrapper = mount(ProfileSettingsPanel, {
             global: { plugins: [i18n] },
             props: {
@@ -16,16 +16,19 @@ describe('ProfileSettingsPanel', () => {
         });
 
         expect(wrapper.get('h3').text()).toBe('Perfil');
-        expect(wrapper.get('.user-avatar img').attributes('src')).toBe('/api/v1/profile/avatar');
+        expect(wrapper.get('.user-avatar img').attributes('src')).toBe('/api/v1/profile/avatar?v=2026-09-26T12%3A00%3A00Z');
         expect(wrapper.get('input').element.value).toBe('Ana Souza');
         expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined();
+        expect(wrapper.get('.workspace-settings__setting-actions .ui-button--secondary').attributes('disabled')).toBeUndefined();
         expect(wrapper.get('button.ui-button--destructive').attributes('disabled')).toBeUndefined();
 
         await wrapper.get('input').setValue('Ana Lima');
         await wrapper.get('form').trigger('submit');
+        await wrapper.get('.workspace-settings__setting-actions .ui-button--secondary').trigger('click');
         await wrapper.get('button.ui-button--destructive').trigger('click');
 
         expect(wrapper.emitted('saveName')).toEqual([['Ana Lima']]);
+        expect(wrapper.emitted('requestEditAvatar')).toHaveLength(1);
         expect(wrapper.emitted('requestRemoveAvatar')).toHaveLength(1);
     });
 

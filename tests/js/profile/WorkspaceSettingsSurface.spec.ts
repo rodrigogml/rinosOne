@@ -61,6 +61,16 @@ describe('WorkspaceSettingsSurface profile integration', () => {
         expect(wrapper.emitted('profileUpdated')?.at(-1)).toEqual([{ user: profile.user, avatar: { available: false, url: null, updatedAt: null } }]);
     });
 
+    it('opens the contained avatar editor from the enabled profile action', async () => {
+        const wrapper = mountSurface();
+        await flushPromises();
+
+        await wrapper.get('.profile-settings-panel .workspace-settings__setting-actions .ui-button--secondary').trigger('click');
+
+        expect(wrapper.find('.avatar-crop-dialog').exists()).toBe(true);
+        expect(wrapper.get('.avatar-crop-dialog input[type="file"]').attributes('accept')).toBe('image/jpeg,image/png,image/webp');
+    });
+
     it('preserves an edited name after a remote failure and retries the same safe intent', async () => {
         const wrapper = mountSurface();
         await flushPromises();

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from './UiButton.vue';
 import UiDialog from './UiDialog.vue';
 import ProfileSettingsPanel, { type ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
+import AvatarCropDialog from '../profile/AvatarCropDialog.vue';
 import { useVisualPreferencesStore, type DensityPreference, type PalettePreference, type ThemePreference } from '../preferences/visualPreferences';
 import type { WorkspaceSurface } from '../workspace/workspaceTypes';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
@@ -48,6 +49,7 @@ const profileLoading = ref(false);
 const profileSavingName = ref(false);
 const profileRemovingAvatar = ref(false);
 const removeAvatarDialogOpen = ref(false);
+const avatarEditorOpen = ref(false);
 const discardProfileChangesDialogOpen = ref(false);
 const requestedSection = ref<SettingsSection | null>(null);
 const profileNameDirty = ref(false);
@@ -149,7 +151,7 @@ onMounted(async () => {
         <section class="workspace-settings__content" :aria-label="sectionTitle">
             <header v-if="activeSection !== 'profile'" class="workspace-settings__content-header"><h3>{{ sectionTitle }}</h3></header>
 
-            <ProfileSettingsPanel v-if="activeSection === 'profile'" :profile="profile" :loading="profileLoading" :saving-name="profileSavingName" :removing-avatar="profileRemovingAvatar" :name-error="profileNameError" :load-error="profileLoadError" @save-name="saveProfileName" @request-remove-avatar="removeAvatarDialogOpen = true" @dirty-changed="profileNameDirty = $event" @name-edited="profileNameError = null" @retry-load="loadProfile" @retry-name="saveProfileName" />
+            <ProfileSettingsPanel v-if="activeSection === 'profile'" :profile="profile" :loading="profileLoading" :saving-name="profileSavingName" :removing-avatar="profileRemovingAvatar" :name-error="profileNameError" :load-error="profileLoadError" @save-name="saveProfileName" @request-edit-avatar="avatarEditorOpen = true" @request-remove-avatar="removeAvatarDialogOpen = true" @dirty-changed="profileNameDirty = $event" @name-edited="profileNameError = null" @retry-load="loadProfile" @retry-name="saveProfileName" />
 
             <template v-else-if="activeSection === 'theme'">
                 <section class="workspace-settings__panel"><div class="workspace-settings__panel-heading"><div><h4>Família cromática</h4><p>Escolha a cor de destaque da sua interface.</p></div></div><div class="workspace-settings__theme-grid"><button v-for="(theme, index) in themes" :key="theme.id" type="button" class="workspace-settings__theme-card" :class="{ 'workspace-settings__theme-card--selected': preferences.palette === theme.id }" @click="updatePalette(theme.id)"><span class="workspace-settings__theme-swatch" :class="`workspace-settings__theme-swatch--${index}`" /><span>{{ theme.label }}</span><small v-if="preferences.palette === theme.id">Selecionado</small></button></div></section>
@@ -171,6 +173,7 @@ onMounted(async () => {
         <UiDialog v-model="passwordDialogOpen" contained :title="passwordDefined ? 'Alterar senha' : 'Definir senha'" :backdrop-dismissible="false"><form class="workspace-settings__password-form" @submit.prevent="savePassword"><label>Nova senha<input v-model="newPassword" type="password" autocomplete="new-password" /></label><label>Confirme a nova senha<input v-model="confirmationPassword" type="password" autocomplete="new-password" /></label><p class="workspace-settings__password-help">Mínimo de 6 caracteres e 2 entre letras maiúsculas, minúsculas, números e símbolos.</p><p v-if="passwordError" class="workspace-settings__error" role="alert">{{ passwordError }}</p><div class="dialog-actions"><UiButton variant="secondary" :disabled="processing" @click="passwordDialogOpen = false">Cancelar</UiButton><UiButton type="submit" :loading="processing">Salvar senha</UiButton></div></form></UiDialog>
         <UiDialog v-model="removePasswordDialogOpen" contained title="Remover senha" :backdrop-dismissible="false"><p class="dialog-description">Sem senha, o acesso à sua conta deverá ser feito por outro método de autenticação válido, como o código ou link enviado por e-mail.</p><div class="dialog-actions"><UiButton variant="secondary" :disabled="processing" @click="removePasswordDialogOpen = false">Cancelar</UiButton><UiButton variant="destructive" :loading="processing" @click="removePassword">Remover senha</UiButton></div></UiDialog>
         <UiDialog v-model="removeAvatarDialogOpen" contained destructive :title="t('access.profile.removeTitle')" :backdrop-dismissible="false"><p class="dialog-description">{{ t('access.profile.removeDescription') }}</p><div class="dialog-actions"><UiButton variant="secondary" :disabled="profileRemovingAvatar" @click="removeAvatarDialogOpen = false">{{ t('access.actions.cancel') }}</UiButton><UiButton variant="destructive" :loading="profileRemovingAvatar" @click="removeProfileAvatar">{{ t('access.profile.removeImage') }}</UiButton></div></UiDialog>
+        <AvatarCropDialog v-model="avatarEditorOpen" @completed="updateProfile" />
         <UiDialog v-model="discardProfileChangesDialogOpen" contained :title="t('access.profile.discardTitle')" :backdrop-dismissible="false"><p class="dialog-description">{{ t('access.profile.discardDescription') }}</p><div class="dialog-actions"><UiButton variant="secondary" @click="discardProfileChangesDialogOpen = false; requestedSection = null">{{ t('access.profile.remain') }}</UiButton><UiButton variant="destructive" @click="discardProfileChanges">{{ t('access.profile.discard') }}</UiButton></div></UiDialog>
     </div>
 </template>
