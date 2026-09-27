@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { WorkspaceDestination, WorkspaceNavigationCategory } from '../workspace/workspaceTypes';
+import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 
 const emit = defineEmits<{ openDestination: [destination: WorkspaceDestination] }>();
 const { t } = useI18n();
@@ -47,7 +48,7 @@ const destinationGroups = computed(() => {
                     type="button"
                     @click="emit('openDestination', destination)"
                 >
-                    <span class="workspace-mega-menu__destination-icon" aria-hidden="true"></span>
+                    <WorkspaceSurfaceIcon class="workspace-mega-menu__destination-icon" :name="destination.icon" />
                     <span>{{ destination.label ?? t(destination.titleKey) }}</span>
                 </button>
             </div>

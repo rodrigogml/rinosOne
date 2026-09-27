@@ -24,8 +24,8 @@ return new class extends Migration
             $table->string('reducedName', 255);
             $table->string('tradeName', 255)->nullable();
             $table->string('acronym', 64)->nullable();
-            $table->string('bcbStatusCode', 16);
-            $table->string('bcbStatusName', 128);
+            $table->string('bcbStatusCode', 16)->nullable();
+            $table->string('bcbStatusName', 128)->nullable();
             $table->string('institutionTypeCode', 16)->nullable();
             $table->string('institutionTypeName', 128)->nullable();
             $table->boolean('activeForSelection');

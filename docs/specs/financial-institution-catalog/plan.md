@@ -21,7 +21,7 @@ Implementar o catálogo global `financialInstitution` no schema `rinosone`, abas
 1. O futuro módulo de manutenção invoca o serviço de sincronização, informando opcionalmente a data de referência para teste.
 2. O adaptador BCB consulta a coleção `EntidadesSupervisionadas` daquela data e percorre todas as páginas.
 3. O serviço normaliza os campos e faz *upsert* por `bcbEntityIdentifier`; classificações que a fonte não publicar são preservadas como `NULL`.
-4. O status BCB `3 — Autorizada em Atividade` define `activeForSelection`; os outros estados a tornam indisponível para seleção.
+4. O status BCB `3 — Autorizada em Atividade` define `activeForSelection`; outros estados ou ausência do status a tornam indisponível para seleção.
 5. Registros ausentes da resposta não são excluídos nem inativados. Falhas da fonte não alteram o catálogo existente.
 6. O serviço emite o resultado consolidado no log e devolve um objeto de resultado para o chamador e os testes.
 

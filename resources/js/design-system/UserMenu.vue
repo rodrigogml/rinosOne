@@ -18,6 +18,8 @@ const root = ref<HTMLElement | null>(null);
 const opener = ref<HTMLButtonElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const open = ref(false);
+const settingsIcon = '/assets/icons/rinoUser-tweek_32.png';
+const signOutIcon = '/assets/icons/logout_32.png';
 
 function close() { open.value = false; }
 function toggle() { open.value = !open.value; }
@@ -45,12 +47,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerD
             <UserAvatar :display-name="displayName" :image-src="avatarUrl" :label="avatarLabel" />
         </button>
         <section v-if="open" ref="panel" class="user-menu__panel" role="dialog" :aria-label="menuLabel" tabindex="-1" @keydown="handleKeydown">
-            <button class="user-menu__settings" type="button" @click="openSettings">{{ settingsLabel }}</button>
+            <button class="user-menu__settings" type="button" @click="openSettings"><img class="user-menu__settings-icon" :src="settingsIcon" alt="" aria-hidden="true"><span>{{ settingsLabel }}</span></button>
             <div class="user-menu__utilities">
                 <VisualPreferencesPopover />
                 <LanguageSelector />
                 <button class="ui-icon-button" type="button" :aria-label="signOutLabel" @click="emit('signOut')">
-                    <svg class="ui-icon-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5H5.5A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19H10" /><path d="m15 8 4 4-4 4M19 12H9" /></svg>
+                    <img :src="signOutIcon" alt="" aria-hidden="true">
                 </button>
             </div>
         </section>

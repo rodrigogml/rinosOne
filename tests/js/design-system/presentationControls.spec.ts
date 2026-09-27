@@ -41,6 +41,14 @@ describe('presentation controls', () => {
         wrapper.unmount();
     });
 
+    it('renders the approved raster icon for visual preferences', () => {
+        const { wrapper } = mountWithStore(VisualPreferencesPopover);
+        const icon = wrapper.get('button[aria-label="Preferências visuais"] img');
+
+        expect(icon.attributes()).toMatchObject({ src: '/assets/icons/theme_32.png', alt: '', 'aria-hidden': 'true' });
+        wrapper.unmount();
+    });
+
     it('supports keyboard choices, external dismissal, Escape and opener focus restoration', async () => {
         const { wrapper } = mountWithStore(VisualPreferencesPopover);
         const opener = wrapper.get('button');

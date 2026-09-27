@@ -107,9 +107,9 @@
     --control-height-sm: max(2.5rem, calc(2.5rem * var(--component-scale)));
     --control-height-md: max(2.75rem, calc(2.75rem * var(--component-scale)));
     --control-height-lg: max(3rem, calc(3rem * var(--component-scale)));
-    --icon-size-sm: calc(1rem * var(--component-scale));
-    --icon-size-md: calc(1.25rem * var(--component-scale));
-    --icon-size-lg: calc(1.5rem * var(--component-scale));
+    --icon-size-sm: calc(2rem * var(--component-scale));
+    --icon-size-md: calc(2rem * var(--component-scale));
+    --icon-size-lg: calc(2rem * var(--component-scale));
     --size-brand-landscape-max: 24rem;
     --size-brand-top-bar-max: 6.5rem;
     --size-dialog-max: 32rem;

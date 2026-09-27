@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Http\Requests\Authorization;
+
+class AuthorizationSubjectRequest extends AdministrativeAuthorizationRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return ['userId' => ['required', 'integer', 'min:1']];
+    }
+}

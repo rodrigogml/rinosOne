@@ -31,7 +31,7 @@ onBeforeUnmount(clearTimer);
         <UiAlert :tone="notification.kind === 'information' ? 'info' : notification.kind">
             <span>{{ t(notification.messageKey) }}</span>
             <button class="workspace-notification-host__dismiss" type="button" :aria-label="dismissLabel" :title="dismissLabel" @click="dismiss">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke-linecap="round" /></svg>
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M14 14 34 34M34 14 14 34" stroke-linecap="round" /></svg>
             </button>
         </UiAlert>
     </aside>

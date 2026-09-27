@@ -2,13 +2,15 @@
 
 namespace App\Services\Authorization;
 
+use App\Domain\Authorization\AuthorizationScope;
 use App\Models\AuthorizationGroup;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class AuthorizationGroupHierarchyService
 {
-    public function __construct(private readonly AuthorizationAuditLogger $audit) {}
+    public function __construct(private readonly AuthorizationAuditLogger $audit, private readonly PolicyVersionService $policyVersions) {}
 
     public function addChildGroup(AuthorizationGroup $parent, AuthorizationGroup $child, ?int $actorUserId = null, ?string $correlationId = null): void
     {
@@ -34,6 +36,7 @@ class AuthorizationGroupHierarchyService
                     after: ['idChildGroup' => $child->id],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::from($parent->scope), $parent->idTenant);
             }
         });
     }
@@ -56,6 +59,7 @@ class AuthorizationGroupHierarchyService
                     before: ['idChildGroup' => $child->id],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::from($parent->scope), $parent->idTenant);
             }
         });
     }

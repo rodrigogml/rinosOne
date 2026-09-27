@@ -41,14 +41,14 @@ onBeforeUnmount(() => returnFocus?.focus());
         <aside ref="panel" class="workspace-mobile-task-panel" role="dialog" aria-modal="true" :aria-label="title" tabindex="-1" @keydown="handleKeydown">
             <header class="workspace-mobile-task-panel__header">
                 <h2>{{ title }}</h2>
-                <button class="workspace-mobile-task-panel__close" type="button" :aria-label="closeLabel" @click="close"><svg class="ui-icon-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+                <button class="workspace-mobile-task-panel__close" type="button" :aria-label="closeLabel" @click="close"><svg class="ui-icon-button__icon" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M14 14 34 34M34 14 14 34" stroke-linecap="round" /></svg></button>
             </header>
             <div v-if="surfaces.length" class="workspace-mobile-task-panel__list">
                 <div v-for="surface in surfaces" :key="surface.id" class="workspace-mobile-task-panel__item" :class="{ 'workspace-mobile-task-panel__item--active': surface.id === activeSurfaceId }">
                     <button class="workspace-mobile-task-panel__activate" type="button" :aria-current="surface.id === activeSurfaceId ? 'page' : undefined" :aria-label="surface.label ?? t(surface.titleKey)" @click="activate(surface.id)">
                         <WorkspaceSurfaceIcon :name="surface.icon" /><span>{{ surface.label ?? t(surface.titleKey) }}</span><span v-if="surface.dirty" :aria-label="dirtyLabel">●</span>
                     </button>
-                    <button class="workspace-mobile-task-panel__request-close" type="button" :aria-label="`${closeSurfaceLabel}: ${surface.label ?? t(surface.titleKey)}`" @click="requestClose(surface.id)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke-linecap="round" /></svg></button>
+                    <button class="workspace-mobile-task-panel__request-close" type="button" :aria-label="`${closeSurfaceLabel}: ${surface.label ?? t(surface.titleKey)}`" @click="requestClose(surface.id)"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M14 14 34 34M34 14 14 34" stroke-linecap="round" /></svg></button>
                 </div>
             </div>
             <p v-else class="workspace-mobile-task-panel__empty">{{ emptyLabel }}</p>

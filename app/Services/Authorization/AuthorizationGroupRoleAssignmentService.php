@@ -7,12 +7,13 @@ use App\Domain\Authorization\AuthorizationScope;
 use App\Models\AuthorizationGroup;
 use App\Models\AuthorizationGroupRoleAssignment;
 use App\Models\AuthorizationRole;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class AuthorizationGroupRoleAssignmentService
 {
-    public function __construct(private readonly AuthorizationAuditLogger $audit) {}
+    public function __construct(private readonly AuthorizationAuditLogger $audit, private readonly PolicyVersionService $policyVersions) {}
 
     public function grant(AuthorizationRole $role, AuthorizationGroup $group, ?int $actorUserId = null, ?string $correlationId = null): AuthorizationGroupRoleAssignment
     {
@@ -40,6 +41,7 @@ class AuthorizationGroupRoleAssignmentService
                     after: ['idRole' => $role->id, 'idGroup' => $group->id, 'state' => $assignment->state],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::from($role->scope), $tenantId);
             }
 
             return $assignment;
@@ -71,6 +73,7 @@ class AuthorizationGroupRoleAssignmentService
                 after: ['state' => $assignment->state],
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::from($group->scope), $assignment->idTenant);
         });
     }
 
@@ -93,6 +96,7 @@ class AuthorizationGroupRoleAssignmentService
                 before: $before,
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::from($group->scope), $assignment->idTenant);
         });
     }
 

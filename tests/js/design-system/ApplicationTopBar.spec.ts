@@ -26,6 +26,7 @@ describe('application top bar', () => {
         expect(wrapper.get('button[aria-label="Selecionar organização"] [role="img"]').text()).toBe('?');
         expect(wrapper.get('button[aria-label="Menu pessoal de Rodrigo Leitão"] [role="img"]').text()).toBe('RL');
         expect(wrapper.get('button[aria-label="Abrir navegação"]')).toBeTruthy();
+        expect(wrapper.get('button[aria-label="Alternar janelas"] img').attributes('src')).toBe('/assets/icons/taskbar2_32.png');
         wrapper.unmount();
     });
 
@@ -37,6 +38,8 @@ describe('application top bar', () => {
         await opener.trigger('click');
         expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Menu pessoal');
         expect(wrapper.get('.user-menu__settings').text()).toBe('Configurações do usuário');
+        expect(wrapper.get('.user-menu__settings img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_32.png');
+        expect(wrapper.get('button[aria-label="Sair"] img').attributes('src')).toBe('/assets/icons/logout_32.png');
         await wrapper.get('button[aria-label="Preferências visuais"]').trigger('click');
         await wrapper.get('[role="dialog"][aria-label="Preferências visuais"]').trigger('keydown', { key: 'Escape' });
         expect(wrapper.get('[role="dialog"][aria-label="Menu pessoal"]')).toBeTruthy();

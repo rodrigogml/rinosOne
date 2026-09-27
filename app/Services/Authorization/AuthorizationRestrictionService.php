@@ -11,13 +11,14 @@ use App\Models\AuthorizationRestriction;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class AuthorizationRestrictionService
 {
-    public function __construct(private readonly AuthorizationAuditLogger $audit) {}
+    public function __construct(private readonly AuthorizationAuditLogger $audit, private readonly PolicyVersionService $policyVersions) {}
 
     public function create(
         AuthorizationPermission $permission,
@@ -56,6 +57,7 @@ class AuthorizationRestrictionService
                     after: $this->snapshot($restriction),
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate($scope, $tenantId);
             }
 
             return $restriction;
@@ -82,6 +84,7 @@ class AuthorizationRestrictionService
                 after: $this->snapshot($restriction),
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::from($restriction->scope), $restriction->idTenant);
         });
     }
 
@@ -96,6 +99,7 @@ class AuthorizationRestrictionService
             $before = $this->snapshot($restriction);
             $restriction->update(['active' => true]);
             $this->audit->record('authorization.restriction.activated', 'authorization.restriction', $restriction->id, actorUserId: $actorUserId, tenantId: $restriction->idTenant, before: $before, after: $this->snapshot($restriction), correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($restriction->scope), $restriction->idTenant);
         });
     }
 
@@ -107,6 +111,7 @@ class AuthorizationRestrictionService
             $before = $this->snapshot($restriction);
             $restriction->update(['startsAt' => $startsAt, 'endsAt' => $endsAt]);
             $this->audit->record('authorization.restriction.validity_updated', 'authorization.restriction', $restriction->id, actorUserId: $actorUserId, tenantId: $restriction->idTenant, before: $before, after: $this->snapshot($restriction), correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($restriction->scope), $restriction->idTenant);
         });
     }
 
@@ -119,6 +124,7 @@ class AuthorizationRestrictionService
             $tenantId = $restriction->idTenant;
             $restriction->delete();
             $this->audit->record('authorization.restriction.removed', 'authorization.restriction', $restrictionId, actorUserId: $actorUserId, tenantId: $tenantId, before: $before, correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($restriction->scope), $tenantId);
         });
     }
 

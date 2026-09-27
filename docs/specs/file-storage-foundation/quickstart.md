@@ -25,6 +25,13 @@
 1. Associe um avatar a um usuário por `USER_PROFILE_AVATAR`.
 2. Substitua-o e valide uma única binding ativa, consumo `SYSTEM_MANAGED` correto e liberação da posse anterior.
 
+## Compartilhamento de workspace por pasta
+
+1. Crie uma pasta compartilhada e uma subpasta, ambas no mesmo workspace; armazene uma posse de arquivo na subpasta.
+2. Conceda `READ` ao colaborador somente na pasta ancestral e confirme que ele lê o arquivo da subpasta sem receber qualquer privilégio individual sobre a posse.
+3. Confirme que a escrita de metadados é recusada até que seja concedido `EDIT` na pasta ancestral; então confirme a escrita autorizada.
+4. Revogue `READ` e `EDIT` e confirme que, respectivamente, a leitura e a escrita deixam de ser autorizadas imediatamente.
+
 ## Operação em homologação
 
 Consulte [Operação — Fundação de armazenamento de arquivos](../../operations/file-storage.md) para as variáveis de ambiente, workers, scheduler, retenção, reconciliação e recuperação segura.

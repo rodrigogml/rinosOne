@@ -32,7 +32,7 @@ const { t } = useI18n();
                     :title="surface.label ?? t(surface.titleKey)"
                     @click="emit('activate', surface.id)"
                 >
-                    <WorkspaceSurfaceIcon :name="surface.icon" :size="surface.id === activeSurfaceId ? 'lg' : 'md'" />
+                    <WorkspaceSurfaceIcon :name="surface.icon" size="lg" />
                     <span v-if="surface.dirty" class="workspace-taskbar__dirty" :aria-label="dirtyLabel">●</span>
                     <span v-if="surface.id === activeSurfaceId" class="workspace-taskbar__active-pill" aria-hidden="true" />
                 </button>

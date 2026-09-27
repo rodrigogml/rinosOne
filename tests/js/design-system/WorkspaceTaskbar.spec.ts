@@ -30,4 +30,16 @@ describe('WorkspaceTaskbar', () => {
 
         expect(wrapper.emitted('activate')).toEqual([['surface-2']]);
     });
+
+    it('uses the user-settings raster in the taskbar when that surface is open', () => {
+        const wrapper = mount(WorkspaceTaskbar, {
+            props: {
+                surfaces: [{ ...surfaces[0]!, icon: 'rinoUser-tweek', destinationId: 'personal.settings' }],
+                activeSurfaceId: 'surface-1', label: 'Superfícies abertas', dirtyLabel: 'Alterações não salvas',
+            },
+            global: { plugins: [i18n] },
+        });
+
+        expect(wrapper.get('.workspace-taskbar__activate img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_48.png');
+    });
 });

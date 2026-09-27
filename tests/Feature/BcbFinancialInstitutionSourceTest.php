@@ -49,6 +49,18 @@ class BcbFinancialInstitutionSourceTest extends TestCase
         $this->assertNull($record->institutionTypeName);
     }
 
+    public function test_accepts_an_official_record_without_an_operating_status(): void
+    {
+        $payload = $this->payload();
+        unset($payload['codigoTipoSituacaoPessoaJuridica'], $payload['descricaoTipoSituacaoPessoaJuridica']);
+        Http::fake(['*' => Http::response(['value' => [$payload]])]);
+
+        $record = app(BcbFinancialInstitutionSource::class)->fetch(CarbonImmutable::parse('2026-09-25'))[0];
+
+        $this->assertNull($record->bcbStatusCode);
+        $this->assertNull($record->bcbStatusName);
+    }
+
     /** @return array<string, string> */
     private function payload(string $identifier = 'BCB-EXAMPLE'): array
     {

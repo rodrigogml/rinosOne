@@ -35,6 +35,17 @@ Laravel/PHP e API JSON versionada com Vue 3/TypeScript no workspace. Depende de 
 3. `EffectiveAccessQuery` e `AuthorizationExplainService` projetam somente fatores visíveis ao administrador solicitante.
 4. Controllers expõem DTOs camelCase; Vue atualiza stores após mutação e trata capability como UX.
 
+### Matriz de permissões administrativas
+
+| Permission | Esfera | Uso |
+| --- | --- | --- |
+| `tenant.authorization.read` | TENANT | Consulta de acesso efetivo, explain e auditoria do tenant ativo. |
+| `tenant.authorization.manage` | TENANT | Escritas administrativas no tenant ativo. |
+| `platform.authorization.tenant.read` | PLATFORM | Supervisão de consultas administrativas de tenants, sem assumir membership. |
+| `platform.authorization.tenant.manage` | PLATFORM | Supervisão de escritas administrativas de tenants, sem assumir membership. |
+
+O facade administrativo aceita a permission da esfera do contexto: TENANT exige membership ativa; PLATFORM é uma autorização separada e nunca é reinterpretada como membership do tenant.
+
 ## Estrutura do Projeto
 
 ```text

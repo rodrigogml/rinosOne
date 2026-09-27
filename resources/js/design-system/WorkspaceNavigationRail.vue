@@ -35,11 +35,11 @@ const { t } = useI18n();
                 @click="emit('selectCategory', category.id)"
                 @mouseenter="emit('previewCategory', category.id)"
             >
-                <svg class="workspace-navigation-rail__category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                    <path d="M4 5.5h16M4 12h16M4 18.5h16" stroke-linecap="round" />
-                    <circle cx="7" cy="5.5" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="17" cy="18.5" r="1" fill="currentColor" stroke="none" />
+                <svg class="workspace-navigation-rail__category-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                    <path d="M16 13h22M16 24h22M16 35h22" stroke-linecap="round" />
+                    <circle cx="10" cy="13" r="2.2" fill="currentColor" stroke="none" />
+                    <circle cx="10" cy="24" r="2.2" fill="currentColor" stroke="none" />
+                    <circle cx="10" cy="35" r="2.2" fill="currentColor" stroke="none" />
                 </svg>
                 <span v-if="!collapsed" class="workspace-navigation-rail__category-label">{{ category.label ?? t(category.titleKey) }}</span>
             </button>
@@ -51,8 +51,8 @@ const { t } = useI18n();
             :title="collapsed ? expandLabel : collapseLabel"
             @click="emit('toggleCollapsed')"
         >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                <path :d="collapsed ? 'm9 5 7 7-7 7' : 'm15 5-7 7 7 7'" stroke-linecap="round" stroke-linejoin="round" />
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                <path :d="collapsed ? 'm19 13 11 11-11 11' : 'm29 13-11 11 11 11'" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
     </aside>

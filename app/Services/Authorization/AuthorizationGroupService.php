@@ -9,12 +9,13 @@ use App\Models\AuthorizationGroup;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class AuthorizationGroupService
 {
-    public function __construct(private readonly AuthorizationAuditLogger $audit) {}
+    public function __construct(private readonly AuthorizationAuditLogger $audit, private readonly PolicyVersionService $policyVersions) {}
 
     public function create(string $displayName, AuthorizationScope $scope, ?int $tenantId = null, ?int $actorUserId = null, ?string $correlationId = null): AuthorizationGroup
     {
@@ -40,6 +41,7 @@ class AuthorizationGroupService
                 after: ['displayName' => $group->displayName, 'scope' => $group->scope, 'active' => $group->active],
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate($scope, $tenantId);
 
             return $group;
         });
@@ -65,6 +67,7 @@ class AuthorizationGroupService
                     after: ['idUser' => $user->id],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::from($group->scope), $group->idTenant);
             }
         });
     }
@@ -84,6 +87,7 @@ class AuthorizationGroupService
                     before: ['idUser' => $user->id],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::from($group->scope), $group->idTenant);
             }
         });
     }
@@ -108,6 +112,7 @@ class AuthorizationGroupService
                 after: ['active' => false],
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::from($group->scope), $group->idTenant);
         });
     }
 

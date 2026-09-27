@@ -11,15 +11,15 @@ Escopo: cache descartável, versionamento de política, lote, listagem agregada,
 
 Ref: Spec FR-AP-001 a 004, `data-model.md`.
 
-- [ ] 1.1.1 Persistir/resolver versões por sujeito e contexto com BIGINT.
-- [ ] 1.1.2 Associar toda decisão cacheável à versão atual.
-- [ ] 1.1.3 Testar perda de cache e equivalência com fonte persistente.
+- [x] 1.1.1 Persistir/resolver versões por sujeito e contexto com BIGINT. <!-- auth_policy_version e PolicyVersionService mantêm versão monotônica por esfera/contexto, com tenant BIGINT e teste de persistência em 2026-09-27 -->
+- [x] 1.1.2 Associar toda decisão cacheável à versão atual. <!-- AuthorizationService usa chave SHA-256 com principal, contexto, recurso e versões de política tenant/global; cache é dispensável em 2026-09-27 -->
+- [x] 1.1.3 Testar perda de cache e equivalência com fonte persistente. <!-- PolicyVersionServiceTest confirma allow após Cache::flush e deny imediato após restriction invalidar a versão em 2026-09-27 -->
 
 ### 1.2 Invalidar todas as origens de mudança `[C]`
 
 Ref: Spec FR-AP-003/004.
 
-- [ ] 1.2.1 Publicar invalidação transacional para grants, grupos, membership, restriction e relation.
+- [x] 1.2.1 Publicar invalidação transacional para grants, grupos, membership, restriction e relation. <!-- serviços de role, grupo/hierarquia, membership, restriction e relation incrementam versão na mesma transação da mutação em 2026-09-27 -->
 - [ ] 1.2.2 Integrar políticas, delegações, aprovação, SoD, service account e directory sync.
 - [ ] 1.2.3 Testar próxima operação após cada tipo de alteração concorrente.
 

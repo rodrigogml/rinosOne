@@ -17,6 +17,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openMobileTasks: []; openPersonalMenu: []; openSettings: [] }>();
+const mobileTasksIcon = '/assets/icons/taskbar2_32.png';
 </script>
 
 <template>
@@ -29,7 +30,7 @@ const emit = defineEmits<{ signOut: []; openMobileNavigation: []; openMobileTask
         </div>
         <div class="application-top-bar__personal">
             <button v-if="mobileTasksVisible" class="application-top-bar__mobile-task-trigger" type="button" :aria-label="mobileTasksLabel" @click="emit('openMobileTasks')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M8 10h7m0 0-2-2m2 2-2 2M16 14H9m0 0 2-2m-2 2m2 2-2 2" /></svg>
+                <img class="application-top-bar__mobile-task-icon" :src="mobileTasksIcon" alt="" aria-hidden="true">
             </button>
             <TenantSelector @changed="emit('openPersonalMenu')" />
             <UserMenu :display-name="displayName" :avatar-url="avatarUrl" :avatar-label="avatarLabel" :menu-label="menuLabel" :settings-label="settingsLabel" :sign-out-label="signOutLabel" @sign-out="emit('signOut')" @open-settings="emit('openSettings')" @opened="emit('openPersonalMenu')" />

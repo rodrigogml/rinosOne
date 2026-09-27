@@ -11,15 +11,48 @@ use App\Domain\Tenant\TenantState;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use App\Services\Authorization\Resource\AuthorizationResourceRegistry;
 use DateTimeInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AuthorizationService
 {
-    public function __construct(private readonly AuthorizationResourceRegistry $resources) {}
+    public function __construct(
+        private readonly AuthorizationResourceRegistry $resources,
+        private readonly PolicyVersionService $policyVersions,
+    ) {}
 
     public function check(User $principal, string $permissionKey, AuthorizationScope $scope, ?int $tenantId = null, ?ResourceReference $resource = null): AuthorizationDecision
+    {
+        try {
+            $version = (string) $this->policyVersions->current($scope, $tenantId);
+            if ($scope === AuthorizationScope::Tenant) {
+                $version .= ':'.$this->policyVersions->current(AuthorizationScope::Tenant);
+            }
+            $cacheSeconds = max(0, (int) config('authorization.decisionCacheSeconds', 300));
+            if ($cacheSeconds > 0) {
+                $key = 'authorization:decision:'.hash('sha256', implode('|', [
+                    $principal->id,
+                    $permissionKey,
+                    $scope->value,
+                    $tenantId ?? 'none',
+                    $resource?->type ?? 'none',
+                    $resource?->id ?? 'none',
+                    $version,
+                ]));
+
+                return Cache::remember($key, now()->addSeconds($cacheSeconds), fn (): AuthorizationDecision => $this->resolve($principal, $permissionKey, $scope, $tenantId, $resource));
+            }
+        } catch (\Throwable) {
+            // Cache and policy-version infrastructure is an accelerator only.
+        }
+
+        return $this->resolve($principal, $permissionKey, $scope, $tenantId, $resource);
+    }
+
+    private function resolve(User $principal, string $permissionKey, AuthorizationScope $scope, ?int $tenantId = null, ?ResourceReference $resource = null): AuthorizationDecision
     {
         if ($scope === AuthorizationScope::Tenant) {
             if ($tenantId === null || $tenantId < 1) {

@@ -47,7 +47,7 @@ onBeforeUnmount(() => returnFocus?.focus());
             <header class="mobile-navigation-drawer__header">
                 <BrandMark class="mobile-navigation-drawer__brand" :alt="brandLabel" />
                 <button class="mobile-navigation-drawer__close" type="button" :aria-label="closeLabel" @click="close">
-                    <svg class="ui-icon-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+                    <svg class="ui-icon-button__icon" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M14 14 34 34M34 14 14 34" stroke-linecap="round" /></svg>
                 </button>
             </header>
             <div class="mobile-navigation-drawer__content">

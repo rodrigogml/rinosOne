@@ -35,4 +35,13 @@ describe('WorkspaceMegaMenu', () => {
 
         expect(wrapper.emitted('openDestination')).toEqual([[destination]]);
     });
+
+    it('renders the destination icon on the 48px source viewport', () => {
+        const wrapper = mount(WorkspaceMegaMenu, {
+            props: { category, destinations: [destination], emptyLabel: 'Nenhuma área disponível.' },
+            global: { plugins: [i18n] },
+        });
+
+        expect(wrapper.get('.workspace-mega-menu__destination-icon').attributes('viewBox')).toBe('0 0 48 48');
+    });
 });

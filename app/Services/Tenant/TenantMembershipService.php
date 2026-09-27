@@ -2,9 +2,11 @@
 
 namespace App\Services\Tenant;
 
+use App\Domain\Authorization\AuthorizationScope;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Models\TenantMembership;
 use App\Services\Authorization\AuthorizationAuditLogger;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use App\Services\Authorization\TenantAdministratorInvariant;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +15,7 @@ class TenantMembershipService
     public function __construct(
         private readonly AuthorizationAuditLogger $audit,
         private readonly TenantAdministratorInvariant $administrators,
+        private readonly PolicyVersionService $policyVersions,
     ) {}
 
     public function activate(TenantMembership $membership, ?int $actorUserId = null, ?string $correlationId = null): TenantMembership
@@ -35,6 +38,7 @@ class TenantMembershipService
                 after: ['idUser' => $membership->idUser, 'state' => $membership->state->value],
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::Tenant, $membership->idTenant);
 
             return $membership;
         });
@@ -61,6 +65,7 @@ class TenantMembershipService
                 after: ['state' => $membership->state->value],
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::Tenant, $membership->idTenant);
         });
     }
 
@@ -82,6 +87,7 @@ class TenantMembershipService
                 before: $before,
                 correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::Tenant, $membership->idTenant);
         });
     }
 

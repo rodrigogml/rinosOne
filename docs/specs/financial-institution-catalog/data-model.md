@@ -17,8 +17,8 @@ Todos os campos abaixo pertencem ao schema global `rinosone`. A tabela não poss
 | `reducedName` | VARCHAR(255) | obrigatório | Nome preferencial de apresentação e busca. |
 | `tradeName` | VARCHAR(255) | opcional | Nome fantasia publicado pelo BCB. |
 | `acronym` | VARCHAR(64) | opcional | Sigla publicada pelo BCB. |
-| `bcbStatusCode` | VARCHAR(16) | obrigatório | Código oficial da situação de funcionamento. |
-| `bcbStatusName` | VARCHAR(128) | obrigatório | Descrição oficial da situação. |
+| `bcbStatusCode` | VARCHAR(16) | opcional | Código oficial da situação de funcionamento, quando publicado pelo BCB. |
+| `bcbStatusName` | VARCHAR(128) | opcional | Descrição oficial da situação, quando publicada pelo BCB. |
 | `institutionTypeCode` | VARCHAR(16) | opcional | Código oficial do segmento, quando publicado pelo BCB. |
 | `institutionTypeName` | VARCHAR(128) | opcional | Descrição oficial do segmento, quando publicada pelo BCB. |
 | `activeForSelection` | BOOLEAN | obrigatório | Derivado exclusivamente de `bcbStatusCode`; verdadeiro somente para a situação oficial autorizada em atividade. |
@@ -38,8 +38,8 @@ Todos os campos abaixo pertencem ao schema global `rinosone`. A tabela não poss
 
 ```text
 status BCB = Autorizada em Atividade -> activeForSelection = true
-qualquer outro status BCB                -> activeForSelection = false
-ausência do registro em resposta          -> mantém o valor atual e gera alerta em log
+outro status ou status ausente        -> activeForSelection = false
+ausência do registro em resposta      -> mantém o valor atual e gera alerta em log
 ```
 
 ### Relacionamentos Futuros

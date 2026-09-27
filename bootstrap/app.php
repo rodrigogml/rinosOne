@@ -1,6 +1,5 @@
 <?php
 
-use App\Bootstrap\LoadUtf8EnvironmentVariables;
 use App\Domain\Profile\Exception\AvatarProcessingUnavailableException;
 use App\Domain\Profile\Exception\AvatarValidationException;
 use App\Http\Middleware\NormalizePersistentAuthenticationSession;
@@ -8,7 +7,6 @@ use App\Http\Middleware\RestorePersistentAuthentication;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
@@ -59,7 +57,5 @@ $app = Application::configure(basePath: dirname(__DIR__))
             ], 422);
         });
     })->create();
-
-$app->bind(LoadEnvironmentVariables::class, LoadUtf8EnvironmentVariables::class);
 
 return $app;

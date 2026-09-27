@@ -10,6 +10,7 @@ use App\Models\AuthorizationResourceRelation;
 use App\Models\AuthorizationResourceType;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationAuditLogger;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -19,6 +20,7 @@ class AuthorizationResourceRelationService
         private readonly AuthorizationResourceRegistry $registry,
         private readonly AuthorizationResourceTypeCatalog $types,
         private readonly AuthorizationAuditLogger $audit,
+        private readonly PolicyVersionService $policyVersions,
     ) {}
 
     public function create(
@@ -61,6 +63,7 @@ class AuthorizationResourceRelationService
                     after: $this->snapshot($relation),
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate($resource->scope, $resource->tenantId);
             }
 
             return $relation;
@@ -77,6 +80,7 @@ class AuthorizationResourceRelationService
             $before = $this->snapshot($relation);
             $relation->forceFill(['active' => false])->save();
             $this->audit->record('authorization.resource_relation.deactivated', 'authorization.resource_relation', $relation->id, actorUserId: $actorUserId, tenantId: $relation->idTenant, before: $before, after: $this->snapshot($relation), correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($relation->scope), $relation->idTenant);
         });
     }
 
@@ -96,6 +100,7 @@ class AuthorizationResourceRelationService
             $before = $this->snapshot($relation);
             $relation->forceFill(['relationKey' => $relationKey])->save();
             $this->audit->record('authorization.resource_relation.updated', 'authorization.resource_relation', $relation->id, actorUserId: $actorUserId, tenantId: $relation->idTenant, before: $before, after: $this->snapshot($relation), correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($relation->scope), $relation->idTenant);
         });
     }
 
@@ -108,6 +113,7 @@ class AuthorizationResourceRelationService
             $tenantId = $relation->idTenant;
             $relation->delete();
             $this->audit->record('authorization.resource_relation.removed', 'authorization.resource_relation', $relationId, actorUserId: $actorUserId, tenantId: $tenantId, before: $before, correlationId: $correlationId);
+            $this->policyVersions->invalidate(AuthorizationScope::from($relation->scope), $tenantId);
         });
     }
 

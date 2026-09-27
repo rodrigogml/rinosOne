@@ -9,6 +9,7 @@ use App\Models\AuthorizationRole;
 use App\Models\AuthorizationRoleAssignment;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -17,6 +18,7 @@ class AuthorizationRoleAssignmentService
     public function __construct(
         private readonly AuthorizationAuditLogger $audit,
         private readonly TenantAdministratorInvariant $administrators,
+        private readonly PolicyVersionService $policyVersions,
     ) {}
 
     public function assignTenantRole(AuthorizationRole $role, User $user, int $tenantId, ?int $actorUserId = null, ?string $correlationId = null): AuthorizationRoleAssignment
@@ -54,6 +56,7 @@ class AuthorizationRoleAssignmentService
                     after: ['idRole' => $role->id, 'idUser' => $user->id, 'state' => $assignment->state],
                     correlationId: $correlationId,
                 );
+                $this->policyVersions->invalidate(AuthorizationScope::Tenant, $tenantId);
             }
 
             return $assignment;
@@ -78,9 +81,9 @@ class AuthorizationRoleAssignmentService
         });
     }
 
-    public function deactivate(AuthorizationRole $role, User $user, int $tenantId): void
+    public function deactivate(AuthorizationRole $role, User $user, int $tenantId, ?int $actorUserId = null, ?string $correlationId = null): void
     {
-        DB::transaction(function () use ($role, $user, $tenantId): void {
+        DB::transaction(function () use ($role, $user, $tenantId, $actorUserId, $correlationId): void {
             $assignment = AuthorizationRoleAssignment::query()
                 ->where('idRole', $role->id)->where('idUser', $user->id)->where('idTenant', $tenantId)->lockForUpdate()->firstOrFail();
             $this->ensureRemovalKeepsAdministrator($role, $tenantId, $assignment->id);
@@ -90,16 +93,19 @@ class AuthorizationRoleAssignmentService
                 'authorization.role_assignment.deactivated',
                 'authorization.role_assignment',
                 $assignment->id,
+                actorUserId: $actorUserId,
                 tenantId: $tenantId,
                 before: $before,
                 after: ['state' => $assignment->state],
+                correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::Tenant, $tenantId);
         });
     }
 
-    public function remove(AuthorizationRole $role, User $user, int $tenantId): void
+    public function remove(AuthorizationRole $role, User $user, int $tenantId, ?int $actorUserId = null, ?string $correlationId = null): void
     {
-        DB::transaction(function () use ($role, $user, $tenantId): void {
+        DB::transaction(function () use ($role, $user, $tenantId, $actorUserId, $correlationId): void {
             $assignment = AuthorizationRoleAssignment::query()
                 ->where('idRole', $role->id)->where('idUser', $user->id)->where('idTenant', $tenantId)->lockForUpdate()->firstOrFail();
             $this->ensureRemovalKeepsAdministrator($role, $tenantId, $assignment->id);
@@ -109,9 +115,12 @@ class AuthorizationRoleAssignmentService
                 'authorization.role_assignment.removed',
                 'authorization.role_assignment',
                 $assignment->id,
+                actorUserId: $actorUserId,
                 tenantId: $tenantId,
                 before: $before,
+                correlationId: $correlationId,
             );
+            $this->policyVersions->invalidate(AuthorizationScope::Tenant, $tenantId);
         });
     }
 
