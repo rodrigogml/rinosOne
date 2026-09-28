@@ -42,7 +42,7 @@ describe('mobile navigation drawer', () => {
     });
 
     it('filters destinations under its selected category and emits only the selected destination', async () => {
-        const categories: WorkspaceNavigationCategory[] = [{ id: 'workspace', titleKey: 'access.workspace.navigation.title', icon: 'workspace' }];
+        const categories: WorkspaceNavigationCategory[] = [{ id: 'workspace', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', icon: 'workspace' }];
         const destination: WorkspaceDestination = { id: 'personal.sample', scope: 'personal', category: 'workspace', titleKey: 'access.workspace.title', icon: 'sample', createSurface: () => ({ titleKey: 'access.workspace.title', icon: 'sample' }) };
         const wrapper = mount(MobileNavigationDrawer, {
             props: { modelValue: true, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar', emptyLabel: 'Vazia', categories, destinations: [destination] },
@@ -50,7 +50,27 @@ describe('mobile navigation drawer', () => {
         });
 
         await wrapper.get('.mobile-navigation-drawer__category-trigger').trigger('click');
+        expect(wrapper.get('.mobile-navigation-drawer__destination .workspace-surface-icon').attributes('viewBox')).toBe('0 0 48 48');
         await wrapper.get('.mobile-navigation-drawer__destination').trigger('click');
         expect(wrapper.emitted('openDestination')).toEqual([[destination]]);
+    });
+
+    it('groups mobile navigation by context and collapses a complete context without closing the drawer', async () => {
+        const categories: WorkspaceNavigationCategory[] = [
+            { id: 'personal', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', icon: 'overview' },
+            { id: 'tenant', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', icon: 'contacts' },
+        ];
+        const wrapper = mount(MobileNavigationDrawer, {
+            props: { modelValue: true, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar', emptyLabel: 'Vazia', categories, destinations: [], scopeLabels: { personal: 'Ana Souza', tenant: 'Organização Alfa' } },
+            global: { plugins: [i18n] },
+        });
+
+        expect(wrapper.findAll('.mobile-navigation-drawer__scope')).toHaveLength(2);
+        expect(wrapper.text()).toContain('Ana Souza');
+        expect(wrapper.text()).toContain('Organização Alfa');
+
+        await wrapper.get('[aria-label="Recolher Organização Alfa"]').trigger('click');
+        expect(wrapper.get('[aria-label="Expandir Organização Alfa"]').attributes('aria-expanded')).toBe('false');
+        expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
     });
 });

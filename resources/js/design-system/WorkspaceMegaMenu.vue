@@ -11,7 +11,9 @@ const props = defineProps<{
     destinations: readonly WorkspaceDestination[];
     emptyLabel: string;
     positionTop?: string;
+    contextLabel?: string | null;
 }>();
+const headerContextLabel = computed(() => props.contextLabel ?? props.category?.scopeLabel ?? '');
 const destinationGroups = computed(() => {
     const groups = new Map<string, { label?: string; destinations: WorkspaceDestination[] }>();
     const fallbackGroupKey = props.category?.titleKey ?? '';
@@ -36,6 +38,7 @@ const destinationGroups = computed(() => {
         :style="{ '--workspace-mega-menu-top': positionTop ?? '0px' }"
     >
         <header class="workspace-mega-menu__header">
+            <p class="workspace-mega-menu__context">{{ headerContextLabel }}</p>
             <h2>{{ category.label ?? t(category.titleKey) }}</h2>
         </header>
         <div v-if="destinations.length" class="workspace-mega-menu__columns">

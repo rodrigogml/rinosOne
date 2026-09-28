@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WorkspaceShell from '../../../resources/js/design-system/WorkspaceShell.vue';
 import { useWorkspaceStore } from '../../../resources/js/workspace/workspaceStore';
 import type { WorkspaceDestination } from '../../../resources/js/workspace/workspaceTypes';
@@ -26,7 +26,7 @@ describe('WorkspaceShell', () => {
 
     it('opens the preview menu and closes it with Escape, returning focus to its trigger', async () => {
         const { wrapper } = mountShell();
-        const trigger = wrapper.findAll('.workspace-navigation-rail__category')[1]!;
+        const trigger = wrapper.get('.workspace-navigation-rail__category[data-category-id="personal-library"]');
 
         await trigger.trigger('click');
         expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos e anexos');
@@ -40,17 +40,17 @@ describe('WorkspaceShell', () => {
 
     it('opens a category preview on hover without requiring a click', async () => {
         const { wrapper } = mountShell();
-        const trigger = wrapper.findAll('.workspace-navigation-rail__category')[0]!;
+        const trigger = wrapper.get('.workspace-navigation-rail__category[data-category-id="personal-library"]');
 
         await trigger.trigger('mouseenter');
 
-        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Nenhuma área está disponível nesta etapa.');
+        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos e anexos');
         wrapper.unmount();
     });
 
     it('closes navigation when the person clicks the workspace stage', async () => {
         const { wrapper } = mountShell();
-        await wrapper.findAll('.workspace-navigation-rail__category')[1]!.trigger('click');
+        await wrapper.get('.workspace-navigation-rail__category[data-category-id="personal-library"]').trigger('click');
 
         await wrapper.get('.workspace-stage').trigger('pointerdown');
 
@@ -60,7 +60,7 @@ describe('WorkspaceShell', () => {
 
     it('keeps the mega menu inside the window area instead of the content flow', async () => {
         const { wrapper } = mountShell();
-        await wrapper.findAll('.workspace-navigation-rail__category')[1]!.trigger('click');
+        await wrapper.get('.workspace-navigation-rail__category[data-category-id="personal-library"]').trigger('click');
 
         expect(wrapper.find('.workspace-window-area > #workspace-mega-menu').exists()).toBe(true);
         expect(wrapper.get('.workspace-stage--empty').text()).toBe('');
@@ -128,5 +128,34 @@ describe('WorkspaceShell', () => {
         expect(wrapper.findAll('[role="dialog"][aria-label="Superfícies abertas"]')).toHaveLength(0);
         expect(wrapper.find('[role="alertdialog"]').exists()).toBe(true);
         wrapper.unmount();
+    });
+
+    it('opens mobile navigation after a deliberate inward gesture from the safe left inset', async () => {
+        const { wrapper } = mountShell();
+        const edge = wrapper.get('.workspace-mobile-edge-gesture');
+
+        edge.element.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 24, clientY: 120 }));
+        edge.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 64, clientY: 122 }));
+        await nextTick();
+
+        expect(wrapper.find('[role="dialog"][aria-label="Navegação"]').exists()).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('shows a menu edge preview after a short hold before the drawer opens', async () => {
+        vi.useFakeTimers();
+        const { wrapper } = mountShell();
+        const edge = wrapper.get('.workspace-mobile-edge-gesture');
+
+        try {
+            edge.element.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 24, clientY: 120 }));
+            await vi.advanceTimersByTimeAsync(180);
+
+            expect(wrapper.find('.workspace-mobile-edge-peek').exists()).toBe(true);
+            expect(wrapper.find('[role="dialog"][aria-label="Navegação"]').exists()).toBe(false);
+        } finally {
+            wrapper.unmount();
+            vi.useRealTimers();
+        }
     });
 });

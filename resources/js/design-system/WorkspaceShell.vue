@@ -3,10 +3,10 @@ import axios from 'axios';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
-import { availableWorkspaceDestinations, workspaceDestinations, workspaceNavigationCategories } from '../workspace/workspaceCatalog';
+import { availableWorkspaceDestinations, availableWorkspaceNavigationCategories, workspaceDestinations, workspaceNavigationCategories } from '../workspace/workspaceCatalog';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
 import { workspaceShortcutAction } from '../workspace/workspaceShortcuts';
-import type { WorkspaceDestination } from '../workspace/workspaceTypes';
+import type { WorkspaceDestination, WorkspaceDestinationScope } from '../workspace/workspaceTypes';
 import WorkspaceMegaMenu from './WorkspaceMegaMenu.vue';
 import MobileNavigationDrawer from './MobileNavigationDrawer.vue';
 import WorkspaceNavigationRail from './WorkspaceNavigationRail.vue';
@@ -20,7 +20,8 @@ import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 const props = withDefaults(defineProps<{
     mobileNavigationOpen?: boolean;
     brandLabel?: string;
-}>(), { mobileNavigationOpen: false, brandLabel: '' });
+    displayName?: string | null;
+}>(), { mobileNavigationOpen: false, brandLabel: '', displayName: null });
 const emit = defineEmits<{ 'update:mobileNavigationOpen': [value: boolean]; profileUpdated: [profile: ProfilePresentation] }>();
 
 const { t } = useI18n();
@@ -31,11 +32,25 @@ const windowArea = ref<HTMLElement | null>(null);
 const activeCategoryId = ref<string | null>(null);
 const megaMenuTop = ref('0px');
 const mobileNavigationVisible = ref(props.mobileNavigationOpen);
+const mobileEdgeGesture = ref<{ pointerId: number; startX: number; startY: number } | null>(null);
+const mobileEdgePeekVisible = ref(false);
+let mobileEdgePeekTimeout: ReturnType<typeof setTimeout> | null = null;
 const maintenanceVisible = ref(false);
-const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null }));
+const collapsedScopes = ref<WorkspaceDestinationScope[]>([]);
+const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null, domainAccess: maintenanceVisible.value }));
 const destinations = computed(() => availableWorkspaceDestinations(workspaceDestinations.filter((destination) => destination.id !== 'platform.maintenance' || maintenanceVisible.value), context.value));
-const activeCategory = computed(() => workspaceNavigationCategories.find((category) => category.id === activeCategoryId.value) ?? null);
+const navigationCategories = computed(() => availableWorkspaceNavigationCategories(workspaceNavigationCategories, context.value)
+    .filter((category) => destinations.value.some((destination) => destination.category === category.id)));
+const scopeLabels = computed<Partial<Record<WorkspaceDestinationScope, string>>>(() => ({
+    personal: props.displayName?.trim() || 'Pessoal',
+    tenant: tenantContext.context?.tenant.displayName || 'Organização',
+    domain: 'Domínio',
+}));
+const activeCategory = computed(() => navigationCategories.value.find((category) => category.id === activeCategoryId.value) ?? null);
 const activeDestinations = computed(() => destinations.value.filter((destination) => destination.category === activeCategoryId.value));
+const activeContextLabel = computed(() => activeCategory.value
+    ? scopeLabels.value[activeCategory.value.scope] ?? activeCategory.value.scopeLabel
+    : null);
 
 function closeNavigation(restoreFocus = false): void {
     const trigger = shell.value?.querySelector<HTMLButtonElement>('.workspace-navigation-rail__category--active') ?? null;
@@ -72,7 +87,16 @@ function updateMegaMenuPosition(): void {
 }
 
 function toggleRail(): void {
+    if (!workspace.menuCollapsed) collapsedScopes.value = [];
     workspace.menuCollapsed = !workspace.menuCollapsed;
+}
+
+function toggleScope(scope: WorkspaceDestinationScope): void {
+    const isCollapsing = !collapsedScopes.value.includes(scope);
+    if (isCollapsing && activeCategory.value?.scope === scope) closeNavigation();
+    collapsedScopes.value = collapsedScopes.value.includes(scope)
+        ? collapsedScopes.value.filter((candidate) => candidate !== scope)
+        : [...collapsedScopes.value, scope];
 }
 
 function openDestination(destination: WorkspaceDestination): void {
@@ -134,6 +158,46 @@ function setMobileNavigationOpen(value: boolean): void {
     emit('update:mobileNavigationOpen', value);
 }
 
+function clearMobileEdgeGesture(): void {
+    if (mobileEdgePeekTimeout !== null) clearTimeout(mobileEdgePeekTimeout);
+    mobileEdgePeekTimeout = null;
+    mobileEdgeGesture.value = null;
+    mobileEdgePeekVisible.value = false;
+}
+
+function startMobileEdgeGesture(event: PointerEvent): void {
+    if (event.pointerType === 'mouse' || mobileNavigationVisible.value) return;
+
+    clearMobileEdgeGesture();
+    mobileEdgeGesture.value = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
+    mobileEdgePeekTimeout = setTimeout(() => {
+        if (mobileEdgeGesture.value?.pointerId === event.pointerId) mobileEdgePeekVisible.value = true;
+    }, 180);
+    if (event.currentTarget instanceof HTMLElement && typeof event.currentTarget.setPointerCapture === 'function') {
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }
+}
+
+function moveMobileEdgeGesture(event: PointerEvent): void {
+    const gesture = mobileEdgeGesture.value;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    const horizontalDistance = event.clientX - gesture.startX;
+    const verticalDistance = Math.abs(event.clientY - gesture.startY);
+    if (verticalDistance > horizontalDistance) {
+        clearMobileEdgeGesture();
+        return;
+    }
+
+    if (horizontalDistance < 36) {
+        if (horizontalDistance > 8) mobileEdgePeekVisible.value = true;
+        return;
+    }
+    if (event.cancelable) event.preventDefault();
+    clearMobileEdgeGesture();
+    setMobileNavigationOpen(true);
+}
+
 watch(() => tenantContext.context?.tenant.id ?? null, () => {
     closeNavigation();
     setMobileNavigationOpen(false);
@@ -151,7 +215,7 @@ watch(() => workspace.mobileTaskPanelOpen, (open) => {
 watch(() => props.mobileNavigationOpen, (open) => { mobileNavigationVisible.value = open; });
 watch(activeCategoryId, updateMegaMenuPosition);
 watch(() => destinations.value, () => {
-    if (activeCategoryId.value && !workspaceNavigationCategories.some((category) => category.id === activeCategoryId.value)) {
+    if (activeCategoryId.value && !navigationCategories.value.some((category) => category.id === activeCategoryId.value)) {
         closeNavigation();
     }
 });
@@ -162,6 +226,7 @@ onMounted(() => {
     window.addEventListener('resize', updateMegaMenuPosition);
 });
 onBeforeUnmount(() => {
+    clearMobileEdgeGesture();
     document.removeEventListener('pointerdown', onDocumentPointerDown);
     document.removeEventListener('keydown', onDocumentKeydown);
     window.removeEventListener('resize', updateMegaMenuPosition);
@@ -172,13 +237,16 @@ onBeforeUnmount(() => {
     <section ref="shell" class="workspace-shell">
         <div class="workspace-layout">
             <WorkspaceNavigationRail
-                :categories="workspaceNavigationCategories"
+                :categories="navigationCategories"
                 :active-category-id="activeCategoryId"
                 :collapsed="workspace.menuCollapsed"
+                :collapsed-scopes="collapsedScopes"
+                :scope-labels="scopeLabels"
                 :collapse-label="t('access.workspace.navigation.collapse')"
                 :expand-label="t('access.workspace.navigation.expand')"
                 @select-category="selectCategory"
                 @preview-category="previewCategory"
+                @toggle-scope="toggleScope"
                 @toggle-collapsed="toggleRail"
             />
             <div class="workspace-content">
@@ -188,6 +256,7 @@ onBeforeUnmount(() => {
                         :destinations="activeDestinations"
                         :empty-label="t('access.workspace.navigation.empty')"
                         :position-top="megaMenuTop"
+                        :context-label="activeContextLabel"
                         @open-destination="openDestination"
                     />
                     <WorkspaceStage :surface="workspace.activeSurface" :surfaces="workspace.surfaces" @request-close="requestCloseSurface" @profile-updated="emit('profileUpdated', $event)" />
@@ -203,7 +272,9 @@ onBeforeUnmount(() => {
         </div>
         <WorkspaceOverlayHost :dialogs="workspace.dialogStack" @resolve="workspace.resolveDialog" />
         <WorkspaceNotificationHost :notifications="workspace.notificationQueue" :dismiss-label="t('access.workspace.notification.dismiss')" @dismiss="workspace.dismissNotification" />
-        <MobileNavigationDrawer :model-value="mobileNavigationVisible" :brand-label="props.brandLabel" :title="t('access.workspace.navigation.title')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.navigation.empty')" :categories="workspaceNavigationCategories" :destinations="destinations" @update:model-value="setMobileNavigationOpen" @open-destination="openDestination" />
+        <div class="workspace-mobile-edge-gesture" aria-hidden="true" @pointerdown="startMobileEdgeGesture" @pointermove="moveMobileEdgeGesture" @pointerup="clearMobileEdgeGesture" @pointercancel="clearMobileEdgeGesture" />
+        <div v-if="mobileEdgePeekVisible" class="workspace-mobile-edge-peek" aria-hidden="true" />
+        <MobileNavigationDrawer :model-value="mobileNavigationVisible" :brand-label="props.brandLabel" :title="t('access.workspace.navigation.title')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.navigation.empty')" :categories="navigationCategories" :destinations="destinations" :scope-labels="scopeLabels" @update:model-value="setMobileNavigationOpen" @open-destination="openDestination" />
         <WorkspaceMobileTaskPanel v-model="workspace.mobileTaskPanelOpen" :surfaces="workspace.surfaces" :active-surface-id="workspace.activeSurfaceId" :title="t('access.workspace.taskbar.label')" :close-label="t('access.shell.closeNavigation')" :empty-label="t('access.workspace.mobile.noSurfaces')" :close-surface-label="t('access.workspace.taskbar.close')" :dirty-label="t('access.workspace.taskbar.dirty')" @activate="activateSurface" @request-close="requestCloseSurface" />
     </section>
 </template>

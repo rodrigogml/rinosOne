@@ -5,7 +5,7 @@ import type { WorkspaceNavigationCategory } from '../../../resources/js/workspac
 import { i18n } from '../../../resources/js/i18n';
 
 const categories: WorkspaceNavigationCategory[] = [
-    { id: 'workspace', titleKey: 'access.workspace.navigation.title', icon: 'workspace' },
+    { id: 'workspace', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', icon: 'workspace' },
 ];
 
 describe('WorkspaceNavigationRail', () => {
@@ -16,7 +16,7 @@ describe('WorkspaceNavigationRail', () => {
         });
 
         const category = wrapper.get('.workspace-navigation-rail__category');
-        expect(category.attributes('aria-label')).toBe('Navegação');
+        expect(category.attributes('aria-label')).toBe('Pessoal: Navegação');
         expect(category.attributes('aria-expanded')).toBe('true');
         expect(wrapper.find('.workspace-navigation-rail__category-label').exists()).toBe(false);
 
@@ -25,5 +25,30 @@ describe('WorkspaceNavigationRail', () => {
 
         expect(wrapper.emitted('selectCategory')).toEqual([['workspace']]);
         expect(wrapper.emitted('toggleCollapsed')).toHaveLength(1);
+    });
+
+    it('groups categories by context and allows each context to collapse independently', async () => {
+        const wrapper = mount(WorkspaceNavigationRail, {
+            props: {
+                categories: [
+                    ...categories,
+                    { id: 'organization', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', icon: 'documents' },
+                ],
+                activeCategoryId: null,
+                collapsed: false,
+                collapsedScopes: [],
+                scopeLabels: { personal: 'Ana Souza', tenant: 'Organização Alfa' },
+                collapseLabel: 'Recolher',
+                expandLabel: 'Expandir',
+            },
+            global: { plugins: [i18n] },
+        });
+
+        expect(wrapper.findAll('.workspace-navigation-rail__scope')).toHaveLength(2);
+        expect(wrapper.text()).toContain('Ana Souza');
+        expect(wrapper.text()).toContain('Organização Alfa');
+
+        await wrapper.get('[aria-label="Recolher Organização Alfa"]').trigger('click');
+        expect(wrapper.emitted('toggleScope')).toEqual([['tenant']]);
     });
 });

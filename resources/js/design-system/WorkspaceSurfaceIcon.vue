@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { rasterIconSource } from './rasterIconAssets';
 
 const props = withDefaults(defineProps<{ name: string; size?: 'sm' | 'md' | 'lg' }>(), { size: 'md' });
 
@@ -16,21 +17,9 @@ const paths: Record<string, string[]> = {
     performance: ['M9 39V25M19 39V15M29 39V21M39 39V9'],
     settings: ['M24 17.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z', 'M24 7v4M24 37v4M41 24h-4M11 24H7m29-12-2.8 2.8M14.8 33.2 12 36m24 0-2.8-2.8M14.8 14.8 12 12M31.4 16.6l2.8-2.8M16.6 31.4l-2.8 2.8m19.4 0-2.8-2.8M16.6 16.6l-2.8-2.8'],
 };
-const rasterSources: Record<string, Record<'sm' | 'md' | 'lg', string>> = {
-    maintenance: {
-        sm: '/assets/icons/maintenance_24.png',
-        md: '/assets/icons/maintenance_32.png',
-        lg: '/assets/icons/maintenance_48.png',
-    },
-    'rinoUser-tweek': {
-        sm: '/assets/icons/rinoUser-tweek_24.png',
-        md: '/assets/icons/rinoUser-tweek_32.png',
-        lg: '/assets/icons/rinoUser-tweek_48.png',
-    },
-};
 const fallback = ['M8 9h32v30H8z', 'M16 19h16M16 27h16M16 35h10'];
 const strokeWidth = computed(() => props.name === 'performance' ? 4 : 2.25);
-const rasterSource = computed(() => rasterSources[props.name]?.[props.size] ?? null);
+const rasterSource = computed(() => rasterIconSource(props.name, props.size));
 </script>
 
 <template><img v-if="rasterSource" class="workspace-surface-icon" :class="`workspace-surface-icon--${size}`" :src="rasterSource" alt="" aria-hidden="true"><svg v-else class="workspace-surface-icon" :class="`workspace-surface-icon--${size}`" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" :stroke-width="strokeWidth" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="path in paths[name] ?? fallback" :key="path" :d="path" /></svg></template>

@@ -4,7 +4,7 @@ import WorkspaceMegaMenu from '../../../resources/js/design-system/WorkspaceMega
 import type { WorkspaceDestination, WorkspaceNavigationCategory } from '../../../resources/js/workspace/workspaceTypes';
 import { i18n } from '../../../resources/js/i18n';
 
-const category: WorkspaceNavigationCategory = { id: 'workspace', titleKey: 'access.workspace.navigation.title', icon: 'workspace' };
+const category: WorkspaceNavigationCategory = { id: 'workspace', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', icon: 'workspace' };
 const destination: WorkspaceDestination = {
     id: 'personal.sample',
     scope: 'personal',
@@ -17,11 +17,13 @@ const destination: WorkspaceDestination = {
 describe('WorkspaceMegaMenu', () => {
     it('states honestly when the selected category has no destination', () => {
         const wrapper = mount(WorkspaceMegaMenu, {
-            props: { category, destinations: [], emptyLabel: 'Nenhuma área disponível.' },
+            props: { category, contextLabel: 'Ana Souza', destinations: [], emptyLabel: 'Nenhuma área disponível.' },
             global: { plugins: [i18n] },
         });
 
         expect(wrapper.get('#workspace-mega-menu').attributes('aria-label')).toBe('Navegação');
+        expect(wrapper.get('.workspace-mega-menu__context').text()).toBe('Ana Souza');
+        expect(wrapper.get('.workspace-mega-menu__header').classes()).toContain('workspace-mega-menu__header');
         expect(wrapper.text()).toContain('Nenhuma área disponível.');
     });
 

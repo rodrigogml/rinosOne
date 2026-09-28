@@ -1,22 +1,22 @@
 import type { WorkspaceContext, WorkspaceDestination, WorkspaceNavigationCategory } from './workspaceTypes';
 
 export const workspaceNavigationCategories: readonly WorkspaceNavigationCategory[] = [
-    { id: 'overview', titleKey: 'access.workspace.navigation.title', label: 'Visão geral', icon: 'overview' },
-    { id: 'documents', titleKey: 'access.workspace.navigation.title', label: 'Documentos', icon: 'documents' },
-    { id: 'security', titleKey: 'access.workspace.navigation.title', label: 'Segurança', icon: 'settings' },
+    { id: 'personal-library', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', label: 'Biblioteca', icon: 'documents' },
+    { id: 'tenant-security', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Segurança', icon: 'settings' },
+    { id: 'domain-governance', scope: 'domain', scopeLabel: 'Domínio', titleKey: 'access.workspace.navigation.title', label: 'Administração', icon: 'settings' },
 ];
 
 export const workspaceDestinations: readonly WorkspaceDestination[] = [
-    { id: 'personal.workspace-folders', scope: 'personal', category: 'documents', groupKey: 'access.workspace.navigation.title', groupLabel: 'Consulta', titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments' }) },
-    { id: 'platform.maintenance', scope: 'personal', category: 'overview', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'maintenance', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'maintenance' }) },
-    { id: 'tenant.authorization-administration', scope: 'tenant', category: 'security', groupKey: 'access.workspace.navigation.title', groupLabel: 'Administração', titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings' }) },
+    { id: 'personal.workspace-folders', scope: 'personal', category: 'personal-library', groupKey: 'access.workspace.navigation.title', groupLabel: 'Arquivos', titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Arquivos e anexos', icon: 'attachments' }) },
+    { id: 'tenant.authorization-administration', scope: 'tenant', category: 'tenant-security', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Usuários e acessos', icon: 'settings', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Usuários e acessos', icon: 'settings' }) },
+    { id: 'platform.maintenance', scope: 'domain', category: 'domain-governance', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'maintenance', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'maintenance' }) },
 ];
 
 /** Superfície pessoal permanente, aberta pelo menu do perfil e não pelo catálogo de módulos. */
 export const personalSettingsDestination: WorkspaceDestination = {
     id: 'personal.settings',
     scope: 'personal',
-    category: 'overview',
+    category: 'personal-library',
     titleKey: 'access.shell.userSettings',
     icon: 'rinoUser-tweek',
     instancePolicy: 'single',
@@ -27,5 +27,16 @@ export function availableWorkspaceDestinations(
     destinations: readonly WorkspaceDestination[],
     context: WorkspaceContext,
 ): WorkspaceDestination[] {
-    return destinations.filter((destination) => destination.scope === 'personal' || context.tenantId !== null);
+    return destinations.filter((destination) => destination.scope === 'personal'
+        || (destination.scope === 'tenant' && context.tenantId !== null)
+        || (destination.scope === 'domain' && context.domainAccess === true));
+}
+
+export function availableWorkspaceNavigationCategories(
+    categories: readonly WorkspaceNavigationCategory[],
+    context: WorkspaceContext,
+): WorkspaceNavigationCategory[] {
+    return categories.filter((category) => category.scope === 'personal'
+        || (category.scope === 'tenant' && context.tenantId !== null)
+        || (category.scope === 'domain' && context.domainAccess === true));
 }

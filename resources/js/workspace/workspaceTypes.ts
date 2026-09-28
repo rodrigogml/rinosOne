@@ -1,4 +1,4 @@
-export type WorkspaceDestinationScope = 'personal' | 'tenant';
+export type WorkspaceDestinationScope = 'personal' | 'tenant' | 'domain';
 export type WorkspaceInstancePolicy = 'single' | 'multiple';
 export type WorkspaceSurfaceStatus = 'open' | 'active' | 'closing' | 'unavailable';
 export type WorkspaceDialogKind = 'information' | 'warning' | 'error' | 'confirmation';
@@ -7,6 +7,8 @@ export type WorkspaceNotificationKind = 'information' | 'success' | 'warning' | 
 
 export interface WorkspaceContext {
     tenantId: number | null;
+    /** Indica que o usuário pode acessar recursos administrativos do domínio. */
+    domainAccess?: boolean;
 }
 
 export interface WorkspaceSurfaceDefinition {
@@ -24,6 +26,8 @@ export interface WorkspaceSurfaceDefinition {
  */
 export interface WorkspaceNavigationCategory {
     id: string;
+    scope: WorkspaceDestinationScope;
+    scopeLabel: string;
     titleKey: string;
     label?: string;
     icon: string;

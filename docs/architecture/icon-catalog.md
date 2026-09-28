@@ -25,6 +25,12 @@ O diretório `etc/Icon Treatment/output/` é uma área local e descartável de r
 > [!NOTE]
 > O disco `storage/app/public` é destinado a conteúdo operacional e é ignorado pelo Git. Não o utilize para ícones internos versionados.
 
+### Preload ocioso de ícones de interface
+
+Após a primeira renderização autenticada, a aplicação pré-carrega no tempo ocioso do navegador as variantes de interface `_24`, `_32` e `_48` de todos os ícones raster registrados em `resources/js/design-system/rasterIconAssets.ts`. O preload usa `requestIdleCallback` quando disponível e um atraso curto como fallback; assim, não concorre com o conteúdo inicial da tela. A variante `_512` não é pré-carregada porque não é usada na interface corrente.
+
+Esse registro é a única manutenção necessária para um novo ícone PNG. Menus, janelas, taskbar e demais componentes que usam a chave registrada passam a compartilhar a mesma resolução de URL e o cache já aquecido, sem listas específicas por tela.
+
 | Ativo raster | Semântica aprovada | Uso atual |
 | --- | --- | --- |
 | `logout` | Encerrar a sessão autenticada | Ação Sair no menu pessoal |

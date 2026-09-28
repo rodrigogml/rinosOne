@@ -51,6 +51,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function openDestination(destination: WorkspaceDestination, context: WorkspaceContext): WorkspaceSurface | null {
         if (destination.scope === 'tenant' && context.tenantId === null) return null;
+        if (destination.scope === 'domain' && context.domainAccess !== true) return null;
 
         const policy = destination.instancePolicy ?? 'single';
         const existing = policy === 'single'

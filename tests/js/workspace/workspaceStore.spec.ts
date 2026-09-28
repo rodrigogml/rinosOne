@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { availableWorkspaceDestinations } from '../../../resources/js/workspace/workspaceCatalog';
+import { availableWorkspaceDestinations, availableWorkspaceNavigationCategories, workspaceDestinations, workspaceNavigationCategories } from '../../../resources/js/workspace/workspaceCatalog';
 import { useWorkspaceStore } from '../../../resources/js/workspace/workspaceStore';
 import type { WorkspaceDestination } from '../../../resources/js/workspace/workspaceTypes';
 
@@ -22,9 +22,36 @@ describe('workspace runtime store', () => {
     it('filters tenant destinations without a tenant context', () => {
         const personal = destination();
         const tenant = destination({ id: 'tenant.orders', scope: 'tenant', category: 'tenant' });
+        const domain = destination({ id: 'domain.audit', scope: 'domain', category: 'domain' });
 
-        expect(availableWorkspaceDestinations([personal, tenant], { tenantId: null })).toEqual([personal]);
-        expect(availableWorkspaceDestinations([personal, tenant], { tenantId: 1 })).toEqual([personal, tenant]);
+        expect(availableWorkspaceDestinations([personal, tenant, domain], { tenantId: null })).toEqual([personal]);
+        expect(availableWorkspaceDestinations([personal, tenant, domain], { tenantId: 1 })).toEqual([personal, tenant]);
+        expect(availableWorkspaceDestinations([personal, tenant, domain], { tenantId: 1, domainAccess: true })).toEqual([personal, tenant, domain]);
+    });
+
+    it('keeps navigation contexts aligned with destination visibility', () => {
+        const categories = [
+            { id: 'personal', scope: 'personal' as const, scopeLabel: 'Pessoal', titleKey: 'workspace', icon: 'overview' },
+            { id: 'tenant', scope: 'tenant' as const, scopeLabel: 'Organização', titleKey: 'workspace', icon: 'contacts' },
+            { id: 'domain', scope: 'domain' as const, scopeLabel: 'Domínio', titleKey: 'workspace', icon: 'settings' },
+        ];
+
+        expect(availableWorkspaceNavigationCategories(categories, { tenantId: null }).map((category) => category.id)).toEqual(['personal']);
+        expect(availableWorkspaceNavigationCategories(categories, { tenantId: 4 }).map((category) => category.id)).toEqual(['personal', 'tenant']);
+        expect(availableWorkspaceNavigationCategories(categories, { tenantId: 4, domainAccess: true }).map((category) => category.id)).toEqual(['personal', 'tenant', 'domain']);
+    });
+
+    it('publishes only workspace destinations backed by an implemented surface', () => {
+        expect(workspaceNavigationCategories.map((category) => category.id)).toEqual([
+            'personal-library',
+            'tenant-security',
+            'domain-governance',
+        ]);
+        expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
+            'personal.workspace-folders',
+            'tenant.authorization-administration',
+            'platform.maintenance',
+        ]);
     });
 
     it('focuses the existing single instance and creates distinguishable multiple instances', () => {
