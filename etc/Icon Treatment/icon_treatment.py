@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -15,18 +16,27 @@ except ImportError as error:
 
 
 SIZES = (512, 48, 32, 24)
+DEFAULT_ALPHA_TRIM_THRESHOLD = 16
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent
 OUTPUT_DIRECTORY = SCRIPT_DIRECTORY / "output"
 
 
-def normalized_canvas(source_path: Path) -> Image.Image:
-    """Remove a borda inteiramente transparente e centraliza o conteúdo em um quadrado."""
+def normalized_canvas(
+    source_path: Path, alpha_trim_threshold: int = DEFAULT_ALPHA_TRIM_THRESHOLD
+) -> Image.Image:
+    """Remove ruído translúcido de borda e centraliza o conteúdo visível em um quadrado."""
     with Image.open(source_path) as source:
         image = ImageOps.exif_transpose(source).convert("RGBA")
 
-    content_bounds = image.getchannel("A").getbbox()
+    alpha = image.getchannel("A")
+    visible_alpha = alpha.point(
+        lambda value: 255 if value >= alpha_trim_threshold else 0
+    )
+    content_bounds = visible_alpha.getbbox()
     if content_bounds is None:
-        raise ValueError("a imagem não possui pixels visíveis")
+        raise ValueError(
+            "a imagem não possui pixels visíveis acima do limiar de transparência"
+        )
 
     cropped = image.crop(content_bounds)
     side = max(cropped.size)
@@ -36,9 +46,9 @@ def normalized_canvas(source_path: Path) -> Image.Image:
     return canvas
 
 
-def save_sizes(source_path: Path) -> list[Path]:
+def save_sizes(source_path: Path, alpha_trim_threshold: int) -> list[Path]:
     """Gera versões quadradas em PNG preservando transparência e o nome-base recebido."""
-    source = normalized_canvas(source_path)
+    source = normalized_canvas(source_path, alpha_trim_threshold)
     OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
     generated: list[Path] = []
 
@@ -52,12 +62,25 @@ def save_sizes(source_path: Path) -> list[Path]:
 
 
 def main(arguments: list[str]) -> int:
-    if not arguments:
-        print("Uso: py -3 icon_treatment.py <imagem> [imagem ...]", file=sys.stderr)
-        return 1
+    parser = argparse.ArgumentParser(
+        description="Remove bordas transparentes e gera variantes PNG para a aplicação."
+    )
+    parser.add_argument(
+        "--alpha-trim-threshold",
+        type=int,
+        default=DEFAULT_ALPHA_TRIM_THRESHOLD,
+        help=(
+            "alfa mínimo (1-255) considerado conteúdo; o padrão 16 ignora "
+            "pixels residuais quase transparentes"
+        ),
+    )
+    parser.add_argument("images", metavar="imagem", nargs="+")
+    options = parser.parse_args(arguments)
+    if not 1 <= options.alpha_trim_threshold <= 255:
+        parser.error("--alpha-trim-threshold deve estar entre 1 e 255")
 
     failures = 0
-    for argument in arguments:
+    for argument in options.images:
         source_path = Path(argument)
         if not source_path.is_file():
             print(f"ERRO: arquivo não encontrado: {source_path}", file=sys.stderr)
@@ -65,7 +88,7 @@ def main(arguments: list[str]) -> int:
             continue
 
         try:
-            generated = save_sizes(source_path)
+            generated = save_sizes(source_path, options.alpha_trim_threshold)
         except (OSError, UnidentifiedImageError, ValueError) as error:
             print(f"ERRO: {source_path.name}: {error}", file=sys.stderr)
             failures += 1

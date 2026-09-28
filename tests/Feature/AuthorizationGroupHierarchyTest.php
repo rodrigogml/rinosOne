@@ -99,6 +99,24 @@ class AuthorizationGroupHierarchyTest extends TestCase
         app(AuthorizationGroupHierarchyService::class)->addChildGroup($parent, $child);
     }
 
+    public function test_it_enforces_the_configured_nesting_depth_at_the_boundary(): void
+    {
+        config()->set('authorization.maxGroupNestingDepth', 2);
+        $tenant = $this->activeTenant();
+        $groups = app(AuthorizationGroupService::class);
+        $first = $groups->create('First', AuthorizationScope::Tenant, $tenant->id);
+        $second = $groups->create('Second', AuthorizationScope::Tenant, $tenant->id);
+        $third = $groups->create('Third', AuthorizationScope::Tenant, $tenant->id);
+        $fourth = $groups->create('Fourth', AuthorizationScope::Tenant, $tenant->id);
+        $hierarchy = app(AuthorizationGroupHierarchyService::class);
+
+        $hierarchy->addChildGroup($first, $second);
+        $hierarchy->addChildGroup($second, $third);
+
+        $this->expectException(LogicException::class);
+        $hierarchy->addChildGroup($third, $fourth);
+    }
+
     private function tenantMember(): array
     {
         $tenant = $this->activeTenant();

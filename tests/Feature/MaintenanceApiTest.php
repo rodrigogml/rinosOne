@@ -8,6 +8,7 @@ use App\Models\AuthorizationRole;
 use App\Models\AuthorizationRoleAssignment;
 use App\Models\MaintenanceAdministrativeAudit;
 use App\Models\User;
+use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,11 +60,49 @@ class MaintenanceApiTest extends TestCase
             ->assertJsonPath('administrativeAudits.0.outcome', 'ACCEPTED');
     }
 
+    public function test_ibge_reader_can_read_the_routine_but_cannot_trigger_it(): void
+    {
+        $reader = $this->ibgeReader();
+
+        $this->actingAs($reader)
+            ->getJson('/api/v1/platform/maintenance/routines/locality-ibge-territory-catalog')
+            ->assertOk()
+            ->assertJsonPath('routine.routineKey', IbgeTerritoryMaintenanceService::ROUTINE_KEY)
+            ->assertJsonPath('routine.state', 'NOT_EXECUTED')
+            ->assertJsonPath('routine.capabilities.canSynchronize', false)
+            ->assertJsonPath('routine.administrativeAudits', []);
+        $this->actingAs($reader)
+            ->postJson('/api/v1/platform/maintenance/routines/locality-ibge-territory-catalog/actions/SYNCHRONIZE')
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'MAINTENANCE_ROUTINE_NOT_AVAILABLE');
+    }
+
     private function maintenanceOperator(): User
     {
         $user = User::factory()->create();
         $role = AuthorizationRole::query()
             ->where('key', 'platform.maintenance.financial-institution.operator')
+            ->firstOrFail();
+        AuthorizationRoleAssignment::query()->create([
+            'idRole' => $role->id,
+            'idUser' => $user->id,
+            'idTenant' => null,
+            'state' => 'ACTIVE',
+        ]);
+
+        return $user;
+    }
+
+    private function ibgeReader(): User
+    {
+        return $this->platformUserWithRole('platform.maintenance.locality-ibge.reader');
+    }
+
+    private function platformUserWithRole(string $roleKey): User
+    {
+        $user = User::factory()->create();
+        $role = AuthorizationRole::query()
+            ->where('key', $roleKey)
             ->firstOrFail();
         AuthorizationRoleAssignment::query()->create([
             'idRole' => $role->id,

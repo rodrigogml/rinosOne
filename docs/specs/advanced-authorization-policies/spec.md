@@ -12,7 +12,7 @@ Esta é uma capacidade complementar. Papéis, permissões, grupos, escopos, rela
 
 ## Escopo
 
-Inclui políticas condicionais e reutilizáveis aplicáveis aos escopos `PLATFORM`, `PERSONAL` e `TENANT`; delegação administrativa limitada; acesso temporário e sujeito a aprovação; separação de funções; identidades de serviço; e sincronização de grupos por diretório corporativo. A primeira integração corporativa adotará SCIM 2.0 por adaptador, preservando o domínio independente do fornecedor.
+Inclui políticas condicionais e reutilizáveis aplicáveis aos escopos `PLATFORM`, `PERSONAL` e `TENANT`; implicação explícita de permissions; delegação administrativa limitada; acesso temporário e sujeito a aprovação; separação de funções; identidades de serviço; restrictions por recurso; limite de grupos aninhados; e sincronização de grupos por diretório corporativo. A primeira integração corporativa adotará SCIM 2.0 por adaptador, preservando o domínio independente do fornecedor.
 
 Não inclui a criação de novas permissões de produto, nem substitui fluxos funcionais de aprovação próprios de cada módulo. Quando uma política exigir aprovação, ela decide somente sobre a ativação temporária de um acesso; a aprovação de uma transação de negócio continua sob responsabilidade do módulo correspondente.
 
@@ -93,6 +93,9 @@ Como administrador de integração, quero aplicar as mesmas garantias de autoriz
 - **FR-AAP-014:** O sistema DEVE suportar sincronização de grupos de diretório corporativo por adaptador aprovado, com mapeamento explícito para grupos internos e trilha de auditoria de cada alteração recebida.
 - **FR-AAP-015:** O sistema DEVE aplicar princípio de falha segura a integrações de identidade: dados ausentes, inválidos, expirados ou não verificados não PODEM conceder ou manter acesso acima da política de continuidade configurada.
 - **FR-AAP-016:** O sistema DEVE manter a regra de proteção do administrador de tenant diante de sincronizações, delegações, aprovações e políticas avançadas: todo tenant precisa conservar ao menos uma associação direta, ativa e elegível ao papel `tenant.administrator`.
+- **FR-AAP-017:** O sistema DEVE permitir declarar implicações acíclicas entre permissions do mesmo escopo; uma permission implicada somente é considerada após uma concessão válida da permission de origem e nunca supera uma restriction.
+- **FR-AAP-018:** O sistema DEVE limitar a profundidade de grupos aninhados por configuração segura e negar uma escrita que ultrapasse o limite.
+- **FR-AAP-019:** O sistema DEVE permitir restriction opcional por recurso registrado, validando tipo, escopo e tenant; uma restriction específica só nega a decisão para o recurso qualificado.
 
 ## Regras transversais
 
@@ -107,6 +110,7 @@ Como administrador de integração, quero aplicar as mesmas garantias de autoriz
 - Aprovação de transações de negócio, assinaturas eletrônicas ou fluxo financeiro dos módulos de domínio.
 - Fornecedor de diretório diferente de SCIM 2.0, SSO/protocolo de autenticação e mapeamento específico de atributos de cada fornecedor.
 - Substituição de políticas já publicadas sem versionamento, rastreabilidade e validação de compatibilidade.
+- Regras de negócio por módulo, como limites financeiros, pares de funções incompatíveis ou categorias de permission: o motor é entregue sem regras arbitrárias até que cada módulo as declare.
 
 ## Critérios de sucesso mensuráveis
 

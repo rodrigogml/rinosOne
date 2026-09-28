@@ -1,7 +1,7 @@
 # Arquitetura das Superfícies de Interação
 
 **Criado**: 2026-09-22
-**Última atualização**: 2026-09-26
+**Última atualização**: 2026-09-27
 **Status**: Aprovado
 **Fontes**: briefing inicial, Constituição e plano da feature de acesso de usuário.
 
@@ -52,5 +52,6 @@ A web adota dez famílias cromáticas claro/escuro em tokens, com Rubi Industria
 | 2026-09-24 | SURF-WEB-ACCESS | A área autenticada evoluirá para uma Área de trabalho com superfícies efêmeras por aba | Permite produtividade desktop e adaptação móvel sem persistir telas ou contexto | Plano da Área de Trabalho |
 | 2026-09-25 | SURF-WEB-ACCESS | A autorização projeta capabilities mínimas para a web, mas a decisão permanece no backend | Evita que estado visual se torne controle de acesso e permite revogação na próxima operação | Plano da Fundação de Autorização |
 | 2026-09-26 | SURF-WEB-MAINTENANCE | A central de manutenções integra rotinas explicitamente e apresenta somente suas capacidades autorizadas | Preserva regras próprias de agenda, concorrência e execução, sem criar abstração genérica | Plano da Central de Manutenções |
+| 2026-09-27 | SURF-WEB-MAINTENANCE | A atualização territorial do IBGE será uma integração de leitura no Hub, sem disparo manual | A rotina é automaticamente devida na primeira execução e mensalmente depois; o Hub a observa, mas não define suas regras | Plano da Fundação de Localidades |
 | 2026-09-26 | SURF-WEB-ADMIN | A administração de segurança será uma superfície responsiva separada da área operacional | Evita misturar gestão de privilégios com uso cotidiano e preserva controles reforçados | SDDs de autorização |
 | 2026-09-26 | SURF-WEB-SHARING | A gestão visual de compartilhamentos é uma superfície futura própria | Mantém a fundação por recurso independente do editor de relações | SDD de autorização por recurso |

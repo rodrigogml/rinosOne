@@ -49,6 +49,19 @@ describe('access entry and account creation', () => {
         expect(http.post).toHaveBeenLastCalledWith('/api/v1/auth/password-sessions', { email: 'person@example.test', password: 'Secret#1', rememberMe: false });
     });
 
+    it('explains invalid password credentials without disclosing whether the account exists', async () => {
+        const wrapper = mount(App);
+        http.post.mockRejectedValue({ response: { data: { code: 'INVALID_CREDENTIAL' } } });
+        vi.mocked(axios.isAxiosError).mockReturnValue(true);
+
+        await wrapper.get('#email').setValue('person@example.test');
+        await wrapper.get('#password').setValue('wrong-password');
+        await wrapper.get('form').trigger('submit');
+
+        expect(wrapper.text()).toContain('E-mail ou senha inválidos.');
+        expect(wrapper.text()).not.toContain('Não foi possível concluir esta ação.');
+    });
+
     it('opens a separate registration journey without transporting login email or password', async () => {
         const wrapper = mount(App);
 

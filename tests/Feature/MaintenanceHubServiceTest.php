@@ -125,7 +125,7 @@ class MaintenanceHubServiceTest extends TestCase
     {
         $user = $this->platformAdministrator();
 
-        $this->assertCount(1, app(MaintenanceHubService::class)->listKnownRoutines($user));
+        $this->assertCount(2, app(MaintenanceHubService::class)->listKnownRoutines($user));
     }
 
     private function maintenanceOperator(): User

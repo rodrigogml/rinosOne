@@ -6,6 +6,7 @@ use App\Jobs\FileStorage\PurgeRetainedFileVersions;
 use App\Jobs\FileStorage\ReconcileFileStorageObjects;
 use App\Jobs\FileStorage\ReprocessFileStorageCompression;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
+use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -24,10 +25,16 @@ Schedule::command('access:purge-expired-challenges')
     ->cron("*/{$cleanupIntervalMinutes} * * * *");
 
 Schedule::command('authorization:purge-audit-events')->daily();
+Schedule::command('authorization:expire-access-requests')->everyMinute();
+Schedule::command('authorization:expire-service-identities')->everyMinute();
 
 Schedule::call(static fn () => app(FinancialInstitutionMaintenanceService::class)->synchronizeScheduled())
     ->daily()
     ->name('maintenance.financial-institution-catalog');
+
+Schedule::call(static fn () => app(IbgeTerritoryMaintenanceService::class)->synchronizeWhenDue())
+    ->hourly()
+    ->name('maintenance.locality-ibge-territory-catalog');
 
 $fileStorageRetentionPurgeInterval = config('file-storage.maintenance.retentionPurgeIntervalMinutes');
 

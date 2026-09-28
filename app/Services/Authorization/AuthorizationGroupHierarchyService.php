@@ -21,6 +21,7 @@ class AuthorizationGroupHierarchyService
             if ($this->wouldCreateCycle($parent->id, $child->id)) {
                 throw new LogicException('An authorization group hierarchy cannot contain a cycle.');
             }
+            $this->ensureMaximumDepth($parent, $child);
 
             $created = DB::table('auth_group_group')->insertOrIgnore([
                 'idParentGroup' => $parent->id,
@@ -107,5 +108,43 @@ class AuthorizationGroupHierarchyService
         );
 
         return (bool) $result->cycle;
+    }
+
+    private function ensureMaximumDepth(AuthorizationGroup $parent, AuthorizationGroup $child): void
+    {
+        $groupIds = AuthorizationGroup::query()
+            ->where('scope', $parent->scope)
+            ->when($parent->idTenant === null, fn ($query) => $query->whereNull('idTenant'), fn ($query) => $query->where('idTenant', $parent->idTenant))
+            ->lockForUpdate()
+            ->pluck('id')
+            ->all();
+        $parents = [];
+        $children = [];
+        if ($groupIds !== []) {
+            foreach (DB::table('auth_group_group')->whereIn('idParentGroup', $groupIds)->get() as $relation) {
+                $parents[$relation->idChildGroup][] = (int) $relation->idParentGroup;
+                $children[$relation->idParentGroup][] = (int) $relation->idChildGroup;
+            }
+        }
+
+        $depth = $this->maximumPathDepth($parent->id, $parents) + 1 + $this->maximumPathDepth($child->id, $children);
+        if ($depth > (int) config('authorization.maxGroupNestingDepth')) {
+            throw new LogicException('The authorization group hierarchy exceeds its configured nesting depth.');
+        }
+    }
+
+    /** @param array<int, list<int>> $relations */
+    private function maximumPathDepth(int $groupId, array $relations, array $visiting = []): int
+    {
+        if (isset($visiting[$groupId])) {
+            throw new LogicException('An authorization group hierarchy cannot contain a cycle.');
+        }
+        $visiting[$groupId] = true;
+        $maximum = 0;
+        foreach ($relations[$groupId] ?? [] as $relatedGroupId) {
+            $maximum = max($maximum, 1 + $this->maximumPathDepth($relatedGroupId, $relations, $visiting));
+        }
+
+        return $maximum;
     }
 }

@@ -29,17 +29,17 @@ Ref: Spec FR-AP-003/004.
 
 Ref: Spec FR-AP-005, `contracts/decision-performance.md`.
 
-- [ ] 2.1.1 Definir limite e validação do payload de lote.
-- [ ] 2.1.2 Reutilizar resolvedores sem alterar semântica individual.
-- [ ] 2.1.3 Criar teste de equivalência por matriz de contexto/recurso.
+- [x] 2.1.1 Definir limite e validação do payload de lote. <!-- CheckResourceAuthorizationBatchRequest limita a 100 verificações, valida referências opcionais e mantém envelope 422 em 2026-09-27 -->
+- [x] 2.1.2 Reutilizar resolvedores sem alterar semântica individual. <!-- AuthorizationService::checkBatch pré-carrega permissions e delega cada decisão a check(), mantendo a fonte de semântica única em 2026-09-27 -->
+- [x] 2.1.3 Criar teste de equivalência por matriz de contexto/recurso. <!-- ResourceAuthorizationApiTest cobre recurso compartilhado/privado e ação TENANT com e sem contexto, preservando ordem e códigos de decisão em 2026-09-27 -->
 
 ### 2.2 Implementar listagem autorizada escalável `[C]`
 
 Ref: Spec FR-AP-006/007.
 
-- [ ] 2.2.1 Projetar consultas/adaptadores por tipo de recurso sem N+1 de check.
-- [ ] 2.2.2 Preservar default deny e restrictions com/sem cache.
-- [ ] 2.2.3 Validar subconjunto autorizado em massa e plano de consulta.
+- [x] 2.2.1 Projetar consultas/adaptadores por tipo de recurso sem N+1 de check. <!-- AuthorizedPersonalWorkspaceFolderQuery mantém adaptador por personal.folder com CTEs de grupos, relações e descendentes em uma única consulta em 2026-09-27 -->
+- [x] 2.2.2 Preservar default deny e restrictions com/sem cache. <!-- listagem usa fonte persistente, default deny e NOT EXISTS para restrictions ativas de usuário/grupo antes de retornar qualquer pasta em 2026-09-27 -->
+- [x] 2.2.3 Validar subconjunto autorizado em massa e plano de consulta. <!-- ResourceAuthorizationApiTest compara subconjunto, cobre restriction e confirma uma query para 30 candidatos em 2026-09-27 -->
 
 ## FASE 3 - Observabilidade e Qualidade
 
@@ -47,17 +47,17 @@ Ref: Spec FR-AP-006/007.
 
 Ref: Spec FR-AP-008/009.
 
-- [ ] 3.1.1 Emitir métricas agregadas de decisão, duração, cache e lote.
-- [ ] 3.1.2 Separar negação esperada de falha interna.
-- [ ] 3.1.3 Testar ausência de labels ou logs de alta cardinalidade/sensíveis.
+- [x] 3.1.1 Emitir métricas agregadas de decisão, duração, cache e lote. <!-- AuthorizationMetrics registra contadores estáveis no cache e AuthorizationService instrumenta check/checkBatch em 2026-09-27 -->
+- [x] 3.1.2 Separar negação esperada de falha interna. <!-- decision:deny representa negação esperada; failure:count só é registrado em exceção de resolução em 2026-09-27 -->
+- [x] 3.1.3 Testar ausência de labels ou logs de alta cardinalidade/sensíveis. <!-- AuthorizationMetricsTest valida catálogo fechado de métricas sem IDs, tenant, permission ou resource labels em 2026-09-27 -->
 
 ### 3.2 Manter benchmark de autorização `[A]`
 
 Ref: Spec FR-AP-010 a 012, `quickstart.md`.
 
-- [ ] 3.2.1 Criar cenários reprodutíveis de check, grupo, recurso, lote e listagem.
-- [ ] 3.2.2 Registrar baseline e limiares de regressão.
-- [ ] 3.2.3 Executar automação completa e documentar resultado.
+- [x] 3.2.1 Criar cenários reprodutíveis de check, grupo, recurso, lote e listagem. <!-- AuthorizationPerformanceBenchmarkTest usa SQLite efêmero e cobre check direto, grupo aninhado, recurso, lote, listagem e invalidação em 2026-09-27 -->
+- [x] 3.2.2 Registrar baseline e limiares de regressão. <!-- authorization.benchmarkMaxMilliseconds define orçamento reproduzível de 1.000 ms por cenário; não é SLA de produção, em 2026-09-27 -->
+- [x] 3.2.3 Executar automação completa e documentar resultado. <!-- php artisan test: 284 aprovados, 2 integrações Mailpit ignoradas por configuração; benchmark, type-check, build e git diff --check passaram em 2026-09-27 -->
 
 ## Matriz de Dependências
 

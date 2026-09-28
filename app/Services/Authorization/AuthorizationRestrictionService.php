@@ -3,6 +3,7 @@
 namespace App\Services\Authorization;
 
 use App\Domain\Authorization\AuthorizationScope;
+use App\Domain\Authorization\Resource\ResourceReference;
 use App\Domain\Tenant\TenantMembershipState;
 use App\Domain\Tenant\TenantState;
 use App\Models\AuthorizationGroup;
@@ -12,13 +13,18 @@ use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\Authorization\Performance\PolicyVersionService;
+use App\Services\Authorization\Resource\AuthorizationResourceRegistry;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class AuthorizationRestrictionService
 {
-    public function __construct(private readonly AuthorizationAuditLogger $audit, private readonly PolicyVersionService $policyVersions) {}
+    public function __construct(
+        private readonly AuthorizationAuditLogger $audit,
+        private readonly PolicyVersionService $policyVersions,
+        private readonly AuthorizationResourceRegistry $resources,
+    ) {}
 
     public function create(
         AuthorizationPermission $permission,
@@ -30,14 +36,17 @@ class AuthorizationRestrictionService
         ?DateTimeInterface $endsAt = null,
         ?int $actorUserId = null,
         ?string $correlationId = null,
+        ?ResourceReference $resource = null,
     ): AuthorizationRestriction {
-        return DB::transaction(function () use ($permission, $user, $group, $scope, $tenantId, $startsAt, $endsAt, $actorUserId, $correlationId): AuthorizationRestriction {
+        return DB::transaction(function () use ($permission, $user, $group, $scope, $tenantId, $startsAt, $endsAt, $actorUserId, $correlationId, $resource): AuthorizationRestriction {
             $permission = AuthorizationPermission::query()->lockForUpdate()->findOrFail($permission->id);
             $group = $group === null ? null : AuthorizationGroup::query()->lockForUpdate()->findOrFail($group->id);
-            $this->validate($permission, $user, $group, $scope, $tenantId, $startsAt, $endsAt);
+            $resourceTypeId = $this->validate($permission, $user, $group, $scope, $tenantId, $startsAt, $endsAt, $resource);
 
             $attributes = [
                 'idPermission' => $permission->id,
+                'idResourceType' => $resourceTypeId,
+                'resourceId' => $resource?->id,
                 'idUser' => $user?->id,
                 'idGroup' => $group?->id,
                 'idTenant' => $tenantId,
@@ -136,7 +145,8 @@ class AuthorizationRestrictionService
         ?int $tenantId,
         ?DateTimeInterface $startsAt,
         ?DateTimeInterface $endsAt,
-    ): void {
+        ?ResourceReference $resource,
+    ): ?int {
         if (($user === null) === ($group === null)) {
             throw new LogicException('An authorization restriction requires exactly one subject.');
         }
@@ -149,7 +159,7 @@ class AuthorizationRestrictionService
                 throw new LogicException('Only tenant authorization restrictions can have a tenant context.');
             }
 
-            return;
+            return $this->validateResource($resource, $scope, $tenantId);
         }
         if ($tenantId === null || ! Tenant::query()->whereKey($tenantId)->where('state', TenantState::Active->value)->lockForUpdate()->exists()) {
             throw new LogicException('A tenant authorization restriction requires an active tenant context.');
@@ -160,6 +170,25 @@ class AuthorizationRestrictionService
         if ($user !== null && ! TenantMembership::query()->where('idTenant', $tenantId)->where('idUser', $user->id)->where('state', TenantMembershipState::Active->value)->lockForUpdate()->exists()) {
             throw new LogicException('A tenant authorization restriction requires an active tenant membership.');
         }
+
+        return $this->validateResource($resource, $scope, $tenantId);
+    }
+
+    private function validateResource(?ResourceReference $resource, AuthorizationScope $scope, ?int $tenantId): ?int
+    {
+        if ($resource === null) {
+            return null;
+        }
+        if ($resource->scope !== $scope || $resource->tenantId !== $tenantId) {
+            throw new LogicException('An authorization restriction resource must match its scope and tenant context.');
+        }
+        $this->resources->assertAvailable($resource);
+        $resourceTypeId = DB::table('auth_resource_type')->where('key', $resource->type)->where('active', true)->value('id');
+        if ($resourceTypeId === null) {
+            throw new LogicException('The authorization restriction resource is not registered.');
+        }
+
+        return (int) $resourceTypeId;
     }
 
     private function ensureValidity(?DateTimeInterface $startsAt, ?DateTimeInterface $endsAt): void
@@ -173,6 +202,8 @@ class AuthorizationRestrictionService
     {
         return [
             'idPermission' => $restriction->idPermission,
+            'idResourceType' => $restriction->idResourceType,
+            'resourceId' => $restriction->resourceId,
             'idUser' => $restriction->idUser,
             'idGroup' => $restriction->idGroup,
             'idTenant' => $restriction->idTenant,

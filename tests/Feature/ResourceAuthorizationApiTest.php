@@ -4,11 +4,19 @@ namespace Tests\Feature;
 
 use App\Domain\Authorization\AuthorizationScope;
 use App\Domain\Authorization\Resource\ResourceReference;
+use App\Models\AuthorizationPermission;
+use App\Models\AuthorizationRestriction;
+use App\Models\AuthorizationRole;
+use App\Models\AuthorizationRoleAssignment;
 use App\Models\FileStorage\WorkspaceFolder;
+use App\Models\Tenant;
+use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\Authorization\Resource\AuthorizationResourceRelationService;
+use App\Services\Authorization\Resource\AuthorizedPersonalWorkspaceFolderQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ResourceAuthorizationApiTest extends TestCase
@@ -53,6 +61,28 @@ class ResourceAuthorizationApiTest extends TestCase
             ->assertJsonPath('error.code', 'VALIDATION_ERROR');
     }
 
+    public function test_it_returns_non_resource_tenant_checks_with_the_same_individual_decision(): void
+    {
+        $user = User::factory()->create();
+        $tenant = Tenant::query()->create(['displayName' => 'Batch', 'state' => 'ACTIVE']);
+        TenantMembership::query()->create(['idTenant' => $tenant->id, 'idUser' => $user->id, 'state' => 'ACTIVE']);
+        $administrator = AuthorizationRole::query()->where('key', 'tenant.administrator')->firstOrFail();
+        AuthorizationRoleAssignment::query()->create(['idRole' => $administrator->id, 'idUser' => $user->id, 'idTenant' => $tenant->id, 'state' => 'ACTIVE']);
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/authorization/resource-checks', [
+                'checks' => [
+                    ['permissionKey' => 'tenant.availability.manage', 'tenantId' => $tenant->id],
+                    ['permissionKey' => 'tenant.availability.manage'],
+                ],
+            ])
+            ->assertOk()
+            ->assertExactJson(['decisions' => [
+                ['allowed' => true, 'reasonCode' => 'GRANT_APPLIES'],
+                ['allowed' => false, 'reasonCode' => 'TENANT_CONTEXT_REQUIRED'],
+            ]]);
+    }
+
     public function test_it_lists_only_the_personal_workspace_and_shared_folder_tree_in_one_authorized_query(): void
     {
         $owner = User::factory()->create();
@@ -77,6 +107,39 @@ class ResourceAuthorizationApiTest extends TestCase
             ->assertJsonFragment(['id' => $descendant->id, 'displayName' => 'Contracts'])
             ->assertJsonFragment(['id' => $own->id, 'displayName' => 'Mine'])
             ->assertJsonMissing(['id' => $private->id, 'displayName' => 'Private']);
+    }
+
+    public function test_a_personal_read_restriction_denies_the_aggregate_folder_listing(): void
+    {
+        $user = User::factory()->create();
+        WorkspaceFolder::query()->create(['idUser' => $user->id, 'displayName' => 'Private', 'state' => 'ACTIVE']);
+        $permission = AuthorizationPermission::query()->where('key', 'personal.folder.read')->firstOrFail();
+        AuthorizationRestriction::query()->create([
+            'idPermission' => $permission->id,
+            'idUser' => $user->id,
+            'scope' => 'PERSONAL',
+            'active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/authorization/personal-workspace/folders')
+            ->assertOk()
+            ->assertJsonPath('folders', []);
+    }
+
+    public function test_the_aggregate_listing_executes_one_database_query_for_many_candidates(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(1, 30) as $number) {
+            WorkspaceFolder::query()->create(['idUser' => $user->id, 'displayName' => "Folder {$number}", 'state' => 'ACTIVE']);
+        }
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $folders = app(AuthorizedPersonalWorkspaceFolderQuery::class)->pageFor($user, 1, 50);
+
+        $this->assertCount(30, $folders);
+        $this->assertCount(1, DB::getQueryLog());
     }
 
     public function test_pagination_never_exposes_an_unshared_folder_and_matches_reference_decisions(): void

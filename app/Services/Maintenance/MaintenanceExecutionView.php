@@ -9,6 +9,7 @@ use Carbon\CarbonInterface;
  */
 final readonly class MaintenanceExecutionView
 {
+    /** @param array<string, int|string|null> $details */
     public function __construct(
         public string $state,
         public string $triggerType,
@@ -17,5 +18,6 @@ final readonly class MaintenanceExecutionView
         public ?string $summary,
         public ?int $createdCount,
         public ?int $updatedCount,
+        public array $details,
     ) {}
 }

@@ -1,0 +1,5 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+return new class extends Migration { public function up(): void { Schema::create('auth_service_identity', function (Blueprint $table): void { $table->engine='InnoDB'; $table->id(); $table->unsignedBigInteger('idOwnerUser'); $table->unsignedBigInteger('idTenant')->nullable(); $table->string('displayName',160); $table->string('purpose',500); $table->string('scope',16); $table->string('state',16); $table->timestamp('startsAt')->nullable(); $table->timestamp('endsAt')->nullable(); $table->timestamp('createdAt')->useCurrent(); $table->timestamp('updatedAt')->useCurrent()->useCurrentOnUpdate(); $table->index(['scope','idTenant','state'],'idx_auth_service_identity_context'); $table->foreign('idOwnerUser','fk_auth_service_identity_owner')->references('id')->on('user')->cascadeOnUpdate()->cascadeOnDelete(); $table->foreign('idTenant','fk_auth_service_identity_tenant')->references('id')->on('tenant')->cascadeOnUpdate()->cascadeOnDelete(); }); } public function down(): void { Schema::dropIfExists('auth_service_identity'); } };

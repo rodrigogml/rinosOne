@@ -8,6 +8,7 @@ use App\Models\MaintenanceExecutionHistory;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
+use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use App\Services\Maintenance\MaintenanceAdministrativeAuditView;
 use App\Services\Maintenance\MaintenanceExecutionView;
 use App\Services\Maintenance\MaintenanceHubService;
@@ -32,7 +33,7 @@ class MaintenanceController extends Controller
 
     public function show(string $routineKey, Request $request, MaintenanceHubService $hub, AuthorizationService $authorization): JsonResponse
     {
-        $routine = $this->financialInstitutionRoutine($routineKey, $request->user(), $hub);
+        $routine = $this->routine($routineKey, $request->user(), $hub);
 
         if ($routine === null) {
             return $this->notAvailable();
@@ -85,13 +86,13 @@ class MaintenanceController extends Controller
         ]);
     }
 
-    private function financialInstitutionRoutine(string $routineKey, User $principal, MaintenanceHubService $hub): ?MaintenanceRoutineDetail
+    private function routine(string $routineKey, User $principal, MaintenanceHubService $hub): ?MaintenanceRoutineDetail
     {
-        if ($routineKey !== FinancialInstitutionMaintenanceService::ROUTINE_KEY) {
-            return null;
-        }
-
-        return $hub->financialInstitutionCatalog($principal);
+        return match ($routineKey) {
+            FinancialInstitutionMaintenanceService::ROUTINE_KEY => $hub->financialInstitutionCatalog($principal),
+            IbgeTerritoryMaintenanceService::ROUTINE_KEY => $hub->ibgeTerritoryCatalog($principal),
+            default => null,
+        };
     }
 
     /** @return array<string, mixed> */
@@ -124,6 +125,7 @@ class MaintenanceController extends Controller
             'summary' => $execution->summary,
             'createdCount' => $execution->createdCount,
             'updatedCount' => $execution->updatedCount,
+            'details' => $execution->details,
         ];
     }
 
@@ -138,6 +140,7 @@ class MaintenanceController extends Controller
             summary: $execution->summary,
             createdCount: $execution->details['createdCount'] ?? null,
             updatedCount: $execution->details['updatedCount'] ?? null,
+            details: $execution->details ?? [],
         ));
     }
 

@@ -72,10 +72,26 @@ class AuthorizedPersonalWorkspaceFolderQuery
                 WHERE folder.idTenant IS NULL
                     AND folder.state = 'ACTIVE'
                     AND (folder.idUser = ? OR folder.id IN (SELECT id FROM shared_tree))
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM auth_restriction restriction
+                        INNER JOIN auth_permission permission ON permission.id = restriction.idPermission
+                        WHERE restriction.active = 1
+                            AND restriction.scope = 'PERSONAL'
+                            AND permission.active = 1
+                            AND permission.scope = 'PERSONAL'
+                            AND permission.key = 'personal.folder.read'
+                            AND (restriction.startsAt IS NULL OR restriction.startsAt <= CURRENT_TIMESTAMP)
+                            AND (restriction.endsAt IS NULL OR restriction.endsAt > CURRENT_TIMESTAMP)
+                            AND (
+                                restriction.idUser = ?
+                                OR restriction.idGroup IN (SELECT id FROM eligible_group)
+                            )
+                    )
                 ORDER BY folder.idParentFolder, folder.displayName, folder.id
                 LIMIT ? OFFSET ?
                 SQL,
-            [$principal->id, $principal->id, $principal->id, $perPage, $offset],
+            [$principal->id, $principal->id, $principal->id, $principal->id, $perPage, $offset],
         );
     }
 }

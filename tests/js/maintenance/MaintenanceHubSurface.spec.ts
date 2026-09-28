@@ -63,6 +63,48 @@ describe('MaintenanceHubSurface', () => {
         wrapper.unmount();
     });
 
+    it('presents the IBGE routine without a manual action and localizes its execution history', async () => {
+        const ibgeRoutine = {
+            routineKey: 'locality-ibge-territory-catalog',
+            title: 'Localidades brasileiras',
+            description: 'Dados oficiais.',
+            state: 'SUCCEEDED',
+            scheduleDescription: 'Inicial automática e mensal',
+            capabilities: { canSynchronize: false },
+            lastExecution: { state: 'SUCCEEDED', triggerType: 'SCHEDULED', startedAt: '2026-09-26T10:00:00Z', completedAt: '2026-09-26T10:01:00Z', summary: 'Catálogo territorial atualizado.', createdCount: null, updatedCount: null, details: { createdStateCount: 1 } },
+            executionHistory: [{ state: 'SUCCEEDED', triggerType: 'SCHEDULED', startedAt: '2026-09-26T10:00:00Z', completedAt: '2026-09-26T10:01:00Z', summary: 'Catálogo territorial atualizado.', createdCount: null, updatedCount: null, details: { createdStateCount: 1 } }],
+            administrativeAudits: [],
+        };
+        const wrapper = mountSurface(ibgeRoutine);
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('Localidades brasileiras');
+        expect(wrapper.text()).toContain('Inicial automática e mensal');
+        expect(wrapper.text()).toContain('Catálogo territorial atualizado.');
+        expect(wrapper.find('[data-testid="maintenance-synchronize"]').exists()).toBe(false);
+        expect(wrapper.text()).toContain('Nenhuma ação administrativa registrada.');
+        wrapper.unmount();
+    });
+
+    it('keeps the IBGE detail reachable through the existing mobile back control', async () => {
+        const ibgeRoutine = {
+            ...routine,
+            routineKey: 'locality-ibge-territory-catalog',
+            title: 'Localidades brasileiras',
+            scheduleDescription: 'Inicial automática e mensal',
+            capabilities: { canSynchronize: false },
+            administrativeAudits: [],
+        };
+        const wrapper = mountSurface(ibgeRoutine);
+        await flushPromises();
+
+        await wrapper.get('.maintenance-hub__back').trigger('click');
+
+        expect(wrapper.find('.maintenance-hub__layout').classes()).not.toContain('maintenance-hub__layout--detail');
+        expect(wrapper.get('nav button').attributes('aria-current')).toBe('page');
+        wrapper.unmount();
+    });
+
     it('preserves loaded data and identifies it as stale when a later reload fails', async () => {
         const wrapper = mountSurface();
         await flushPromises();

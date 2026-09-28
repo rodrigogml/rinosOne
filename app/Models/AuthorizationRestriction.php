@@ -14,7 +14,7 @@ class AuthorizationRestriction extends Model
 
     public const UPDATED_AT = 'updatedAt';
 
-    protected $fillable = ['idPermission', 'idUser', 'idGroup', 'idTenant', 'scope', 'startsAt', 'endsAt', 'active'];
+    protected $fillable = ['idPermission', 'idResourceType', 'resourceId', 'idUser', 'idGroup', 'idTenant', 'scope', 'startsAt', 'endsAt', 'active'];
 
     protected function casts(): array
     {

@@ -18,9 +18,9 @@ class CheckResourceAuthorizationBatchRequest extends FormRequest
         return [
             'checks' => ['required', 'array', 'min:1', 'max:100'],
             'checks.*.permissionKey' => ['required', 'string', 'max:120'],
-            'checks.*.resource' => ['required', 'array'],
-            'checks.*.resource.type' => ['required', 'string', 'max:120'],
-            'checks.*.resource.id' => ['required', 'integer', 'min:1'],
+            'checks.*.resource' => ['nullable', 'array'],
+            'checks.*.resource.type' => ['required_with:checks.*.resource', 'string', 'max:120'],
+            'checks.*.resource.id' => ['required_with:checks.*.resource', 'integer', 'min:1'],
             'checks.*.tenantId' => ['nullable', 'integer', 'min:1'],
         ];
     }

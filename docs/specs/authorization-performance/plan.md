@@ -35,6 +35,10 @@ Laravel/PHP, MySQL core, cache configurado por ambiente, jobs/telemetria existen
 4. Lote e listagem usam resoluções agregadas do domínio, nunca `check` em loop por registro.
 5. Métricas agregadas separam deny normal de erro interno e proíbem labels de alta cardinalidade.
 
+## Observabilidade
+
+`AuthorizationMetrics` registra somente contadores estáveis no cache configurado: allow/deny, acerto/erro de cache, duração acumulada e quantidade de decisões em lote. `failure:count` é incrementado apenas quando a resolução lança erro interno; uma negação esperada permanece em `decision:deny`. Nenhuma chave de métrica contém ID, tenant, permission ou referência de recurso.
+
 ## Estrutura do Projeto
 
 ```text

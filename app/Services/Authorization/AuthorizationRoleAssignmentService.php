@@ -10,6 +10,7 @@ use App\Models\AuthorizationRoleAssignment;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\Authorization\Performance\PolicyVersionService;
+use App\Services\Authorization\Advanced\AuthorizationSeparationEvaluator;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -19,6 +20,7 @@ class AuthorizationRoleAssignmentService
         private readonly AuthorizationAuditLogger $audit,
         private readonly TenantAdministratorInvariant $administrators,
         private readonly PolicyVersionService $policyVersions,
+        private readonly AuthorizationSeparationEvaluator $separationEvaluator,
     ) {}
 
     public function assignTenantRole(AuthorizationRole $role, User $user, int $tenantId, ?int $actorUserId = null, ?string $correlationId = null): AuthorizationRoleAssignment
@@ -36,6 +38,13 @@ class AuthorizationRoleAssignmentService
         }
 
         return DB::transaction(function () use ($role, $user, $tenantId, $actorUserId, $correlationId): AuthorizationRoleAssignment {
+            TenantMembership::query()
+                ->where('idTenant', $tenantId)
+                ->where('idUser', $user->id)
+                ->where('state', TenantMembershipState::Active)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $this->separationEvaluator->assertDirectRoleAssignmentAllowed($role, $user, $tenantId);
             $assignment = AuthorizationRoleAssignment::query()->firstOrNew([
                 'idRole' => $role->id,
                 'idUser' => $user->id,
