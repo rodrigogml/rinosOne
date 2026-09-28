@@ -30,7 +30,7 @@ Laravel/PHP, MySQL core, cache configurado por ambiente, jobs/telemetria existen
 ## Desenho da Arquitetura
 
 1. Um `PolicyVersionResolver` produz versão por sujeito e contexto de autorização.
-2. Toda alteração em membership, role, grupo, restriction, relation, política, delegação, aprovação, SoD, identidade de serviço ou sincronização incrementa/invalida a versão afetada na transação.
+2. Toda alteração em membership, role, grupo, restriction, relation, política, delegação, aprovação, SoD ou identidade de serviço incrementa/invalida a versão afetada na transação.
 3. A chave de cache inclui sujeito, permission, esfera, tenant, referência de recurso quando houver e versão; ausência/falha de cache chama o resolvedor persistente.
 4. Lote e listagem usam resoluções agregadas do domínio, nunca `check` em loop por registro.
 5. Métricas agregadas separam deny normal de erro interno e proíbem labels de alta cardinalidade.

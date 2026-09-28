@@ -126,7 +126,7 @@ class AuthorizationResourceRelationService
             throw new LogicException('The resource relation group does not belong to the resource context.');
         }
         if ($resource->scope === AuthorizationScope::Tenant && $user !== null
-            && ! DB::table('tenant_membership')->where('idTenant', $resource->tenantId)->where('idUser', $user->id)->where('state', TenantMembershipState::Active->value)->exists()) {
+            && ! DB::table('tenantMembership')->where('idTenant', $resource->tenantId)->where('idUser', $user->id)->where('state', TenantMembershipState::Active->value)->exists()) {
             throw new LogicException('A tenant resource relation requires an active tenant membership.');
         }
     }

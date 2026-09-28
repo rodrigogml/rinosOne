@@ -8,13 +8,16 @@ use App\Contracts\FileStorage\V1\FilePossessionOperationRequest;
 use App\Contracts\FileStorage\V1\FilePrivateReadRequest;
 use App\Contracts\FileStorage\V1\FileStorageOwnerType;
 use App\Contracts\FileStorage\V1\FileStorageV1;
+use App\Contracts\FileStorage\V1\IngestWorkspaceContentRequest;
 use App\Contracts\FileStorage\V1\ManagedBindingStatus;
 use App\Contracts\FileStorage\V1\ManagedBindingStatusRequest;
 use App\Contracts\FileStorage\V1\ReleaseManagedBindingRequest;
 use App\Contracts\FileStorage\V1\ReserveFileVersionDerivativeRequest;
 use App\Contracts\FileStorage\V1\StoredManagedVersion;
+use App\Contracts\FileStorage\V1\StoredWorkspaceVersion;
 use App\Contracts\FileStorage\V1\StoreFileVersionMetadataRequest;
 use App\Contracts\FileStorage\V1\StoreManagedVersionRequest;
+use App\Contracts\FileStorage\V1\StoreWorkspaceVersionRequest;
 use App\Domain\FileStorage\Exception\FileStorageVersionException;
 use App\Models\FileStorage\StoredFile;
 use App\Models\FileStorage\StoredFileOwnerUsage;
@@ -34,6 +37,12 @@ class FileStorageV1Service implements FileStorageV1
         private readonly FileStorageMetadataService $metadataService,
         private readonly FileStorageDerivativeService $derivativeService,
     ) {}
+
+    /** {@inheritDoc} */
+    public function ingestWorkspaceContent(IngestWorkspaceContentRequest $request): \App\Domain\FileStorage\Content\IngestedStoredFileContent
+    {
+        return $this->contentIngestionService->ingest($request->sourcePath, $request->backendKey);
+    }
 
     /**
      * {@inheritDoc}
@@ -93,6 +102,52 @@ class FileStorageV1Service implements FileStorageV1
             throw $exception;
         } catch (Throwable $exception) {
             throw new FileStorageVersionException('The managed file version could not be stored.', previous: $exception);
+        }
+    }
+
+    /** {@inheritDoc} */
+    public function storeWorkspaceVersion(StoreWorkspaceVersionRequest $request): StoredWorkspaceVersion
+    {
+        if ($request->ownerId < 1 || trim($request->displayName) === '') {
+            throw new FileStorageVersionException('The workspace file version request is invalid.');
+        }
+
+        try {
+            return DB::transaction(function () use ($request): StoredWorkspaceVersion {
+                $ingestedContent = $request->content;
+                $file = StoredFile::query()->create(['fileUuid' => (string) str()->uuid()]);
+                $version = StoredFileVersion::query()->create([
+                    'idFile' => $file->id,
+                    'idFileContent' => $ingestedContent->contentId,
+                    'versionNumber' => 1,
+                ]);
+                $possession = StoredFilePossession::query()->create([
+                    'idFile' => $file->id,
+                    'idCurrentFileVersion' => $version->id,
+                    'idUser' => $request->ownerType === FileStorageOwnerType::User ? $request->ownerId : null,
+                    'idTenant' => $request->ownerType === FileStorageOwnerType::Tenant ? $request->ownerId : null,
+                    'idWorkspaceFolder' => $request->workspaceFolderId,
+                    'storageArea' => 'WORKSPACE',
+                    'displayName' => $request->displayName,
+                    'state' => 'ACTIVE',
+                    'logicalSizeBytes' => $ingestedContent->logicalSizeBytes,
+                ]);
+                $this->adjustWorkspaceOwnerUsage($request->ownerType, $request->ownerId, $ingestedContent->logicalSizeBytes);
+
+                return new StoredWorkspaceVersion(
+                    fileId: $file->id,
+                    versionId: $version->id,
+                    possessionId: $possession->id,
+                    contentId: $ingestedContent->contentId,
+                    storageObjectId: $ingestedContent->storageObjectId,
+                    logicalSizeBytes: $ingestedContent->logicalSizeBytes,
+                    detectedMimeType: $ingestedContent->detectedMimeType,
+                );
+            });
+        } catch (FileStorageVersionException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new FileStorageVersionException('The workspace file version could not be stored.', previous: $exception);
         }
     }
 
@@ -321,6 +376,15 @@ class FileStorageV1Service implements FileStorageV1
         $usage->forceFill([
             'systemManagedBytes' => max(0, (int) $usage->systemManagedBytes + $delta),
             'totalBytes' => max(0, (int) $usage->totalBytes + $delta),
+        ])->save();
+    }
+
+    private function adjustWorkspaceOwnerUsage(FileStorageOwnerType $ownerType, int $ownerId, int $bytes): void
+    {
+        $usage = $this->resolveOwnerUsage($ownerType, $ownerId);
+        $usage->forceFill([
+            'workspaceBytes' => (int) $usage->workspaceBytes + $bytes,
+            'totalBytes' => (int) $usage->totalBytes + $bytes,
         ])->save();
     }
 

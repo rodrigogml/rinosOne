@@ -5,12 +5,13 @@ namespace Tests\Feature;
 use App\Domain\Authorization\AuthorizationEvaluationContext;
 use App\Domain\Authorization\AuthorizationScope;
 use App\Domain\Authorization\Resource\ResourceReference;
+use App\Models\AuthorizationAuditEvent;
 use App\Models\AuthorizationPermission;
 use App\Models\AuthorizationPolicy;
 use App\Models\AuthorizationPolicyBinding;
+use App\Models\AuthorizationResourceType;
 use App\Models\AuthorizationRole;
 use App\Models\AuthorizationRoleAssignment;
-use App\Models\AuthorizationResourceType;
 use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
@@ -36,6 +37,8 @@ class AuthorizationPolicyEvaluationTest extends TestCase
         $this->assertFalse($authorization->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id)->allowed);
         $this->assertTrue($authorization->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id, context: new AuthorizationEvaluationContext(amount: 100))->allowed);
         $this->assertFalse($authorization->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id, context: new AuthorizationEvaluationContext(amount: 101))->allowed);
+        $this->assertDatabaseHas('auth_audit_event', ['operation' => 'authorization.policy.evaluated', 'targetType' => 'authorization.policy', 'targetId' => $policy->id, 'idActorUser' => $user->id]);
+        $this->assertDatabaseMissing('auth_audit_event', ['after' => json_encode(['amount' => 100])]);
     }
 
     public function test_a_restriction_remains_stronger_than_a_satisfied_policy(): void
@@ -75,6 +78,20 @@ class AuthorizationPolicyEvaluationTest extends TestCase
         $decision = app(AuthorizationService::class)->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id, context: new AuthorizationEvaluationContext(amount: 1));
 
         $this->assertTrue($decision->allowed);
+    }
+
+    public function test_a_cached_policy_decision_is_audited_on_each_authorization_check(): void
+    {
+        [$user, $tenant, $permission] = $this->grant();
+        $policy = AuthorizationPolicy::query()->create(['idTenant' => $tenant->id, 'scope' => 'TENANT', 'key' => 'cached-amount-limit', 'contextFingerprint' => "tenant:{$tenant->id}", 'type' => 'AMOUNT_MAXIMUM', 'version' => 1, 'definition' => ['all' => [['type' => 'AMOUNT_MAXIMUM', 'maximum' => 100]]], 'active' => true]);
+        AuthorizationPolicyBinding::query()->create(['idPolicy' => $policy->id, 'idPermission' => $permission->id, 'active' => true]);
+        config()->set('authorization.decisionCacheSeconds', 300);
+        $authorization = app(AuthorizationService::class);
+        $context = new AuthorizationEvaluationContext(amount: 100);
+
+        $this->assertTrue($authorization->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id, context: $context)->allowed);
+        $this->assertTrue($authorization->check($user, $permission->key, AuthorizationScope::Tenant, $tenant->id, context: $context)->allowed);
+        $this->assertSame(2, AuthorizationAuditEvent::query()->where('operation', 'authorization.policy.evaluated')->where('targetId', $policy->id)->count());
     }
 
     /** @return array{User, Tenant, AuthorizationPermission} */

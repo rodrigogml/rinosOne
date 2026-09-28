@@ -10,5 +10,6 @@ class FilePrivateReadRequest
         public readonly ?int $possessionId = null,
         public readonly ?string $bindingKey = null,
         public readonly ?int $principalUserId = null,
+        public readonly bool $allowTrashed = true,
     ) {}
 }

@@ -6,6 +6,7 @@ import WorkspaceSettingsSurface from './WorkspaceSettingsSurface.vue';
 import MaintenanceHubSurface from '../maintenance/MaintenanceHubSurface.vue';
 import WorkspaceFoldersSurface from '../workspace/WorkspaceFoldersSurface.vue';
 import AuthorizationAdministrationSurface from '../authorization/AuthorizationAdministrationSurface.vue';
+import AdvancedAuthorizationControls from '../authorization/AdvancedAuthorizationControls.vue';
 import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 
@@ -40,8 +41,8 @@ const mountedSurfaces = computed(() => props.surfaces?.length
                 <div v-for="mountedSurface in mountedSurfaces" :key="mountedSurface.id" v-show="mountedSurface.id === surface.id" class="workspace-stage__surface-instance">
                     <WorkspaceSettingsSurface v-if="mountedSurface.destinationId === 'personal.settings'" :surface="mountedSurface" @profile-updated="emit('profileUpdated', $event)" />
                     <MaintenanceHubSurface v-else-if="mountedSurface.destinationId === 'platform.maintenance'" />
-                    <WorkspaceFoldersSurface v-else-if="mountedSurface.destinationId === 'personal.workspace-folders'" />
-                    <AuthorizationAdministrationSurface v-else-if="mountedSurface.destinationId === 'tenant.authorization-administration'" :surface="mountedSurface" />
+                    <WorkspaceFoldersSurface v-else-if="mountedSurface.destinationId === 'personal.drive'" />
+                    <template v-else-if="mountedSurface.destinationId === 'tenant.authorization-administration'"><AuthorizationAdministrationSurface :surface="mountedSurface" /><AdvancedAuthorizationControls :surface="mountedSurface" /></template>
                     <p v-else class="workspace-stage__empty-content">{{ t('access.workspace.surface.unavailableDescription') }}</p>
                 </div>
             </slot>

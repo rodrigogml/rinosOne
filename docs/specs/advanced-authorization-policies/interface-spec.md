@@ -4,7 +4,7 @@
 
 | Surface ID | Surface Type | Actors | Coverage | Notes |
 | --- | --- | --- | --- | --- |
-| SURF-WEB-ADMIN | WEB | Administrador/autorizador elegível | FULL | Políticas, delegações, requests, SoD e integrações. |
+| SURF-WEB-ADMIN | WEB | Administrador/autorizador elegível | FULL | Políticas, delegações, requests, SoD e service identities. |
 | SURF-WEB-ACCESS | WEB | Pessoa autenticada | PARTIAL | Solicita e acompanha acesso temporário. |
 
 ## Interaction Inventory
@@ -21,10 +21,10 @@
 **Surface**: SURF-WEB-ADMIN
 **Surface Type**: WEB
 **Change Type**: NEW
-**Purpose**: Publicar condição/SoD, gerir delegação, service identity/diretório e aprovar request elegível.
+**Purpose**: Publicar condição/SoD, gerir delegação, service identity e aprovar request elegível.
 **Actors and Permissions**: Administrador ou aprovador independente, confirmado pela API.
 **Entry and Navigation**: Seções Políticas, Delegações, Solicitações e Integrações na área Segurança.
-**Content and Data**: Modelos/estados de `advanced-policies-api.md`; sem credencial ou grupo externo não permitido.
+**Content and Data**: Modelos e estados de `advanced-policies-api.md`; credenciais técnicas não são exibidas após a emissão.
 **Actions and Behavior**: Criar/publicar/revogar, decidir request e consultar resultado seguro.
 **Validation and Feedback**: Valida limites/independência; preserva campos não sensíveis no erro.
 **Responsive/Adaptive Behavior**: Seções em seletor mobile e editor por passos.
@@ -53,7 +53,7 @@ Lista filtrada                                    detalhe e validação segura
 | remote-error | Permite repetir sem expor regra interna. |
 | offline | Não envia alteração. |
 | access-denied | Remove ação e retorna seguro. |
-| partial-stale | Reconsulta após decisão/sync. |
+| partial-stale | Reconsulta após uma decisão concorrente. |
 
 ### INT-WEB-POLICY-002 — Solicitar acesso temporário
 
@@ -93,7 +93,7 @@ Lista filtrada                                    detalhe e validação segura
 
 | Interaction ID | User Story | Functional Requirement | Contract | Verification |
 | --- | --- | --- | --- | --- |
-| INT-WEB-POLICY-001 | US-AP-001/002/004 | FR-AAP-001 a 008/012 a 016 | `advanced-policies-api.md` | Task 4.2, API, a11y e visual |
+| INT-WEB-POLICY-001 | US-AP-001/002/004 | FR-AAP-001 a 008/012 a 013/017 a 019 | `advanced-policies-api.md` | Task 4.2, API, a11y e visual |
 | INT-WEB-POLICY-002 | US-AP-003 | FR-AAP-009 a 011 | `advanced-policies-api.md` | Task 4.3 e E2E |
 
 ## Validation Summary

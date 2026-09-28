@@ -14,10 +14,11 @@ use App\Models\AuthorizationPermission;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
-use App\Services\Authorization\Performance\PolicyVersionService;
-use App\Services\Authorization\Advanced\AuthorizationPolicyEvaluator;
 use App\Services\Authorization\Advanced\AuthorizationPermissionImplicationResolver;
+use App\Services\Authorization\Advanced\AuthorizationPolicyEvaluation;
+use App\Services\Authorization\Advanced\AuthorizationPolicyEvaluator;
 use App\Services\Authorization\Advanced\AuthorizationSeparationEvaluator;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use App\Services\Authorization\Resource\AuthorizationResourceRegistry;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Cache;
@@ -28,11 +29,13 @@ class AuthorizationService
 {
     public function __construct(
         private readonly AuthorizationResourceRegistry $resources,
+        private readonly TenantAdministratorInvariant $tenantAdministrators,
         private readonly PolicyVersionService $policyVersions,
         private readonly AuthorizationMetrics $metrics,
         private readonly AuthorizationPolicyEvaluator $policyEvaluator,
         private readonly AuthorizationPermissionImplicationResolver $implicationResolver,
         private readonly AuthorizationSeparationEvaluator $separationEvaluator,
+        private readonly AuthorizationAuditLogger $audit,
     ) {}
 
     public function check(User $principal, string $permissionKey, AuthorizationScope $scope, ?int $tenantId = null, ?ResourceReference $resource = null, ?AuthorizationEvaluationContext $context = null): AuthorizationDecision
@@ -62,6 +65,9 @@ class AuthorizationService
                     if ($cached instanceof AuthorizationDecision) {
                         $cacheHit = true;
                         $decision = $cached;
+                        if ($decision->allowed || $decision->reasonCode === 'POLICY_CONDITION_NOT_SATISFIED') {
+                            $this->auditPolicyEvaluation($principal, $permissionKey, $scope, $tenantId, $resource, $context);
+                        }
 
                         return $decision;
                     }
@@ -74,8 +80,11 @@ class AuthorizationService
             if ($decision->allowed && $this->separationEvaluator->violates($permissionKey, $scope, $tenantId, fn (string $otherKey): bool => $this->resolve($principal, $otherKey, $scope, $tenantId)->allowed)) {
                 $decision = new AuthorizationDecision(false, 'SEPARATION_OF_DUTIES_APPLIES');
             }
-            if ($decision->allowed && ! $this->policyEvaluator->qualifies($permissionKey, $scope, $tenantId, $resource, $context)) {
-                $decision = new AuthorizationDecision(false, 'POLICY_CONDITION_NOT_SATISFIED');
+            if ($decision->allowed) {
+                $policyEvaluation = $this->auditPolicyEvaluation($principal, $permissionKey, $scope, $tenantId, $resource, $context);
+                if (! $policyEvaluation->qualified) {
+                    $decision = new AuthorizationDecision(false, 'POLICY_CONDITION_NOT_SATISFIED');
+                }
             }
             if ($cacheKey !== null) {
                 try {
@@ -94,6 +103,16 @@ class AuthorizationService
                 $this->metrics->recordDecision($decision->allowed, (int) ((hrtime(true) - $startedAt) / 1_000_000), $cacheHit);
             }
         }
+    }
+
+    private function auditPolicyEvaluation(User $principal, string $permissionKey, AuthorizationScope $scope, ?int $tenantId, ?ResourceReference $resource, ?AuthorizationEvaluationContext $context): AuthorizationPolicyEvaluation
+    {
+        $evaluation = $this->policyEvaluator->evaluate($permissionKey, $scope, $tenantId, $resource, $context);
+        foreach ($evaluation->policies as $policy) {
+            $this->audit->record('authorization.policy.evaluated', 'authorization.policy', $policy['id'], actorUserId: $principal->id, tenantId: $tenantId, after: ['version' => $policy['version'], 'allowed' => $evaluation->qualified, 'permissionKey' => $permissionKey]);
+        }
+
+        return $evaluation;
     }
 
     /**
@@ -169,6 +188,9 @@ class AuthorizationService
             }
 
             if (in_array($permissionKey, $adapter->supportedActions(), true)) {
+                if ($scope === AuthorizationScope::Tenant && $this->tenantAdministrators->isActiveDirectAdministrator($principal, $tenantId)) {
+                    return new AuthorizationDecision(true, 'TENANT_WORKSPACE_ADMINISTRATOR_APPLIES');
+                }
                 if ($adapter->isWorkspacePrincipal($resource, $principal->id)) {
                     return new AuthorizationDecision(true, 'WORKSPACE_PRINCIPAL_APPLIES');
                 }
@@ -419,7 +441,7 @@ class AuthorizationService
                     return;
                 }
                 $query->where(function ($qualifier) use ($resource): void {
-                    $qualifier->where(function ($global) use ($resource): void {
+                    $qualifier->where(function ($global): void {
                         $global->whereNull('auth_restriction.idResourceType')->whereNull('auth_restriction.resourceId');
                     })->orWhere(function ($specific) use ($resource): void {
                         $specific->where('restriction_resource_type.key', $resource->type)->where('auth_restriction.resourceId', $resource->id);

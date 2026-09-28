@@ -20,7 +20,7 @@ Ref: Spec FR-AP-001 a 004, `data-model.md`.
 Ref: Spec FR-AP-003/004.
 
 - [x] 1.2.1 Publicar invalidação transacional para grants, grupos, membership, restriction e relation. <!-- serviços de role, grupo/hierarquia, membership, restriction e relation incrementam versão na mesma transação da mutação em 2026-09-27 -->
-- [ ] 1.2.2 Integrar políticas, delegações, aprovação, SoD, service account e directory sync.
+- [ ] 1.2.2 Integrar políticas, delegações, aprovação, SoD e service account.
 - [ ] 1.2.3 Testar próxima operação após cada tipo de alteração concorrente.
 
 ## FASE 2 - Resoluções Agregadas

@@ -464,7 +464,7 @@ test('opens the authorized maintenance hub, confirms its action and reflows on a
     await mockProductionDocument(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await page.locator('.workspace-navigation-rail__category').first().click();
+    await page.getByRole('button', { name: 'Administração' }).click();
     await page.getByRole('button', { name: 'Manutenções' }).click();
     await expect(page.locator('#maintenance-title')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Instituições financeiras' })).toBeVisible();
@@ -497,8 +497,8 @@ test('rechecks an authorized folder action and removes it after revocation on de
     await mockProductionDocument(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Documentos' }).click();
-    await page.getByRole('button', { name: 'Arquivos e anexos' }).click();
+    await page.getByRole('button', { name: 'Biblioteca' }).click();
+    await page.getByRole('button', { name: 'Arquivos' }).click();
     await expect(page.locator('#workspace-folders-title')).toBeVisible();
     await page.getByRole('button', { name: 'Compartilhada' }).click();
     await expect(page.getByText('Pasta aberta:')).toContainText('Compartilhada');
@@ -511,6 +511,95 @@ test('rechecks an authorized folder action and removes it after revocation on de
     await page.setViewportSize({ width: 375, height: 667 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await captureState(page, testInfo, 'authorized-folder-phone-revoked');
+});
+
+test('publishes an advanced authorization policy from the tenant security surface', async ({ page }, testInfo) => {
+    const tenant = { id: 18, displayName: 'Ateliê Norte', state: 'ACTIVE', selectable: true, canManageAvailability: false };
+    await mockAuthenticatedSession(page);
+    await page.route('**/api/v1/tenants', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tenants: [tenant] }) });
+    });
+    await page.route('**/api/v1/tenants/18/contexts', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: false }, availableModules: [] } }) });
+    });
+    await page.route('**/api/v1/tenants/18/authorization/audit-events?**', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ events: [] }) });
+    });
+    await page.route('**/api/v1/tenants/18/authorization/advanced/access-requests', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ requests: [] }) });
+    });
+    await page.route('**/api/v1/tenants/18/authorization/advanced/policies', async (route) => {
+        expect(route.request().postDataJSON()).toEqual({ key: 'invoice-limit', definition: { all: [{ type: 'AMOUNT_MAXIMUM', maximum: 100 }] } });
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ policy: { id: 44 } }) });
+    });
+    await page.route('**/api/v1/tenants/18/authorization/advanced/policies/44/bindings', async (route) => {
+        expect(route.request().postDataJSON()).toEqual({ permissionId: 12 });
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({}) });
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Selecionar organização' }).click();
+    await page.getByRole('button', { name: tenant.displayName, exact: true }).click();
+    await page.getByRole('button', { name: 'Segurança' }).click();
+    await page.getByRole('button', { name: 'Usuários e acessos' }).click();
+    await expect(page.getByRole('heading', { name: 'Controles avançados' })).toBeVisible();
+    await page.getByLabel('Chave da política').fill('invoice-limit');
+    await page.getByLabel('ID da permission').first().fill('12');
+    await page.getByLabel('Valor máximo').fill('100');
+    await page.getByRole('button', { name: 'Publicar política' }).click();
+    await expect(page.getByText('Política publicada e vinculada.')).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 667 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await captureState(page, testInfo, 'advanced-authorization-phone');
+});
+
+test('requests and independently approves temporary access without exposing the approver chain', async ({ page }) => {
+    const tenant = { id: 19, displayName: 'Ateliê Sul', state: 'ACTIVE', selectable: true, canManageAvailability: false };
+    let activeUser = { id: 'requester-1', displayName: 'Solicitante', passwordDefined: false };
+    let requests: Array<Record<string, unknown>> = [];
+    await page.route('**/api/v1/auth/session', async (route) => {
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ persistentAuthentication: true, user: activeUser }) });
+    });
+    await page.route('**/api/v1/tenants', async (route) => { await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tenants: [tenant] }) }); });
+    await page.route('**/api/v1/tenants/19/contexts', async (route) => { await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: false }, availableModules: [] } }) }); });
+    await page.route('**/api/v1/tenants/19/authorization/audit-events?**', async (route) => { await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ events: [] }) }); });
+    await page.route('**/api/v1/tenants/19/authorization/advanced/access-requests**', async (route) => {
+        const url = new URL(route.request().url());
+        if (route.request().method() === 'GET') { await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ accessRequests: requests }) }); return; }
+        if (url.pathname.endsWith('/approval')) { requests = requests.map((request) => ({ ...request, state: 'APPROVED' })); await route.fulfill({ contentType: 'application/json', body: JSON.stringify({}) }); return; }
+        if (url.pathname.endsWith('/revocation')) { requests = requests.map((request) => ({ ...request, state: 'REVOKED' })); await route.fulfill({ contentType: 'application/json', body: JSON.stringify({}) }); return; }
+        expect(route.request().postDataJSON()).toMatchObject({ permissionId: 12, startsAt: expect.stringMatching(/Z$/), endsAt: expect.stringMatching(/Z$/) });
+        requests = [{ id: 90, permissionId: 12, state: 'PENDING', endsAt: '2026-09-28T11:00:00Z' }];
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({}) });
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Selecionar organização' }).click();
+    await page.getByRole('button', { name: tenant.displayName, exact: true }).click();
+    await page.getByRole('button', { name: 'Segurança' }).click();
+    await page.getByRole('button', { name: 'Usuários e acessos' }).click();
+    await page.getByRole('tab', { name: 'Acesso temporário' }).click();
+    await page.locator('#authorization-temporary-permission').fill('12');
+    await page.locator('#authorization-temporary-starts-at').fill('2026-09-28T10:00');
+    await page.locator('#authorization-temporary-ends-at').fill('2026-09-28T11:00');
+    await page.getByRole('button', { name: 'Solicitar acesso' }).click();
+    await expect(page.getByText('Solicitação de acesso enviada.')).toBeVisible();
+
+    activeUser = { id: 'approver-2', displayName: 'Aprovador', passwordDefined: false };
+    await page.reload();
+    await page.getByRole('button', { name: 'Selecionar organização' }).click();
+    await page.getByRole('button', { name: tenant.displayName, exact: true }).click();
+    await page.getByRole('button', { name: 'Segurança' }).click();
+    await page.getByRole('button', { name: 'Usuários e acessos' }).click();
+    await page.getByRole('tab', { name: 'Acesso temporário' }).click();
+    await expect(page.getByText('PENDING')).toBeVisible();
+    await expect(page.getByText('Solicitante')).not.toBeVisible();
+    await page.getByRole('button', { name: 'Aprovar' }).click();
+    await expect(page.getByText('Solicitação aprovada.')).toBeVisible();
+    await expect(page.getByText('APPROVED')).toBeVisible();
+    await page.getByRole('button', { name: 'Revogar' }).click();
+    await expect(page.getByText('Solicitação revogada.')).toBeVisible();
+    await expect(page.getByText('REVOKED')).toBeVisible();
 });
 
 test('honours reduced motion and ships the web installation manifest', async ({ page }) => {

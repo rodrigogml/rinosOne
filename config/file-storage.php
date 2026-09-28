@@ -31,6 +31,14 @@ return [
         'reprocessIntervalMinutes' => (int) env('FILE_COMPRESSION_REPROCESS_INTERVAL_MINUTES', 60),
     ],
 
+    'workspaceUpload' => [
+        'maximumFileBytes' => (int) env('DRIVE_UPLOAD_MAXIMUM_FILE_BYTES', 104857600),
+        'maximumBatchFiles' => (int) env('DRIVE_UPLOAD_MAXIMUM_BATCH_FILES', 20),
+        'maximumBatchBytes' => (int) env('DRIVE_UPLOAD_MAXIMUM_BATCH_BYTES', 524288000),
+        'allowedMimeTypes' => array_values(array_filter(array_map('trim', explode(',', (string) env('DRIVE_UPLOAD_ALLOWED_MIME_TYPES', '*/*'))))),
+        'temporaryRetentionMinutes' => (int) env('DRIVE_UPLOAD_TEMPORARY_RETENTION_MINUTES', 60),
+    ],
+
     'maintenance' => [
         'retentionPurgeIntervalMinutes' => (int) env('FILE_STORAGE_RETENTION_PURGE_INTERVAL_MINUTES', 60),
         'reconciliationIntervalMinutes' => (int) env('FILE_STORAGE_RECONCILIATION_INTERVAL_MINUTES', 60),

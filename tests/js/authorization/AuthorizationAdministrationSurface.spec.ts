@@ -56,4 +56,20 @@ describe('AuthorizationAdministrationSurface', () => {
         expect((wrapper.get('#authorization-membership').element as HTMLInputElement).value).toBe('91');
         wrapper.unmount();
     });
+
+    it('keeps the temporary access request form keyboard-operable and posts only its structured fields', async () => {
+        const wrapper = mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } });
+        await flushPromises();
+        await wrapper.findAll('[role="tab"]')[3]!.trigger('click');
+        const permission = wrapper.get('#authorization-temporary-permission');
+        expect(permission.attributes('inputmode')).toBe('numeric');
+        await permission.setValue('12');
+        await wrapper.get('#authorization-temporary-starts-at').setValue('2026-09-28T10:00');
+        await wrapper.get('#authorization-temporary-ends-at').setValue('2026-09-28T11:00');
+        await wrapper.get('.authorization-administration__form form').trigger('submit');
+        await flushPromises();
+        expect(axios.post).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/advanced/access-requests', expect.objectContaining({ permissionId: 12 }));
+        expect(wrapper.text()).toContain('Solicitações de acesso');
+        wrapper.unmount();
+    });
 });

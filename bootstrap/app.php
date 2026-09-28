@@ -2,6 +2,7 @@
 
 use App\Domain\Profile\Exception\AvatarProcessingUnavailableException;
 use App\Domain\Profile\Exception\AvatarValidationException;
+use App\Http\Middleware\AuthenticateServiceApiKey;
 use App\Http\Middleware\NormalizePersistentAuthenticationSession;
 use App\Http\Middleware\RestorePersistentAuthentication;
 use App\Http\Middleware\SecurityHeaders;
@@ -20,6 +21,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias(['service.api-key' => AuthenticateServiceApiKey::class]);
         $middleware->appendToGroup('web', NormalizePersistentAuthenticationSession::class);
         $middleware->prependToPriorityList(Authenticate::class, RestorePersistentAuthentication::class);
         $middleware->append(SecurityHeaders::class);

@@ -5,9 +5,19 @@ namespace App\Contracts\FileStorage\V1;
 interface FileStorageV1
 {
     /**
+     * Ingests private immutable bytes before an authorized caller decides whether to activate a workspace possession.
+     */
+    public function ingestWorkspaceContent(IngestWorkspaceContentRequest $request): \App\Domain\FileStorage\Content\IngestedStoredFileContent;
+
+    /**
      * Stores a private system-managed version and atomically makes it the active binding when one is requested.
      */
     public function storeManagedVersion(StoreManagedVersionRequest $request): StoredManagedVersion;
+
+    /**
+     * Stores a new immutable private workspace file version for an already-authorized owner and location.
+     */
+    public function storeWorkspaceVersion(StoreWorkspaceVersionRequest $request): StoredWorkspaceVersion;
 
     /**
      * Releases the active system-managed possession of a user binding without exposing it to generic workspace operations.

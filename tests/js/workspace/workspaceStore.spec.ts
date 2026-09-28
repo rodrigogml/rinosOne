@@ -44,14 +44,21 @@ describe('workspace runtime store', () => {
     it('publishes only workspace destinations backed by an implemented surface', () => {
         expect(workspaceNavigationCategories.map((category) => category.id)).toEqual([
             'personal-library',
+            'tenant-workspace',
             'tenant-security',
             'domain-governance',
         ]);
         expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
-            'personal.workspace-folders',
+            'personal.drive',
+            'tenant.drive',
             'tenant.authorization-administration',
             'platform.maintenance',
         ]);
+        expect(workspaceDestinations.find((candidate) => candidate.id === 'personal.drive')).toMatchObject({
+            label: 'Rinos Drive Pessoal',
+            navigationLabel: 'Arquivos',
+            icon: 'drive',
+        });
     });
 
     it('focuses the existing single instance and creates distinguishable multiple instances', () => {
@@ -83,6 +90,23 @@ describe('workspace runtime store', () => {
         expect(store.surfaces.map((surface) => surface.id)).toEqual([personal?.id]);
         expect(store.activeSurfaceId).toBe(personal?.id);
         expect(store.surfaces.find((surface) => surface.id === contextual?.id)).toBeUndefined();
+    });
+
+    it('keeps one Rinos Drive Work instance per tenant and closes it on context change', () => {
+        const store = useWorkspaceStore();
+        const drive = workspaceDestinations.find((candidate) => candidate.id === 'tenant.drive')!;
+
+        const first = store.openDestination(drive, { tenantId: 1 });
+        const sameTenant = store.openDestination(drive, { tenantId: 1 });
+        const otherTenant = store.openDestination(drive, { tenantId: 2 });
+
+        expect(first?.id).toBe(sameTenant?.id);
+        expect(otherTenant?.id).not.toBe(first?.id);
+        expect(store.surfaces).toHaveLength(2);
+
+        store.clearTenantSurfaces();
+
+        expect(store.surfaces).toEqual([]);
     });
 
     it('preserves a dirty surface when discard is cancelled and closes it after confirmation', () => {

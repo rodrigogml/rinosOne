@@ -12,7 +12,7 @@ Esta é uma capacidade complementar. Papéis, permissões, grupos, escopos, rela
 
 ## Escopo
 
-Inclui políticas condicionais e reutilizáveis aplicáveis aos escopos `PLATFORM`, `PERSONAL` e `TENANT`; implicação explícita de permissions; delegação administrativa limitada; acesso temporário e sujeito a aprovação; separação de funções; identidades de serviço; restrictions por recurso; limite de grupos aninhados; e sincronização de grupos por diretório corporativo. A primeira integração corporativa adotará SCIM 2.0 por adaptador, preservando o domínio independente do fornecedor.
+Inclui políticas condicionais e reutilizáveis aplicáveis aos escopos `PLATFORM`, `PERSONAL` e `TENANT`; implicação explícita de permissions; delegação administrativa limitada; acesso temporário e sujeito a aprovação; separação de funções; identidades de serviço; restrictions por recurso; e limite de grupos aninhados.
 
 Não inclui a criação de novas permissões de produto, nem substitui fluxos funcionais de aprovação próprios de cada módulo. Quando uma política exigir aprovação, ela decide somente sobre a ativação temporária de um acesso; a aprovação de uma transação de negócio continua sob responsabilidade do módulo correspondente.
 
@@ -20,8 +20,8 @@ Não inclui a criação de novas permissões de produto, nem substitui fluxos fu
 
 | Superfície | Tipo | Atores | Cobertura | Comportamento funcional | Comportamento excluído ou adiado |
 | --- | --- | --- | --- | --- | --- |
-| Administração de segurança | Web responsiva | Administrador autorizado e aprovador elegível | FULL | Publica políticas, administra delegações, trata solicitações e consulta integrações. | Painel de fornecedor específico de diretório. |
-| API protegida da plataforma | Other | Interface web, job de integração e consumidor autorizado | FULL | Avalia contexto e opera políticas, delegações, solicitações e sincronização protegidas. | API pública para parceiros. |
+| Administração de segurança | Web responsiva | Administrador autorizado e aprovador elegível | FULL | Publica políticas, administra delegações, trata solicitações e consulta integrações. | Painel de fornecedor específico. |
+| API protegida da plataforma | Other | Interface web e consumidor autorizado | FULL | Avalia contexto e opera políticas, delegações e solicitações protegidas. | API pública para parceiros. |
 | Workspace autenticado | Web responsiva | Pessoa autenticada | PARTIAL | Solicita acesso temporário e recebe resultado seguro da aprovação. | Editor de políticas ou administração corporativa. |
 
 ## Histórias de usuário e requisitos
@@ -79,20 +79,15 @@ Como responsável de segurança, quero exigir controles adicionais para acessos 
 
 ### US-AP-004 — Integrar pessoas e identidades de serviço corporativas
 
-Como administrador de integração, quero aplicar as mesmas garantias de autorização a identidades não humanas e grupos sincronizados, com responsabilidade e rastreabilidade claras.
+Como administrador de integração, quero aplicar as mesmas garantias de autorização a identidades não humanas, com responsabilidade e rastreabilidade claras.
 
 **Critérios de aceitação**
 
 1. Uma identidade de serviço recebe somente concessões explicitamente atribuídas, com credencial, escopo e prazo próprios.
-2. Alteração vinda de diretório externo respeita o mapeamento aprovado e não remove o último administrador direto de um tenant.
-3. Falha, atraso ou remoção de vínculo externo não permite ampliar acesso; a política de continuidade configurada é auditável.
 
 **Requisitos funcionais**
 
 - **FR-AAP-013:** O sistema DEVE representar identidades de serviço separadamente de usuários humanos, associando proprietário responsável, finalidade, credenciais permitidas, escopo e vigência.
-- **FR-AAP-014:** O sistema DEVE suportar sincronização de grupos de diretório corporativo por adaptador aprovado, com mapeamento explícito para grupos internos e trilha de auditoria de cada alteração recebida.
-- **FR-AAP-015:** O sistema DEVE aplicar princípio de falha segura a integrações de identidade: dados ausentes, inválidos, expirados ou não verificados não PODEM conceder ou manter acesso acima da política de continuidade configurada.
-- **FR-AAP-016:** O sistema DEVE manter a regra de proteção do administrador de tenant diante de sincronizações, delegações, aprovações e políticas avançadas: todo tenant precisa conservar ao menos uma associação direta, ativa e elegível ao papel `tenant.administrator`.
 - **FR-AAP-017:** O sistema DEVE permitir declarar implicações acíclicas entre permissions do mesmo escopo; uma permission implicada somente é considerada após uma concessão válida da permission de origem e nunca supera uma restriction.
 - **FR-AAP-018:** O sistema DEVE limitar a profundidade de grupos aninhados por configuração segura e negar uma escrita que ultrapasse o limite.
 - **FR-AAP-019:** O sistema DEVE permitir restriction opcional por recurso registrado, validando tipo, escopo e tenant; uma restriction específica só nega a decisão para o recurso qualificado.
@@ -101,20 +96,20 @@ Como administrador de integração, quero aplicar as mesmas garantias de autoriz
 
 - A precedência é invariável: restrição aplicável > ausência de concessão válida > política condicional não satisfeita > concessão permitida. Uma política avançada jamais neutraliza uma restrição.
 - Políticas não podem ser configuradas para criar acesso implícito; elas apenas reduzem, condicionam ou ativam uma concessão explicitamente existente.
-- Todas as mudanças administrativas e decisões de aprovação, delegação, sincronização ou expiração devem gerar evento de auditoria no padrão de retenção configurável, cujo valor padrão é 90 dias.
+- Todas as mudanças administrativas e decisões de aprovação, delegação ou expiração devem gerar evento de auditoria no padrão de retenção configurável, cujo valor padrão é 90 dias.
 - A interface de administração deverá fornecer simulação e explicação segura antes da publicação; o desenho detalhado dessa interface pertence à fase de planejamento e design de interface.
 
 ## Fora do escopo
 
 - Motor genérico de expressões arbitrárias, scripts ou execução de código fornecido por administradores.
 - Aprovação de transações de negócio, assinaturas eletrônicas ou fluxo financeiro dos módulos de domínio.
-- Fornecedor de diretório diferente de SCIM 2.0, SSO/protocolo de autenticação e mapeamento específico de atributos de cada fornecedor.
+- SSO/protocolo de autenticação e mapeamento externo de atributos de identidade.
 - Substituição de políticas já publicadas sem versionamento, rastreabilidade e validação de compatibilidade.
 - Regras de negócio por módulo, como limites financeiros, pares de funções incompatíveis ou categorias de permission: o motor é entregue sem regras arbitrárias até que cada módulo as declare.
 
 ## Critérios de sucesso mensuráveis
 
 - **SC-AAP-001:** 100% das decisões que envolvam política avançada registram a versão e o resultado da política sem expor atributos sensíveis ao solicitante comum.
-- **SC-AAP-002:** Em testes de regressão, nenhuma combinação de delegação, aprovação, sincronização ou condição consegue superar uma restriction aplicável ou preservar acesso após revogação/expiração.
-- **SC-AAP-003:** 100% das tentativas de remover a última associação direta e ativa de `tenant.administrator` são bloqueadas, independentemente da origem administrativa ou integrada.
+- **SC-AAP-002:** Em testes de regressão, nenhuma combinação de delegação, aprovação ou condição consegue superar uma restriction aplicável ou preservar acesso após revogação/expiração.
+- **SC-AAP-003:** 100% das tentativas de remover a última associação direta e ativa de `tenant.administrator` são bloqueadas, independentemente da origem administrativa.
 - **SC-AAP-004:** Para cada tipo de condição publicado, existem testes de valor válido, valor ausente, fronteiras temporais e negação por atributo não confiável.

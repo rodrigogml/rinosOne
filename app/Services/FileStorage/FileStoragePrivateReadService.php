@@ -15,6 +15,7 @@ use App\Models\FileStorage\StoredFileSystemBinding;
 use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationService;
+use App\Services\Authorization\TenantAdministratorInvariant;
 use Throwable;
 
 class FileStoragePrivateReadService
@@ -22,6 +23,7 @@ class FileStoragePrivateReadService
     public function __construct(
         private readonly FileStorageBackendResolver $backendResolver,
         private readonly AuthorizationService $authorization,
+        private readonly TenantAdministratorInvariant $tenantAdministrators,
     ) {}
 
     /**
@@ -86,7 +88,7 @@ class FileStoragePrivateReadService
             ? $this->resolveBindingPossession($request)
             : $this->resolveDirectPossession($request);
 
-        if ($possession === null || ! in_array($possession->state, ['ACTIVE', 'TRASHED'], true)) {
+        if ($possession === null || ($request->allowTrashed ? ! in_array($possession->state, ['ACTIVE', 'TRASHED'], true) : $possession->state !== 'ACTIVE')) {
             throw new FileStorageAccessException('The requested private file content is unavailable.');
         }
         $this->assertPrincipalCanRead($request, $possession);
@@ -108,6 +110,12 @@ class FileStoragePrivateReadService
         }
         $folder = $possession->idWorkspaceFolder === null ? null : WorkspaceFolder::query()->find($possession->idWorkspaceFolder);
         if ($folder === null) {
+            if ($possession->idTenant !== null) {
+                $decision = $this->authorization->check($principal, 'tenant.folder.read', AuthorizationScope::Tenant, $possession->idTenant);
+                if ($decision->reasonCode !== 'RESTRICTION_APPLIES' && $this->tenantAdministrators->isActiveDirectAdministrator($principal, $possession->idTenant)) {
+                    return;
+                }
+            }
             throw new FileStorageAccessException('The requested private file content is unavailable.');
         }
         $scope = $folder->idUser === null ? AuthorizationScope::Tenant : AuthorizationScope::Personal;

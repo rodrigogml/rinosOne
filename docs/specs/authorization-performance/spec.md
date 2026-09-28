@@ -54,7 +54,7 @@ Como equipe operacional, quero distinguir negações esperadas de falhas interna
 
 - **FR-AP-001**: O sistema DEVE tratar cache de autorização como acelerador descartável e manter correção após sua perda.
 - **FR-AP-002**: O sistema DEVE associar decisões armazenadas a uma versão de política do contexto aplicável, incluindo tenant quando houver.
-- **FR-AP-003**: O sistema DEVE atualizar a versão de política após mudança relevante de role, group, membership, restriction, relation, política condicional, delegação, aprovação, separação de funções, identidade de serviço ou sincronização de diretório.
+- **FR-AP-003**: O sistema DEVE atualizar a versão de política após mudança relevante de role, group, membership, restriction, relation, política condicional, delegação, aprovação, separação de funções ou identidade de serviço.
 - **FR-AP-004**: A próxima operação protegida após mudança relevante DEVE usar política atual e não decisão anterior inválida.
 - **FR-AP-005**: O sistema DEVE suportar decisão em lote consistente com decisões individuais equivalentes.
 - **FR-AP-006**: O sistema DEVE filtrar recursos autorizados por consulta ou processamento agregado, sem loop de decisão individual como estratégia principal.

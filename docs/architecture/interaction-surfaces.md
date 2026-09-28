@@ -1,7 +1,7 @@
 # Arquitetura das Superfícies de Interação
 
 **Criado**: 2026-09-22
-**Última atualização**: 2026-09-27
+**Última atualização**: 2026-09-28
 **Status**: Aprovado
 **Fontes**: briefing inicial, Constituição e plano da feature de acesso de usuário.
 
@@ -12,6 +12,8 @@
 | SURF-WEB-ACCESS | WEB | Visitante e usuário validado | Navegadores modernos em desktop, tablet e telefone | Cadastro, validação de e-mail, login, controle de sessões, casca autenticada, área de trabalho e fundação de tenants | Vue 3, TypeScript e navegador moderno | SPA responsiva | Tokens CSS, componentes próprios, temas, preferências locais, i18n e área de trabalho autenticada | `resources/js`, `resources/css`, `resources/views` | Aprovado |
 | SURF-WEB-MAINTENANCE | WEB | Administradores da Plataforma | Navegadores modernos em desktop, tablet e telefone | Central de manutenções, estados, histórico, auditoria e ações permitidas por rotina | Vue 3, TypeScript e navegador moderno | SPA responsiva | Sistema de design existente e componentes específicos de manutenção | `resources/js/maintenance`, `app`, `routes/api` | Planejado |
 | SURF-WEB-ADMIN | WEB | Administradores autorizados de tenant e plataforma | Navegadores modernos em desktop, tablet e telefone | Administração de acesso, roles, grupos, auditoria, políticas e delegações | Vue 3, TypeScript e navegador moderno | SPA responsiva | Sistema de design existente, i18n e componentes de formulário/tabela | `resources/js/workspace/authorization`, `app`, `routes/api` | Planejado |
+| SURF-WEB-DRIVE | WEB | Usuário autenticado, administradores e membros autorizados de organização | Navegadores modernos em desktop, tablet e telefone | Rinos Drive Pessoal e Rinos Drive Work: navegação, pastas, upload, download, lixeira e exportações privadas | Vue 3, TypeScript e navegador moderno | SPA responsiva dentro da Área de Trabalho | Sistema de design existente, i18n, árvore, toolbar, seleção e painel de detalhes reutilizáveis | `resources/js/drive`, `app`, `routes/api` | Planejado |
+| SURF-WEB-PEOPLE | WEB | Usuários autorizados de organização | Navegadores modernos em desktop, tablet e telefone | Cadastro organizacional de Pessoas PF/PJ, endereços, contatos, contas, Pix, relacionamentos e ciclo de vida | Vue 3, TypeScript e navegador moderno | SPA responsiva dentro da Área de Trabalho | Sistema de design existente, i18n, formulários, tabelas, diálogos e confirmações destrutivas | `resources/js`, `resources/css`, `app`, `routes/api` | Planejado |
 | SURF-WEB-SHARING | WEB | Titulares e administradores autorizados | Navegadores modernos em desktop, tablet e telefone | Gestão de relações e compartilhamentos por recurso | Vue 3, TypeScript e navegador moderno | SPA responsiva | Sistema de design existente e componentes de compartilhamento | `resources/js/workspace`, `app`, `routes/api` | Adiado |
 | SURF-FUTURE-CONSUMERS | API | Integrações e interfaces futuras autorizadas | A definir por capacidade | Contratos JSON versionados já definidos, sem interface ou consumidor entregue nesta fase | API JSON `/api/v1` | A definir | Contratos independentes da web | `app`, `routes/api` | Adiado |
 
@@ -54,4 +56,6 @@ A web adota dez famílias cromáticas claro/escuro em tokens, com Rubi Industria
 | 2026-09-26 | SURF-WEB-MAINTENANCE | A central de manutenções integra rotinas explicitamente e apresenta somente suas capacidades autorizadas | Preserva regras próprias de agenda, concorrência e execução, sem criar abstração genérica | Plano da Central de Manutenções |
 | 2026-09-27 | SURF-WEB-MAINTENANCE | A atualização territorial do IBGE será uma integração de leitura no Hub, sem disparo manual | A rotina é automaticamente devida na primeira execução e mensalmente depois; o Hub a observa, mas não define suas regras | Plano da Fundação de Localidades |
 | 2026-09-26 | SURF-WEB-ADMIN | A administração de segurança será uma superfície responsiva separada da área operacional | Evita misturar gestão de privilégios com uso cotidiano e preserva controles reforçados | SDDs de autorização |
+| 2026-09-27 | SURF-WEB-DRIVE | Um navegador responsivo atende workspaces pessoal e organizacional por alvo tipado | Reutiliza a fundação única de arquivos sem permitir seleção livre de proprietário ou acervo | SDD Rinos Drive |
+| 2026-09-28 | SURF-WEB-PEOPLE | Um único cadastro responsivo de Pessoas entrega capacidade integral em desktop, tablet e telefone | Mantém paridade funcional aprovada sem duplicar clientes ou regras de negócio | SDD Cadastro de Pessoas |
 | 2026-09-26 | SURF-WEB-SHARING | A gestão visual de compartilhamentos é uma superfície futura própria | Mantém a fundação por recurso independente do editor de relações | SDD de autorização por recurso |

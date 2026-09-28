@@ -41,6 +41,8 @@ export interface WorkspaceDestination {
     groupLabel?: string;
     titleKey: string;
     label?: string;
+    /** Rótulo curto exibido nas navegações, quando difere do título da janela. */
+    navigationLabel?: string;
     icon: string;
     instancePolicy?: WorkspaceInstancePolicy;
     createSurface: (input: { id: string; tenantId: number | null }) => WorkspaceSurfaceDefinition;

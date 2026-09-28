@@ -50,6 +50,17 @@ class FileStorageConfigurationValidator
             throw new LogicException('FILE_TECHNICAL_RETENTION_DAYS must not be lower than FILE_BACKUP_RETENTION_DAYS.');
         }
 
+        $workspaceUpload = config('file-storage.workspaceUpload');
+        if (! is_array($workspaceUpload)
+            || ! $this->isPositiveInteger($workspaceUpload['maximumFileBytes'] ?? null)
+            || ! $this->isPositiveInteger($workspaceUpload['maximumBatchFiles'] ?? null)
+            || ! $this->isPositiveInteger($workspaceUpload['maximumBatchBytes'] ?? null)
+            || ! $this->isPositiveInteger($workspaceUpload['temporaryRetentionMinutes'] ?? null)
+            || ! is_array($workspaceUpload['allowedMimeTypes'] ?? null)
+            || $workspaceUpload['allowedMimeTypes'] === []) {
+            throw new LogicException('The Rinos Drive upload configuration is invalid.');
+        }
+
         $compressionRules = config('file-storage.compression.rules');
 
         if (! is_array($compressionRules)) {

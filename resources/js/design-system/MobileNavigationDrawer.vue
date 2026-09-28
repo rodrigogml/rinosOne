@@ -90,7 +90,7 @@ onBeforeUnmount(() => returnFocus?.focus());
                                 <div v-if="activeCategoryId === category.id" class="mobile-navigation-drawer__destinations">
                                     <button v-for="destination in activeDestinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">
                                         <WorkspaceSurfaceIcon :name="destination.icon" size="sm" />
-                                        <span>{{ destination.label ?? t(destination.titleKey) }}</span>
+                                        <span>{{ destination.navigationLabel ?? destination.label ?? t(destination.titleKey) }}</span>
                                     </button>
                                     <p v-if="!activeDestinations.length">{{ emptyLabel }}</p>
                                 </div>

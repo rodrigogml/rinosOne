@@ -3,10 +3,10 @@ import { isRegisteredRasterIcon, rasterIconSource, rasterIconSources } from '../
 
 describe('raster icon assets', () => {
     it('resolves every display-size variant for registered interface icons', () => {
-        expect(rasterIconSources('maintenance')).toEqual([
-            '/assets/icons/maintenance_24.png',
-            '/assets/icons/maintenance_32.png',
-            '/assets/icons/maintenance_48.png',
+        expect(rasterIconSources('drive')).toEqual([
+            '/assets/icons/drive_24.png',
+            '/assets/icons/drive_32.png',
+            '/assets/icons/drive_48.png',
         ]);
     });
 

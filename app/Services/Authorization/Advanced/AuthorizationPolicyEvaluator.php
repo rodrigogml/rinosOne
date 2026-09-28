@@ -5,14 +5,33 @@ namespace App\Services\Authorization\Advanced;
 use App\Domain\Authorization\AuthorizationEvaluationContext;
 use App\Domain\Authorization\AuthorizationScope;
 use App\Domain\Authorization\Resource\ResourceReference;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /** Applies active policy bindings only after the base authorization engine found an eligible grant. */
 class AuthorizationPolicyEvaluator
 {
+    public function evaluate(string $permissionKey, AuthorizationScope $scope, ?int $tenantId, ?ResourceReference $resource, ?AuthorizationEvaluationContext $context): AuthorizationPolicyEvaluation
+    {
+        $definitions = $this->definitions($permissionKey, $scope, $tenantId, $resource);
+        $policies = $definitions->map(fn ($definition): array => ['id' => (int) $definition->id, 'version' => (int) $definition->version])->all();
+        foreach ($definitions as $definition) {
+            if (! $this->evaluateNode(json_decode($definition->definition, true, 512, JSON_THROW_ON_ERROR), $context)) {
+                return new AuthorizationPolicyEvaluation(false, $policies);
+            }
+        }
+
+        return new AuthorizationPolicyEvaluation(true, $policies);
+    }
+
     public function qualifies(string $permissionKey, AuthorizationScope $scope, ?int $tenantId, ?ResourceReference $resource, ?AuthorizationEvaluationContext $context): bool
     {
-        $definitions = DB::table('auth_policy_binding')
+        return $this->evaluate($permissionKey, $scope, $tenantId, $resource, $context)->qualified;
+    }
+
+    private function definitions(string $permissionKey, AuthorizationScope $scope, ?int $tenantId, ?ResourceReference $resource): Collection
+    {
+        return DB::table('auth_policy_binding')
             ->join('auth_policy', 'auth_policy.id', '=', 'auth_policy_binding.idPolicy')
             ->join('auth_permission', 'auth_permission.id', '=', 'auth_policy_binding.idPermission')
             ->where('auth_policy_binding.active', true)
@@ -32,16 +51,7 @@ class AuthorizationPolicyEvaluator
                         });
                 });
             })
-            ->pluck('auth_policy.definition');
-
-        foreach ($definitions as $definition) {
-            $decoded = json_decode($definition, true, 512, JSON_THROW_ON_ERROR);
-            if (! $this->evaluateNode($decoded, $context)) {
-                return false;
-            }
-        }
-
-        return true;
+            ->select(['auth_policy.id', 'auth_policy.version', 'auth_policy.definition'])->get();
     }
 
     /** @param array<string, mixed> $node */

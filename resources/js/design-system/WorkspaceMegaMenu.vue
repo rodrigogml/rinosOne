@@ -52,7 +52,7 @@ const destinationGroups = computed(() => {
                     @click="emit('openDestination', destination)"
                 >
                     <WorkspaceSurfaceIcon class="workspace-mega-menu__destination-icon" :name="destination.icon" />
-                    <span>{{ destination.label ?? t(destination.titleKey) }}</span>
+                    <span>{{ destination.navigationLabel ?? destination.label ?? t(destination.titleKey) }}</span>
                 </button>
             </div>
         </div>

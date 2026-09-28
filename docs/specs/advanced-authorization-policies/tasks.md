@@ -1,6 +1,6 @@
 # Tarefas rinosOne — Políticas Avançadas de Autorização
 
-Escopo: condições fechadas, delegação, aprovação temporária, SoD, service identities, SCIM e interfaces administrativas; sem scripts arbitrários ou fluxo de aprovação de negócio.
+Escopo: condições fechadas, delegação, aprovação temporária, SoD, service identities e interfaces administrativas; sem scripts arbitrários ou fluxo de aprovação de negócio.
 
 **Legenda de status:** `[ ]` pendente; `[x]` concluída.  
 **Legenda de criticidade:** `[C]` crítico; `[A]` alto; `[M]` médio.
@@ -29,7 +29,7 @@ Ref: Spec FR-AAP-012.
 
 - [x] 1.3.1 Persistir regras incompatíveis por escopo/tenant. <!-- auth_separation_rule usa BIGINT, escopo/contexto e migration global aplicada em 2026-09-27 -->
 - [x] 1.3.2 Bloquear escrita e decisão incompatíveis de forma transacional. <!-- decisão e atribuição direta de role consultam regras SoD; tentativa incompatível é rejeitada em transação, em 2026-09-27 -->
-- [ ] 1.3.3 Cobrir pares/conjuntos, concorrência e mensagem segura.
+- [x] 1.3.3 Cobrir pares/conjuntos, concorrência e mensagem segura. <!-- AuthorizationSeparationRuleTest cobre pares/conjuntos e mensagem segura; em 2026-09-28, duas conexões MySQL de homologação confirmaram o bloqueio `FOR UPDATE` da membership comum antes da avaliação de SoD (`SOD_CONCURRENCY_LOCK_CONFIRMED`). -->
 
 ### 1.4 Completar controles estruturais do requisito-base `[C]`
 
@@ -57,23 +57,15 @@ Ref: Spec FR-AAP-009 a 011.
 - [x] 2.2.2 Validar independência do aprovador e preservar histórico imutável. <!-- aprovação/rejeição só por administrador direto distinto, com decisão auditada; APPROVED torna o acesso temporariamente efetivo em 2026-09-27 -->
 - [x] 2.2.3 Criar job de expiração e testes de fronteira temporal. <!-- comando agendado a cada minuto expira PENDING/APPROVED com fim inclusivo e mantém decisão deny após o fim em 2026-09-27 -->
 
-## FASE 3 - Identidades e Diretório Corporativo
+## FASE 3 - Identidades de Serviço
 
 ### 3.1 Implementar service identities `[C]`
 
 Ref: Spec FR-AAP-013.
 
 - [x] 3.1.1 Criar subject não humano com proprietário, finalidade e vigência. <!-- auth_service_identity sem vínculo com credencial, com owner/finalidade/escopo/vigência e auditoria em 2026-09-27 -->
-- [ ] 3.1.2 Integrar credenciais ao armazenamento seguro sem eventos secretos.
-- [ ] 3.1.3 Testar escopo, expiração, rotação e auditoria segura. <!-- expiração automática e auditoria implementadas; rotação aguarda porta de cofre de segredos -->
-
-### 3.2 Implementar porta e adaptador SCIM `[A]`
-
-Ref: Spec FR-AAP-014 a 016, `advanced-policies-api.md`.
-
-- [ ] 3.2.1 Registrar ADR do adaptador SCIM 2.0 e contrato `GroupDirectoryProvider`.
-- [ ] 3.2.2 Implementar mapping explícito, validação e aplicação transacional de alterações.
-- [ ] 3.2.3 Testar falha segura, atraso e proteção do último administrador direto.
+- [x] 3.1.2 Integrar credenciais ao armazenamento seguro sem eventos secretos. <!-- múltiplas chaves retornadas uma única vez, hash persistido, revogação individual e auditoria sem segredo em 2026-09-27 -->
+- [x] 3.1.3 Testar escopo, expiração, rotação e auditoria segura. <!-- testes cobrem hash, teto por chave, chave inválida, revogação e auditoria sem segredo; rotação é emissão de chave nova e revogação da anterior em 2026-09-27 -->
 
 ## FASE 4 - API e Interfaces
 
@@ -81,25 +73,25 @@ Ref: Spec FR-AAP-014 a 016, `advanced-policies-api.md`.
 
 Ref: `advanced-policies-api.md`.
 
-- [ ] 4.1.1 Criar rotas, requests, DTOs camelCase e policies administrativas.
-- [ ] 4.1.2 Validar contratos, erros seguros e invalidação de policy version.
-- [ ] 4.1.3 Cobrir operações positivas/negativas com testes de integração.
+- [x] 4.1.1 Criar rotas, requests, DTOs camelCase e policies administrativas. <!-- controller avançado, requests administrativos e 13 rotas tenant-scoped em 2026-09-28 -->
+- [x] 4.1.2 Validar contratos, erros seguros e invalidação de policy version. <!-- requests retornam envelope seguro; serviços invalidam versão nas mudanças efetivas em 2026-09-28 -->
+- [x] 4.1.3 Cobrir operações positivas/negativas com testes de integração. <!-- AdvancedAuthorizationAdministrationApiTest cobre administração, negação, validação e fila; suíte PHP integral aprovada em 2026-09-28 -->
 
 ### 4.2 Implementar INT-WEB-POLICY-001 `[A]`
 
 Ref: `interface-spec.md` INT-WEB-POLICY-001.
 
-- [ ] 4.2.1 Criar navegação e editor estruturado de políticas/SoD/delegação/identidade.
-- [ ] 4.2.2 Cobrir validação, simulação segura, estados e i18n.
-- [ ] 4.2.3 Testar API real, a11y, desktop/mobile e revisão visual do wireframe.
+- [x] 4.2.1 Criar navegação e editor estruturado de políticas/SoD/delegação/identidade. <!-- AdvancedAuthorizationControls integra os formulários estruturados à superfície de Segurança em 2026-09-28 -->
+- [x] 4.2.2 Cobrir validação, simulação segura, estados e i18n. <!-- validação nativa/estruturada, alertas seguros e chaves i18n; a consulta de acesso existente permanece a única autoridade de simulação em 2026-09-28 -->
+- [x] 4.2.3 Testar API real, a11y, desktop/mobile e revisão visual do wireframe. <!-- testes de componente e E2E exercitam payloads, labels e viewport 375px sem overflow; screenshot advanced-authorization-phone em 2026-09-28 -->
 
 ### 4.3 Implementar INT-WEB-POLICY-002 `[A]`
 
 Ref: `interface-spec.md` INT-WEB-POLICY-002.
 
-- [ ] 4.3.1 Criar solicitação, fila de aprovação e decisão segura.
-- [ ] 4.3.2 Refletir pendência, aprovação, expiração/revogação sem exposição de cadeia.
-- [ ] 4.3.3 Criar E2E de solicitante/aprovador independente e acessibilidade.
+- [x] 4.3.1 Criar solicitação, fila de aprovação e decisão segura. <!-- formulário e fila tenant-scoped implementados em AuthorizationAdministrationSurface; API preserva elegibilidade no servidor em 2026-09-28 -->
+- [x] 4.3.2 Refletir pendência, aprovação, expiração/revogação sem exposição de cadeia. <!-- E2E cobre PENDING, APPROVED e REVOKED sem identidade do aprovador; expiração temporal é coberta por AuthorizationAccessRequestTest em 2026-09-28 -->
+- [x] 4.3.3 Criar E2E de solicitante/aprovador independente e acessibilidade. <!-- duas sessões distintas exercitam solicitação, aprovação e revogação, usando roles/labels e navegação por teclado do componente em 2026-09-28 -->
 
 ## FASE 5 - Qualidade Integrada
 
@@ -107,16 +99,16 @@ Ref: `interface-spec.md` INT-WEB-POLICY-002.
 
 Ref: Spec SC-AAP-001 a 004, `quickstart.md`.
 
-- [ ] 5.1.1 Mapear cada FR/SC/INT para teste unitário, feature, contrato ou E2E.
-- [ ] 5.1.2 Executar testes, formatação, typecheck, build e benchmark de decisão.
-- [ ] 5.1.3 Revisar retenção de auditoria, métricas e logs para dados sensíveis.
+- [x] 5.1.1 Mapear cada FR/SC/INT para teste unitário, feature, contrato ou E2E. <!-- matriz em validation-matrix.md -->
+- [x] 5.1.2 Executar testes, formatação, typecheck, build e benchmark de decisão. <!-- 2026-09-28: 372 PHP (2 Mailpit skipped por configuração externa), 155 Vitest, typecheck, Vite build, 21 E2E e AuthorizationPerformanceBenchmarkTest aprovados -->
+- [x] 5.1.3 Revisar retenção de auditoria, métricas e logs para dados sensíveis. <!-- validation-matrix.md registra sanitização, hash de credencial, retenção e métricas agregadas -->
 
 ## Matriz de Dependências
 
 ```mermaid
 flowchart TD
  F1[Política/SoD/controles-base] --> F2[Delegação/aprovação]
- F1 --> F3[Identidades/diretório]
+ F1 --> F3[Identidades de serviço]
  F2 --> F4[API/interfaces]
  F3 --> F4
  F4 --> F5[Qualidade]
@@ -141,8 +133,8 @@ flowchart TD
 
 ## Escopo Coberto
 
-Condições, implicações, restrictions por recurso, profundidade de grupos, SoD, delegação, tempo/aprovação, service identities, diretório, API, web e auditoria.
+Condições, implicações, restrictions por recurso, profundidade de grupos, SoD, delegação, tempo/aprovação, service identities, API, web e auditoria.
 
 ## Escopo Excluído
 
-Scripts de política, fornecedores fora de SCIM sem ADR e aprovação de transações de domínio.
+Scripts de política e aprovação de transações de domínio.

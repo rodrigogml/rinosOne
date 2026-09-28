@@ -27,6 +27,12 @@ Armazena bytes recebidos, deduplica conteúdo, cria versão e associa ou substit
 
 Retorna `possessionId`, `fileId`, `versionId`, `contentId`, `logicalSizeBytes` e o estado final. A substituição de uma binding é atômica: a nova posse é ativada antes da anterior ser liberada.
 
+## `ingestWorkspaceContent` e `storeWorkspaceVersion`
+
+O Rinos Drive usa duas etapas explícitas da mesma porta V1. `ingestWorkspaceContent` recebe o caminho temporário privado, identifica MIME e tamanho pelos bytes, deduplica o conteúdo e devolve apenas um DTO interno imutável. Nenhum identificador de backend, caminho ou hash é exposto à API HTTP.
+
+Depois de validar a permissão da localização, o Drive chama `storeWorkspaceVersion` com esse conteúdo, o proprietário efetivo, a pasta opcional e o nome final já reservado. A operação cria uma nova linhagem de arquivo, versão `1` e posse `WORKSPACE` ativa, atualizando a quota lógica do proprietário na mesma transação. O Drive revalida a permissão imediatamente antes desta etapa: conteúdo já ingerido sem posse ativa permanece sujeito à reconciliação técnica, nunca acessível pelo workspace.
+
 ## `trashPossession`, `restorePossession` e `releasePossession`
 
 - `trashPossession`: move uma posse de workspace para `TRASHED`, preserva cota e define `purgeAfter` pela configuração.

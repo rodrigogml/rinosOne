@@ -12,6 +12,7 @@ use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\Authorization\AuthorizationGroupService;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\Authorization\Resource\AuthorizationResourceRelationService;
 use App\Services\Authorization\Resource\AuthorizedPersonalWorkspaceFolderQuery;
@@ -81,6 +82,58 @@ class ResourceAuthorizationApiTest extends TestCase
                 ['allowed' => true, 'reasonCode' => 'GRANT_APPLIES'],
                 ['allowed' => false, 'reasonCode' => 'TENANT_CONTEXT_REQUIRED'],
             ]]);
+    }
+
+    public function test_a_tenant_administrator_can_access_every_workspace_folder_unless_a_restriction_applies(): void
+    {
+        $administrator = User::factory()->create();
+        $tenant = Tenant::query()->create(['displayName' => 'Acme', 'state' => 'ACTIVE']);
+        TenantMembership::query()->create(['idTenant' => $tenant->id, 'idUser' => $administrator->id, 'state' => 'ACTIVE']);
+        $folder = WorkspaceFolder::query()->create(['idTenant' => $tenant->id, 'displayName' => 'Finance', 'state' => 'ACTIVE']);
+        $role = AuthorizationRole::query()->where('key', 'tenant.administrator')->firstOrFail();
+        AuthorizationRoleAssignment::query()->create(['idRole' => $role->id, 'idUser' => $administrator->id, 'idTenant' => $tenant->id, 'state' => 'ACTIVE']);
+        $resource = new ResourceReference('tenant.folder', $folder->id, AuthorizationScope::Tenant, $tenant->id);
+        $authorization = app(AuthorizationService::class);
+
+        $this->assertSame('TENANT_WORKSPACE_ADMINISTRATOR_APPLIES', $authorization->check($administrator, 'tenant.folder.read', AuthorizationScope::Tenant, $tenant->id, $resource)->reasonCode);
+        $this->assertTrue($authorization->check($administrator, 'tenant.folder.edit', AuthorizationScope::Tenant, $tenant->id, $resource)->allowed);
+
+        AuthorizationRestriction::query()->create([
+            'idPermission' => AuthorizationPermission::query()->where('key', 'tenant.folder.read')->firstOrFail()->id,
+            'idUser' => $administrator->id,
+            'idTenant' => $tenant->id,
+            'scope' => 'TENANT',
+            'active' => true,
+        ]);
+
+        $this->assertSame('RESTRICTION_APPLIES', $authorization->check($administrator, 'tenant.folder.read', AuthorizationScope::Tenant, $tenant->id, $resource)->reasonCode);
+    }
+
+    public function test_tenant_folder_relations_are_inherited_and_never_grant_another_tenant_workspace(): void
+    {
+        $member = User::factory()->create();
+        $tenant = Tenant::query()->create(['displayName' => 'Acme', 'state' => 'ACTIVE']);
+        $otherTenant = Tenant::query()->create(['displayName' => 'Globex', 'state' => 'ACTIVE']);
+        TenantMembership::query()->insert([
+            ['idTenant' => $tenant->id, 'idUser' => $member->id, 'state' => 'ACTIVE'],
+            ['idTenant' => $otherTenant->id, 'idUser' => $member->id, 'state' => 'ACTIVE'],
+        ]);
+        $root = WorkspaceFolder::query()->create(['idTenant' => $tenant->id, 'displayName' => 'Projects', 'state' => 'ACTIVE']);
+        $descendant = WorkspaceFolder::query()->create(['idTenant' => $tenant->id, 'idParentFolder' => $root->id, 'displayName' => 'Roadmap', 'state' => 'ACTIVE']);
+        $otherFolder = WorkspaceFolder::query()->create(['idTenant' => $otherTenant->id, 'displayName' => 'Private', 'state' => 'ACTIVE']);
+        $relations = app(AuthorizationResourceRelationService::class);
+        $relations->create(new ResourceReference('tenant.folder', $root->id, AuthorizationScope::Tenant, $tenant->id), 'READ', $member);
+        $group = app(AuthorizationGroupService::class)->create('Editors', AuthorizationScope::Tenant, $tenant->id);
+        app(AuthorizationGroupService::class)->addUser($group, $member);
+        $editRelation = $relations->create(new ResourceReference('tenant.folder', $root->id, AuthorizationScope::Tenant, $tenant->id), 'EDIT', group: $group);
+        $authorization = app(AuthorizationService::class);
+
+        $this->assertTrue($authorization->check($member, 'tenant.folder.read', AuthorizationScope::Tenant, $tenant->id, new ResourceReference('tenant.folder', $descendant->id, AuthorizationScope::Tenant, $tenant->id))->allowed);
+        $this->assertTrue($authorization->check($member, 'tenant.folder.edit', AuthorizationScope::Tenant, $tenant->id, new ResourceReference('tenant.folder', $descendant->id, AuthorizationScope::Tenant, $tenant->id))->allowed);
+        $this->assertFalse($authorization->check($member, 'tenant.folder.read', AuthorizationScope::Tenant, $otherTenant->id, new ResourceReference('tenant.folder', $otherFolder->id, AuthorizationScope::Tenant, $otherTenant->id))->allowed);
+
+        $relations->deactivate($editRelation);
+        $this->assertFalse($authorization->check($member, 'tenant.folder.edit', AuthorizationScope::Tenant, $tenant->id, new ResourceReference('tenant.folder', $descendant->id, AuthorizationScope::Tenant, $tenant->id))->allowed);
     }
 
     public function test_it_lists_only_the_personal_workspace_and_shared_folder_tree_in_one_authorized_query(): void

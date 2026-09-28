@@ -10,6 +10,7 @@ const pixelsBySize: Record<RasterIconSize, 24 | 32 | 48> = { sm: 24, md: 32, lg:
  * ociosa de preload passa a incluí-lo automaticamente.
  */
 export const registeredRasterIconNames = [
+    'drive',
     'logout',
     'maintenance',
     'rinoUser',

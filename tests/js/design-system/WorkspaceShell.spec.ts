@@ -29,7 +29,7 @@ describe('WorkspaceShell', () => {
         const trigger = wrapper.get('.workspace-navigation-rail__category[data-category-id="personal-library"]');
 
         await trigger.trigger('click');
-        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos e anexos');
+        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos');
 
         await wrapper.get('.workspace-shell').trigger('keydown', { key: 'Escape' });
 
@@ -44,7 +44,7 @@ describe('WorkspaceShell', () => {
 
         await trigger.trigger('mouseenter');
 
-        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos e anexos');
+        expect(wrapper.get('#workspace-mega-menu').text()).toContain('Arquivos');
         wrapper.unmount();
     });
 
