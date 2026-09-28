@@ -104,25 +104,25 @@ Ref: [Plano técnico](plan.md), fluxo “Consulta e enriquecimento de CEP”; FR
 - [x] 4.2.1 Implementar estado de atualização no cache compartilhado, indexado por país e CEP normalizados, com TTL e estados públicos `PENDING`, `COMPLETED` e `COMPLETED_WITH_ERRORS`. <!-- PostalReferenceRefreshStateService -->
 - [x] 4.2.2 Implementar `PostalReferenceEnrichmentJob` após *commit*, com lock por chave postal e continuidade independente do ciclo HTTP. <!-- Job persistente e dispatch afterCommit -->
 - [x] 4.2.3 Impedir que requisições repetidas enfileirem trabalho equivalente enquanto já houver atualização pendente para a mesma chave. <!-- Cache::add no marcador pendente -->
-- [x] 4.2.4 Testar consulta local imediata, abandono do consumidor, conclusão posterior do job, locks e falha parcial sem perda de candidato local. <!-- PostalReferenceEnrichmentJobTest: 4 testes, 16 assertions -->
+- [x] 4.2.4 Testar consulta local imediata, abandono do consumidor, conclusão posterior do job, locks e falha parcial sem perda de candidato local. <!-- PostalReferenceEnrichmentJobTest e PostalReferenceLookupApiTest; consulta local responde antes de qualquer fonte externa -->
 
 ### 4.3 Consolidação, proveniência e qualidade de dados `[A]`
 
 Ref: [Pesquisa técnica](research.md), “Estratégia de equivalência inicial”; [Modelo de dados](data-model.md); FR-LOC-017 a FR-LOC-020, FR-LOC-INFRA-IDEMP, SC-LOC-003 e SC-LOC-004.
 
-- [ ] 4.3.1 Implementar reconciliação de Município apenas por código IBGE existente e preservação de textos observados quando a reconciliação não for segura.
-- [ ] 4.3.2 Implementar *upsert* de CEP, referência, associação N:N e observação por identidade específica da fonte, atualizando somente a última observação quando apropriado.
-- [ ] 4.3.3 Implementar assinatura de equivalência forte somente com campos completos e remoção automática conservadora com `DUPLICATE_AUTOMATIC`, sem estado `MERGED` nem redirecionamento técnico.
-- [ ] 4.3.4 Garantir que reencontro de observação ligada a referência `REMOVED` não a reative; cobrir duplicidade comprovada, conflito territorial e reexecução idempotente em testes.
+- [x] 4.3.1 Implementar reconciliação de Município apenas por código IBGE existente e preservação de textos observados quando a reconciliação não for segura.
+- [x] 4.3.2 Implementar *upsert* de CEP, referência, associação N:N e observação por identidade específica da fonte, atualizando somente a última observação quando apropriado.
+- [x] 4.3.3 Implementar assinatura de equivalência forte somente com campos completos e remoção automática conservadora com `DUPLICATE_AUTOMATIC`, sem estado `MERGED` nem redirecionamento técnico.
+- [x] 4.3.4 Garantir que reencontro de observação ligada a referência `REMOVED` não a reative; cobrir duplicidade comprovada, conflito territorial e reexecução idempotente em testes. <!-- PostalReferenceConsolidationTest: 3 testes, 10 assertions -->
 
 ### 4.4 Fronteira JSON de consulta e acompanhamento `[A]`
 
 Ref: [Contrato postal](contracts/postal-reference-lookup.md); FR-LOC-013 a FR-LOC-016, FR-LOC-022.
 
-- [ ] 4.4.1 Implementar validação e endpoint `POST` de consulta, retornando imediatamente candidatos locais e estado de atualização seguro.
-- [ ] 4.4.2 Implementar endpoint `GET` de estado, com dados consolidados atuais e intervalo de *polling* de até um segundo enquanto pendente.
-- [ ] 4.4.3 Proteger os endpoints pelo middleware autenticado existente, sem criar permissão nova; documentar que o futuro consumidor aplica sua própria autorização de negócio.
-- [ ] 4.4.4 Criar testes de contrato para validação, resposta imediata, *polling*, conclusão parcial, saída sem dados locais e não exposição de provedor/erro bruto.
+- [x] 4.4.1 Implementar validação e endpoint `POST` de consulta, retornando imediatamente candidatos locais e estado de atualização seguro.
+- [x] 4.4.2 Implementar endpoint `GET` de estado, com dados consolidados atuais e intervalo de *polling* de até um segundo enquanto pendente.
+- [x] 4.4.3 Proteger os endpoints pelo middleware autenticado existente, sem criar permissão nova; documentar que o futuro consumidor aplica sua própria autorização de negócio.
+- [x] 4.4.4 Criar testes de contrato para validação, resposta imediata, *polling*, conclusão parcial, saída sem dados locais e não exposição de provedor/erro bruto.
 
 ---
 

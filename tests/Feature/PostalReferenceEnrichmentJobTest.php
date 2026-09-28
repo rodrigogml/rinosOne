@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Locality\PostalReferenceSourceBatchService;
 use App\Jobs\Locality\PostalReferenceEnrichmentJob;
+use App\Models\BrazilMunicipality;
+use App\Models\BrazilState;
+use App\Models\Country;
+use App\Services\Locality\PostalReferenceConsolidationService;
 use App\Services\Locality\PostalReferenceEnrichmentRequestService;
 use App\Services\Locality\PostalReferenceRefreshStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +28,9 @@ class PostalReferenceEnrichmentJobTest extends TestCase
         Cache::flush();
         config()->set('localities.postal.via_cep.base_url', 'https://viacep.test/ws');
         config()->set('localities.postal.brasil_api.base_url', 'https://brasilapi.test/api/cep/v2');
+        $country = Country::query()->create(['isoAlpha2' => 'BR', 'isoAlpha3' => 'BRA', 'isoNumeric' => '076', 'name' => 'Brasil', 'activeForSelection' => true]);
+        $state = BrazilState::query()->create(['idCountry' => $country->id, 'ibgeCode' => '35', 'abbreviation' => 'SP', 'name' => 'São Paulo', 'activeForSelection' => true]);
+        BrazilMunicipality::query()->create(['idBrazilState' => $state->id, 'ibgeCode' => '3550308', 'name' => 'São Paulo', 'activeForSelection' => true]);
     }
 
     public function test_request_marks_pending_and_enqueues_one_after_commit_job_for_equivalent_requests(): void
@@ -53,7 +61,7 @@ class PostalReferenceEnrichmentJobTest extends TestCase
         ]);
 
         app(PostalReferenceEnrichmentJob::class, ['countryCode' => 'BR', 'normalizedPostalCode' => '01001000'])
-            ->handle(app(\App\Infrastructure\Locality\PostalReferenceSourceBatchService::class), $refreshStates);
+            ->handle(app(PostalReferenceSourceBatchService::class), app(PostalReferenceConsolidationService::class), $refreshStates);
 
         $state = $refreshStates->state('BR', '01001000');
         $this->assertSame(PostalReferenceRefreshStateService::COMPLETED, $state->state);
@@ -72,7 +80,7 @@ class PostalReferenceEnrichmentJobTest extends TestCase
         ]);
 
         (new PostalReferenceEnrichmentJob('BR', '01001000'))
-            ->handle(app(\App\Infrastructure\Locality\PostalReferenceSourceBatchService::class), $refreshStates);
+            ->handle(app(PostalReferenceSourceBatchService::class), app(PostalReferenceConsolidationService::class), $refreshStates);
 
         $this->assertSame(PostalReferenceRefreshStateService::COMPLETED_WITH_ERRORS, $refreshStates->state('BR', '01001000')->state);
     }
@@ -87,7 +95,7 @@ class PostalReferenceEnrichmentJobTest extends TestCase
 
         try {
             (new PostalReferenceEnrichmentJob('BR', '01001000'))
-                ->handle(app(\App\Infrastructure\Locality\PostalReferenceSourceBatchService::class), $refreshStates);
+                ->handle(app(PostalReferenceSourceBatchService::class), app(PostalReferenceConsolidationService::class), $refreshStates);
         } finally {
             $lock->release();
         }

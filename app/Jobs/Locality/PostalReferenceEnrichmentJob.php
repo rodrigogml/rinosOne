@@ -3,6 +3,7 @@
 namespace App\Jobs\Locality;
 
 use App\Infrastructure\Locality\PostalReferenceSourceBatchService;
+use App\Services\Locality\PostalReferenceConsolidationService;
 use App\Services\Locality\PostalReferenceRefreshStateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,6 +27,7 @@ class PostalReferenceEnrichmentJob implements ShouldQueue
      */
     public function handle(
         PostalReferenceSourceBatchService $sources,
+        PostalReferenceConsolidationService $consolidation,
         PostalReferenceRefreshStateService $refreshStates,
     ): void {
         $lock = Cache::lock(
@@ -39,6 +41,7 @@ class PostalReferenceEnrichmentJob implements ShouldQueue
 
         try {
             $result = $sources->fetch($this->countryCode, $this->normalizedPostalCode);
+            $consolidation->consolidate($result->records());
 
             $refreshStates->complete($this->countryCode, $this->normalizedPostalCode, $result->hasFailures());
         } catch (Throwable) {
