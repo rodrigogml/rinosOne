@@ -101,10 +101,10 @@ Ref: [Pesquisa técnica](research.md); [Contrato postal](contracts/postal-refere
 
 Ref: [Plano técnico](plan.md), fluxo “Consulta e enriquecimento de CEP”; FR-LOC-013, FR-LOC-015, FR-LOC-016 e FR-LOC-021.
 
-- [ ] 4.2.1 Implementar estado de atualização no cache compartilhado, indexado por país e CEP normalizados, com TTL e estados públicos `PENDING`, `COMPLETED` e `COMPLETED_WITH_ERRORS`.
-- [ ] 4.2.2 Implementar `PostalReferenceEnrichmentJob` após *commit*, com lock por chave postal e continuidade independente do ciclo HTTP.
-- [ ] 4.2.3 Impedir que requisições repetidas enfileirem trabalho equivalente enquanto já houver atualização pendente para a mesma chave.
-- [ ] 4.2.4 Testar consulta local imediata, abandono do consumidor, conclusão posterior do job, locks e falha parcial sem perda de candidato local.
+- [x] 4.2.1 Implementar estado de atualização no cache compartilhado, indexado por país e CEP normalizados, com TTL e estados públicos `PENDING`, `COMPLETED` e `COMPLETED_WITH_ERRORS`. <!-- PostalReferenceRefreshStateService -->
+- [x] 4.2.2 Implementar `PostalReferenceEnrichmentJob` após *commit*, com lock por chave postal e continuidade independente do ciclo HTTP. <!-- Job persistente e dispatch afterCommit -->
+- [x] 4.2.3 Impedir que requisições repetidas enfileirem trabalho equivalente enquanto já houver atualização pendente para a mesma chave. <!-- Cache::add no marcador pendente -->
+- [x] 4.2.4 Testar consulta local imediata, abandono do consumidor, conclusão posterior do job, locks e falha parcial sem perda de candidato local. <!-- PostalReferenceEnrichmentJobTest: 4 testes, 16 assertions -->
 
 ### 4.3 Consolidação, proveniência e qualidade de dados `[A]`
 
