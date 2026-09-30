@@ -504,6 +504,7 @@ Object.assign(
 );
 Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { openSecondPanel: 'Abrir segundo painel', closeSecondPanel: 'Fechar segundo painel' });
 Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferTitle: 'Transferir itens', transferDescription: 'Confirme como deseja transferir {count} item(ns).', transferSource: 'Origem', transferDestination: 'Destino', transferMode: 'Ação', copy: 'Copiar' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferFailed: 'Não foi possível iniciar a transferência agora.' });
 Object.assign(
     (ptBR.access as unknown as { drive: Record<string, string> }).drive,
     {
