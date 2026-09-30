@@ -31,3 +31,11 @@
 
 - Itens `{auto}` foram resolvidos contra a SDD com a evidência indicada.
 - Não há gap, ambiguidade ou conflito funcional aberto neste checklist.
+
+## Evolução unificada — 2026-09-30
+
+- [x] CHK015 - A ferramenta única, o catálogo de roots e a remoção da dependência de organização ativa definem claramente quais drives aparecem e quais metadados permanecem ocultos? [Completude, Spec FR-DRIVE-001 a 005; Plan §Catálogo e alvos seguros] {auto}
+- [x] CHK016 - Compartilhados comigo distingue pasta concedida, arquivo concedido e origem sem conceder navegação por ancestrais, irmãos, lixeira ou quota alheios? [Clareza, Spec FR-DRIVE-032 e 033; Data Model §Evolução unificada] {auto}
+- [x] CHK017 - A transferência entre drives diferencia Copy e Move, define confirmação, progresso persistente, conteúdo físico deduplicado e ausência de resultado parcial? [Completude, Spec US-7; FR-DRIVE-029 a 036; Plan §Transferência lógica e reservas] {auto}
+- [x] CHK018 - As reservas especificam interseção de ramos, mutações recusadas, revalidação de autorização e recuperação após interrupção sem depender de lock manual? [Cobertura, Spec §Casos de Borda; FR-DRIVE-034 a 036; Research §Decisão 10 e 11] {auto}
+- [x] CHK019 - O critério de sucesso de transferência é observável para conflito, revogação, repetição e integridade de origem/destino? [Mensurabilidade, Spec SC-DRIVE-007; Quickstart §Reserva, recuperação e revogação] {auto}

@@ -9,6 +9,9 @@ export interface WorkspaceContext {
     tenantId: number | null;
     /** Indica que o usuário pode acessar recursos administrativos do domínio. */
     domainAccess?: boolean;
+    /** Capability mínima, já projetada no contexto de tenant, para mostrar a Central de acessos. */
+    canReadAuthorization?: boolean;
+    canReadPeople?: boolean;
 }
 
 export interface WorkspaceSurfaceDefinition {
@@ -45,6 +48,8 @@ export interface WorkspaceDestination {
     navigationLabel?: string;
     icon: string;
     instancePolicy?: WorkspaceInstancePolicy;
+    /** Controla somente a visibilidade da entrada; a API revalida toda operação. */
+    isAvailable?: (context: WorkspaceContext) => boolean;
     createSurface: (input: { id: string; tenantId: number | null }) => WorkspaceSurfaceDefinition;
 }
 

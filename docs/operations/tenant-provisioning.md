@@ -17,7 +17,7 @@ O usuário de runtime global deve ter somente operações de leitura e escrita n
 
 O usuário de migration global é separado do runtime e limitado a `rinosone.*`. Para executar o catálogo atual, precisa de `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`, `CREATE TEMPORARY TABLES` e `LOCK TABLES`. Ele não recebe `CREATE DATABASE`, `DROP DATABASE`, `CREATE USER`, `GRANT OPTION`, `FILE` ou acesso aos schemas `rinosone_*` de tenants.
 
-O usuário de provisionamento é separado e usado somente pelo worker. Para a baseline atual, ele necessita criar um schema de tenant e a tabela de histórico de migrations, além de aplicar DDL aditivo e os dados mínimos de migrations. Não conceda `DROP DATABASE`, administração de usuários ou `GRANT OPTION`.
+O usuário de provisionamento é separado e usado somente pelo worker. Ele necessita criar um schema de tenant e a tabela de histórico de migrations, além de aplicar DDL aditivo e os dados mínimos de migrations. Para migrations de domínio que criam FKs tenant → core, conceda a ele somente o privilégio `REFERENCES` em `rinosone.*`; não conceda escrita nem DDL no schema core por esse motivo. Não conceda `DROP DATABASE`, administração de usuários ou `GRANT OPTION`.
 
 > [!WARNING]
 > MySQL não oferece um privilégio nativo que limite `CREATE DATABASE` a um prefixo de nome. O acesso de criação deve ficar isolado na credencial do worker, em ambiente restrito e com monitoramento operacional. A derivação interna do nome `rinosone_{tenantId}` é a barreira da aplicação contra entrada arbitrária.

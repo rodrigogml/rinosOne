@@ -20,10 +20,10 @@ Representa uma exportação compactada efêmera. Ela não é arquivo lógico, ve
 | `idTenant` | BIGINT UNSIGNED nulo | Tenant do contexto Work; nulo no contexto pessoal. |
 | `workspaceScope` | enum | `PERSONAL` ou `TENANT`; compatível com o contexto e solicitante. |
 | `selectionManifest` | JSON | Referências de pastas e posses solicitadas; nunca é considerado autorização final. |
-| `state` | enum | `PENDING`, `PROCESSING`, `READY`, `FAILED`, `EXPIRED`, `CANCELLED`. |
+| `state` | enum | `PENDING`, `PROCESSING`, `READY`, `FAILED` ou `CANCELLED`. A expiração é uma condição temporal, não um estado persistente. |
 | `displayName` | texto limitado | Nome sugerido do pacote entregue. |
 | `storageKey` | texto limitado nulo | Chave privada temporária; ausente antes de pronto e removida na expiração. |
-| `storedSizeBytes` | inteiro nulo | Tamanho do pacote pronto, para controlar capacidade temporária. |
+| `storedSizeBytes` | inteiro nulo | Tamanho do pacote pronto, para diagnóstico operacional e aplicação do limite configurado de tamanho por exportação temporária. |
 | `expiresAt` | data/hora | Prazo estrito de disponibilidade. |
 | `failureCode` | texto limitado nulo | Código seguro, sem caminho, nome de item inacessível ou erro interno. |
 | `createdAt`, `updatedAt` | data/hora | Auditoria operacional. |
@@ -34,7 +34,7 @@ Representa uma exportação compactada efêmera. Ela não é arquivo lógico, ve
 - Índices por `state, expiresAt`, por solicitante e por `idTenant, workspaceScope` suportam limpeza e consulta segura.
 - Uma exportação só se torna `READY` depois de revalidar cada item do manifesto.
 - `storageKey` não identifica usuário, tenant, arquivo, pasta nem versão e nunca sai no payload da API.
-- A expiração ou o cancelamento removem bytes temporários e anulam a disponibilidade mesmo que a limpeza física seja reexecutada.
+- Cancelamento só é aceito enquanto o job está `PENDING`; a expiração torna qualquer estado indisponível e a limpeza remove bytes e registro em execução idempotente.
 
 ## Projeções sem persistência própria
 
@@ -51,13 +51,91 @@ Representa uma exportação compactada efêmera. Ela não é arquivo lógico, ve
 stateDiagram-v2
     [*] --> PENDING
     PENDING --> PROCESSING
+    PENDING --> CANCELLED
     PROCESSING --> READY
     PROCESSING --> FAILED
-    PENDING --> CANCELLED
-    PROCESSING --> CANCELLED
-    READY --> EXPIRED
-    FAILED --> EXPIRED
-    CANCELLED --> EXPIRED
+    READY --> [*]: prazo vencido e limpeza
+    FAILED --> [*]: prazo vencido e limpeza
+    CANCELLED --> [*]: prazo vencido e limpeza
 ```
 
-`EXPIRED` é terminal e representa a indisponibilidade lógica; a remoção física pode ser repetida com segurança pela rotina de limpeza.
+Após `expiresAt`, qualquer estado é indisponível logicamente; a rotina remove o registro e a representação privada. A remoção física pode ser repetida com segurança.
+
+## Evolução unificada: relações diretas de arquivo
+
+Não há nova tabela de compartilhamento. A tabela genérica `auth_resource_relation` passa a referenciar também uma posse de arquivo ativa:
+
+| Campo existente | Regra para arquivo |
+| --- | --- |
+| `idResourceType` | Tipo registrado `personal.file` ou `tenant.file`. |
+| `resourceId` | `file_filePossession.id`, nunca content, versão, caminho ou chave de backend. |
+| `relationKey` | Somente `READ` nesta fase. |
+| `scope`, `idTenant` | Devem corresponder exatamente ao owner da posse. |
+| `idUser` ou `idGroup` | Exatamente um sujeito; relação direta e revogável. |
+| `active` | Somente relação ativa é projetada em Compartilhados comigo. |
+
+O adapter de arquivo confirma posse `WORKSPACE` ativa, não `SYSTEM_MANAGED`, no owner e scope corretos. Diferentemente da pasta, a relação de arquivo não herda para pai, irmãos ou descendentes e não concede edição.
+
+## Nova entidade: `file_workspaceTransfer`
+
+Representa uma cópia ou movimento lógico persistente entre workspaces. Não representa arquivo, versão, conteúdo físico ou item navegável.
+
+| Campo | Tipo lógico | Regras |
+| --- | --- | --- |
+| `id` | BIGINT UNSIGNED | Identidade interna. |
+| `publicId` | identificador opaco | Único; exposto somente ao solicitante autorizado. |
+| `idRequestingUser` | BIGINT UNSIGNED | Principal que iniciou a operação. |
+| `sourceScope`, `sourceTenantId` | enum + BIGINT nulo | Alvo de origem; tenant nulo somente em `PERSONAL`. |
+| `destinationScope`, `destinationTenantId` | enum + BIGINT nulo | Alvo de destino; tenant nulo somente em `PERSONAL`. |
+| `mode` | enum | `COPY` ou `MOVE`. |
+| `selectionManifest` | JSON | Itens de uma única origem; revalidado, nunca autoridade de acesso. |
+| `state` | enum | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED` ou `CANCELLED`. |
+| `totalItems`, `processedItems` | inteiros sem sinal | Progresso seguro por quantidade, sem nomes. |
+| `idempotencyKey` | string limitada | Única por solicitante e operação ativa; impede reexecução acidental. |
+| `correlationId` | string limitada nula | Correlação operacional/auditoria. |
+| `leaseExpiresAt`, `heartbeatAt` | data/hora nula | Lease renovável durante processamento. |
+| `failureCode` | string limitada nula | Código seguro, sem item, caminho ou dado de terceiro. |
+| `startedAt`, `completedAt`, `createdAt`, `updatedAt` | data/hora | Auditoria e recuperação. |
+
+### Entidade dependente: `file_workspaceTransferReservation`
+
+| Campo | Tipo lógico | Regras |
+| --- | --- | --- |
+| `id` | BIGINT UNSIGNED | Identidade interna. |
+| `idWorkspaceTransfer` | BIGINT UNSIGNED | FK para a operação, com cascade delete. |
+| `side` | enum | `SOURCE` ou `DESTINATION`. |
+| `workspaceScope`, `idTenant` | enum + BIGINT nulo | Workspace reservado. |
+| `rootFolderId` | BIGINT UNSIGNED nulo | Nulo reserva a raiz inteira; valor reserva a pasta e seus descendentes. |
+| `leaseExpiresAt` | data/hora | Igual ou derivado do lease da transferência; só reserva válida bloqueia mutação. |
+| `createdAt`, `updatedAt` | data/hora | Auditoria operacional. |
+
+### Índices e invariantes de transferência
+
+- `publicId` é único; `idRequestingUser, idempotencyKey` impede duplicidade da mesma intenção.
+- Índices por `state, leaseExpiresAt` suportam recuperação; por contexto e solicitante suportam status seguro; reservas são indexadas por `workspaceScope, idTenant, rootFolderId, leaseExpiresAt`.
+- Antes de criar a operação, a transação normaliza raízes, adquire locks em ordem estável `(scope, tenant, folder)` e rejeita qualquer interseção com reserva ativa.
+- O destino só recebe posses/pastas ativas no commit lógico; `MOVE` libera a origem na mesma confirmação ou a mantém intacta.
+- Falha, cancelamento ou lease vencido não preservam reserva nem item de destino parcial.
+
+## Projeções adicionais sem persistência própria
+
+| Projeção | Origem | Regra |
+| --- | --- | --- |
+| Catálogo de drives | usuário, membership, administradores e relações efetivas | Lista Meu Drive, roots Work autorizadas e Compartilhados comigo; não carrega árvores. |
+| Compartilhados comigo | relações diretas ativas de folder/file | Agrupa somente itens diretamente concedidos, com alvo de origem e capabilities read-only para arquivo. |
+| Estado de transferência | `file_workspaceTransfer` | Expõe somente id opaco, modo, estado, contadores, destino seguro e erro categorizado ao solicitante. |
+
+## Transições de transferência
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: reservas adquiridas
+    PENDING --> PROCESSING
+    PENDING --> CANCELLED
+    PROCESSING --> COMPLETED: revalidação e commit lógico
+    PROCESSING --> FAILED: revogação, conflito ou falha irrecuperável
+    PROCESSING --> PENDING: worker interrompido e recuperação idempotente
+    COMPLETED --> [*]: retenção operacional
+    FAILED --> [*]: retenção operacional
+    CANCELLED --> [*]: retenção operacional
+```

@@ -18,6 +18,7 @@ As fundações já entregues ou em evolução no repositório incluem:
 - provisionamento isolado de schemas por tenant;
 - perfil de usuário e avatar privado;
 - fundação de armazenamento privado de arquivos, com catálogo, versões, deduplicação, retenção e compactação configurável;
+- Rinos Drive Pessoal e Rinos Drive Work, com pastas, upload múltiplo, download privado, lixeira e exportações ZIP temporárias;
 - fundação de autorização e superfícies administrativas em desenvolvimento;
 - central de manutenções e catálogos globais, conforme capacidades autorizadas.
 

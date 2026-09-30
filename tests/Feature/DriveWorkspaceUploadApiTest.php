@@ -58,6 +58,22 @@ class DriveWorkspaceUploadApiTest extends TestCase
         $this->assertSame(strlen('first document') + strlen('second document'), (int) StoredFileOwnerUsage::query()->where('idUser', $user->id)->value('workspaceBytes'));
     }
 
+    public function test_upload_list_and_location_refresh_roundtrip_uses_only_the_public_workspace_contract(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/api/v1/drive/personal/uploads', [
+            'files' => [UploadedFile::fake()->createWithContent('Roundtrip.txt', 'roundtrip content')],
+        ])->assertOk()->assertJsonPath('results.0.state', 'STORED');
+
+        $this->actingAs($user)->getJson('/api/v1/drive/personal/locations/root')
+            ->assertOk()
+            ->assertJsonPath('location.kind', 'root')
+            ->assertJsonFragment(['displayName' => 'Roundtrip.txt'])
+            ->assertJsonMissingPath('files.0.storageKey')
+            ->assertJsonMissingPath('files.0.logicalSha256');
+    }
+
     public function test_it_uses_the_real_mime_type_and_keeps_invalid_items_out_of_the_workspace(): void
     {
         $user = User::factory()->create();

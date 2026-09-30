@@ -7,7 +7,7 @@
 
 ## Direção de Produto
 
-O Rinos Drive torna navegável o conteúdo privado já mantido pela fundação de arquivos. Ele é um único módulo com duas apresentações: **Rinos Drive Pessoal**, para o workspace do usuário autenticado, e **Rinos Drive Work**, para o workspace da organização selecionada na aba.
+O Rinos Drive torna navegável o conteúdo privado já mantido pela fundação de arquivos. Ele é uma ferramenta global de instância única, que reúne o workspace pessoal, os workspaces organizacionais efetivamente acessíveis e uma raiz virtual de itens compartilhados com o usuário.
 
 O produto não cria outro sistema de armazenamento, nem confere acesso por mera associação a uma organização. Ele permite organizar, enviar, localizar e recuperar arquivos dentro dos limites de cada workspace e das permissões já concedidas sobre suas pastas.
 
@@ -18,31 +18,46 @@ O produto não cria outro sistema de armazenamento, nem confere acesso por mera 
 - **Pergunta**: como operações simultâneas que usam o mesmo nome em uma localização evitam duplicidade ou sobrescrita?
 - **Resposta**: o servidor resolve e reserva o nome final como parte da mesma operação atômica no workspace e na localização de destino. Cada operação concorrente confirma um nome distinto antes de ativar o novo item.
 
+### Sessão 2026-09-29
+
+- **Pergunta**: como o usuário acessa workspaces pessoais e organizacionais sem duplicar o módulo por contexto? -> **Resposta**: uma única janela global do Rinos Drive exibe cada workspace autorizado como raiz independente na árvore, sem depender da organização ativa na aba.
+- **Pergunta**: como lixeira, quota e autorização se comportam nessa árvore unificada? -> **Resposta**: cada drive preserva sua própria lixeira, quota, retenção e autorização; a lixeira é filha da raiz do drive e usuários autorizados de uma organização podem recuperar itens excluídos por outros membros.
+- **Pergunta**: como a transferência por arrastar e soltar entre os dois painéis funciona? -> **Resposta**: o drop sempre abre confirmação com Cancelar, Mover e Copiar; no mesmo drive, Mover é a opção inicial, e entre drives, Copiar é a opção inicial. Um movimento entre drives realiza cópia validada seguida de remoção da origem somente após êxito completo.
+- **Pergunta**: como itens recebidos aparecem sem confundir a origem? -> **Resposta**: a raiz virtual “Compartilhados comigo” lista como itens-raiz as pastas e arquivos compartilhados diretamente com o usuário, preservando o drive de origem e suas permissões em cada operação.
+- **Pergunta**: como o usuário compara dois ramos durante uma transferência? -> **Resposta**: a janela pode abrir um segundo painel de navegação lado a lado, cada qual com localização, seleção e estado próprios, sem criar outra janela do módulo.
+
+### Sessão 2026-09-30
+
+- **Pergunta**: a raiz virtual Compartilhados comigo deve incluir somente pastas ou também arquivos concedidos diretamente? -> **Resposta**: inclui ambos. Arquivos passam a ser recursos compartilháveis diretamente, com relação, autorização, revogação e auditoria próprias, sem expor o restante da localização de origem.
+- **Pergunta**: qual nível de alteração o destinatário recebe sobre um arquivo compartilhado diretamente? -> **Resposta**: somente leitura nesta fase. O destinatário pode baixar, exportar ou copiar o conteúdo para um destino autorizado, mas não renomeia, move, envia à lixeira ou substitui o original. Edição online futura será uma capacidade distinta.
+- **Pergunta**: como transferências entre workspaces devem executar e coexistir com operações concorrentes? -> **Resposta**: são operações lógicas persistentes em segundo plano; não movem bytes físicos. A operação mantém progresso mesmo após fechar a janela e reserva exclusivamente os ramos de origem e destino envolvidos antes de iniciar. Toda alteração mutável que intersecte um ramo reservado é recusada com erro explícito até a conclusão, falha ou cancelamento da transferência.
+- **Pergunta**: o que ocorre se a autorização for revogada durante uma transferência reservada? -> **Resposta**: a autorização é validada no início e revalidada imediatamente antes da confirmação lógica. Se origem ou destino não estiverem mais autorizados, a operação falha sem remover a origem ou deixar vínculo parcial no destino.
+- **Pergunta**: como reservas de transferência sobrevivem a falha de worker ou reinício do servidor sem bloquear um ramo permanentemente? -> **Resposta**: a reserva possui lease renovável pelo job. Uma rotina configurável identifica operações sem sinal de vida, tenta recuperação idempotente e, quando não puder concluir, marca falha e libera as reservas de modo seguro.
+
 ## Cobertura de Interfaces
 
 | Superfície | Tipo | Atores | Cobertura | Comportamento funcional | Comportamento excluído ou adiado |
 | --- | --- | --- | --- | --- | --- |
-| Rinos Drive Pessoal | Web responsiva | Usuário autenticado e colaboradores já autorizados | FULL | Navegar, organizar, enviar, baixar, recuperar e consultar arquivos do workspace pessoal e de pastas recebidas. | Compartilhar arquivos, editar conteúdo, prévias ricas, álbuns e links públicos. |
-| Rinos Drive Work | Web responsiva | Administrador e membro autorizado da organização ativa | FULL | Navegar e operar somente pastas organizacionais autorizadas, conforme a permissão efetiva. | Convites, gestão visual de permissões, links públicos, prévias ricas e edição de conteúdo. |
+| Rinos Drive | Web responsiva | Usuário autenticado, administrador e membro autorizado | FULL | Navegar em uma janela única pelos drives pessoais e organizacionais acessíveis, itens compartilhados, lixeiras separadas, organização, transferência, upload, download e exportação. | Gestão visual de relações, links públicos, prévias ricas e edição de conteúdo. |
 | API de workspace | Other | Interfaces autenticadas e futuras integrações autorizadas | FULL | Expor operações privadas de navegação, pastas, arquivos, lixeira e exportações, sem revelar caminhos físicos. | URL pública de arquivo, compartilhamento externo e gerenciamento administrativo de volumes. |
 | Visualização de mídia | Web responsiva | Usuário autenticado | DEFERRED | Reservar espaço para identificadores de tipo e futuras representações. | Gerar ou entregar thumbnails, prévias de PDF, vídeo, áudio, imagem ou documento. |
 
 ## Cenários de Usuário e Testes
 
-### User Story 1 — Navegar e organizar o Rinos Drive Pessoal (Prioridade: P1)
+### User Story 1 — Navegar e organizar o Rinos Drive unificado (Prioridade: P1)
 
-Como usuário autenticado, quero navegar e organizar meus arquivos em uma árvore de pastas para localizar e manter meu workspace pessoal sem depender do sistema de arquivos do dispositivo.
+Como usuário autenticado, quero navegar em uma única árvore pelos drives a que tenho acesso para localizar e manter arquivos sem depender do sistema de arquivos do dispositivo.
 
 **Por que esta prioridade**: entrega o núcleo útil do módulo e transforma a fundação privada existente em uma capacidade utilizável.
 
-**Teste independente**: criar pastas e arquivos no workspace pessoal, percorrer a árvore, mudar a apresentação e confirmar que cada ação reflete apenas o conteúdo autorizado.
+**Teste independente**: abrir o catálogo de drives, criar pastas e arquivos em um workspace autorizado, percorrer suas raízes, mudar a apresentação e confirmar que cada ação reflete apenas o conteúdo autorizado.
 
 **Cenários de aceitação**:
 
-1. **Dado** um usuário autenticado, **quando** abre Rinos Drive Pessoal, **então** vê a raiz do seu workspace, a árvore de pastas e a área de conteúdo sem depender de uma organização selecionada.
+1. **Dado** um usuário autenticado, **quando** abre Rinos Drive, **então** vê Meu Drive, os drives organizacionais efetivamente acessíveis e Compartilhados comigo, sem depender de uma organização selecionada.
 2. **Dado** uma pasta ativa, **quando** o usuário cria, renomeia ou move uma pasta para um destino válido, **então** a árvore e o conteúdo refletem a nova organização sem criar ciclos ou nomes duplicados entre irmãos.
 3. **Dado** uma pasta ou arquivo selecionado, **quando** o usuário alterna entre grade, lista, detalhes ou tabela, **então** vê os mesmos itens autorizados em outra apresentação, preservando a seleção quando ela ainda é válida.
-4. **Dado** que o usuário recebeu leitura de uma pasta pessoal de outra pessoa por um mecanismo autorizado, **quando** abre o Drive Pessoal, **então** encontra somente essa árvore compartilhada e seus descendentes permitidos, sem receber visibilidade sobre itens vizinhos.
+4. **Dado** que o usuário recebeu leitura de uma pasta ou arquivo por mecanismo autorizado, **quando** abre Compartilhados comigo, **então** encontra somente os itens diretamente concedidos e seus descendentes permitidos, sem receber visibilidade sobre vizinhos, ancestrais ou o restante do drive de origem.
 
 ---
 
@@ -64,7 +79,7 @@ Como usuário com edição em uma pasta, quero enviar vários arquivos para a pa
 
 ---
 
-### User Story 3 — Trabalhar em um Rinos Drive Work delimitado (Prioridade: P1)
+### User Story 3 — Trabalhar em um Drive Work delimitado (Prioridade: P1)
 
 Como membro de uma organização, quero acessar somente as pastas de trabalho para as quais recebi acesso, enquanto administradores mantêm acesso completo ao workspace organizacional.
 
@@ -74,10 +89,10 @@ Como membro de uma organização, quero acessar somente as pastas de trabalho pa
 
 **Cenários de aceitação**:
 
-1. **Dado** um administrador ativo da organização selecionada, **quando** abre Rinos Drive Work, **então** pode navegar e operar todo o workspace organizacional dentro das ações previstas.
-2. **Dado** um membro ativo com leitura em uma pasta organizacional, **quando** abre Rinos Drive Work, **então** vê apenas essa pasta e seus descendentes legíveis, podendo navegar e baixar, mas sem ações de alteração.
+1. **Dado** um administrador ativo de uma organização, **quando** abre a raiz correspondente no Rinos Drive, **então** pode navegar e operar todo o workspace organizacional dentro das ações previstas.
+2. **Dado** um membro ativo com leitura em uma pasta organizacional, **quando** abre a raiz correspondente no Rinos Drive, **então** vê apenas essa pasta e seus descendentes legíveis, podendo navegar e baixar, mas sem ações de alteração.
 3. **Dado** um membro ativo com edição em uma pasta organizacional, **quando** abre essa pasta ou um descendente, **então** pode organizar pastas e arquivos dentro desse ramo, sem obter acesso a ramos vizinhos.
-4. **Dado** um membro ativo sem relação de acesso aplicável, **quando** abre Rinos Drive Work, **então** recebe um estado vazio neutro e não descobre nomes, quantidade ou estrutura do acervo organizacional.
+4. **Dado** um membro ativo sem relação de acesso aplicável, **quando** abre Rinos Drive, **então** a organização não aparece no catálogo e ele não descobre nomes, quantidade ou estrutura do acervo organizacional.
 5. **Dado** que uma relação de acesso é revogada, **quando** o usuário atualiza, navega ou executa uma nova ação, **então** a pasta deixa de ser acessível e a interface remove o item sem expor seu conteúdo anterior.
 
 ---
@@ -130,9 +145,28 @@ Como usuário autorizado, quero receber um arquivo compactado ao baixar múltipl
 3. **Dado** uma exportação expirada, cancelada ou cujo acesso foi revogado, **quando** o usuário tenta baixá-la, **então** o sistema não entrega bytes nem expõe a localização temporária.
 4. **Dado** que o espaço ou os limites temporários da instância foram atingidos, **quando** uma nova exportação é solicitada, **então** o usuário recebe uma mensagem clara e nenhum arquivo parcial fica disponível.
 
+---
+
+### User Story 7 — Transferir entre drives com painéis paralelos (Prioridade: P1)
+
+Como usuário com acesso aos locais de origem e destino, quero comparar dois ramos na mesma janela e transferir itens sem perder a integridade de cada drive.
+
+**Por que esta prioridade**: a navegação multi-drive só se torna produtiva quando permite organizar conteúdo entre workspaces sem tratar drives independentes como uma única pasta física.
+
+**Teste independente**: abrir dois painéis em drives distintos, arrastar arquivo e pasta entre eles, confirmar os modos sugeridos e provocar uma alteração concorrente e uma revogação durante a transferência.
+
+**Cenários de aceitação**:
+
+1. **Dado** dois painéis abertos, **quando** o usuário navega cada painel para localizações diferentes, **então** cada um preserva independentemente sua árvore, seleção, carregamento, capabilities e estado de erro.
+2. **Dado** itens arrastados para um destino no mesmo drive, **quando** o usuário solta a seleção, **então** o diálogo oferece Cancelar, Mover e Copiar com Mover inicialmente selecionado.
+3. **Dado** itens arrastados para outro drive, **quando** o usuário solta a seleção, **então** o diálogo oferece Cancelar, Mover e Copiar com Copiar inicialmente selecionado e explica o drive de origem e destino.
+4. **Dado** uma transferência confirmada, **quando** o usuário fecha o painel ou a janela, **então** ela continua em segundo plano, mantém progresso consultável e não desloca bytes físicos.
+5. **Dado** que uma transferência reserva uma árvore, **quando** outra pessoa tenta alterar um ramo que a intersecta, **então** recebe erro de operação em andamento e nenhum estado parcial é aplicado.
+6. **Dado** que o acesso à origem ou destino é revogado antes da confirmação lógica, **quando** a transferência é revalidada, **então** falha e não remove a origem nem ativa conteúdo parcial no destino.
+
 ### Casos de Borda
 
-- Uma alteração de contexto organizacional fecha o Rinos Drive Work daquela organização e nunca carrega seu estado em outro tenant.
+- A alteração de organização ativa em outros módulos não fecha o Rinos Drive nem altera os drives visíveis; remoção de membership, revogação de relação ou indisponibilidade remove somente a raiz, ramo ou ação que perdeu autorização.
 - A raiz do workspace é implícita; usuários com acesso somente a uma pasta compartilhada não podem inferir ou navegar pela raiz, por ancestrais ou por irmãos não autorizados.
 - Renomeações, uploads e movimentações concorrentes reservam nomes finais distintos entre irmãos antes de ativar qualquer item; conflitos recebem nome automático seguro, sem sobrescrever conteúdo existente.
 - Nomes de arquivo ou pasta inválidos, reservados, excessivamente longos ou perigosos são recusados de modo compreensível e não aparecem em exportações, cabeçalhos ou caminhos inseguros.
@@ -140,14 +174,17 @@ Como usuário autorizado, quero receber um arquivo compactado ao baixar múltipl
 - Itens `SYSTEM_MANAGED`, como avatar, não aparecem no Drive, não podem ser manipulados pelas operações de workspace e continuam sujeitos ao seu próprio ciclo de vida.
 - Falha de upload, conexão perdida, interrupção de exportação ou indisponibilidade temporária não cria item parcialmente ativo, download parcial reutilizável ou alteração silenciosa da árvore.
 - Um arquivo compactado para exportação preserva a hierarquia selecionada, elimina trajetórias perigosas e resolve colisões de nome dentro do pacote sem substituir outro item.
+- Transferências entre drives criam uma operação persistente com bloqueio exclusivo dos ramos de origem e destino. Renomear, mover, enviar à lixeira, restaurar, limpar, enviar conteúdo ou criar descendente que intersecte esses ramos é recusado enquanto a reserva estiver válida; leituras e downloads autorizados permanecem possíveis.
+- A operação de transferência revalida autorização de origem e destino imediatamente antes da confirmação lógica. Revogação durante a execução encerra a operação sem remover a origem, criar vínculo ativo parcial no destino ou revelar informação adicional.
+- Reservas de transferência possuem lease renovável. Uma manutenção configurável recupera operações interrompidas de modo idempotente ou as marca como falhas e libera suas reservas, sem exigir intervenção manual e sem deixar bloqueio permanente.
 
 ## Requisitos
 
 ### Requisitos Funcionais
 
-- **FR-DRIVE-001**: O sistema DEVE apresentar o módulo com o nome Rinos Drive e distinguir Rinos Drive Pessoal de Rinos Drive Work conforme o workspace aberto.
-- **FR-DRIVE-002**: O Rinos Drive Pessoal DEVE abrir o workspace do usuário autenticado sem exigir contexto organizacional.
-- **FR-DRIVE-003**: O Rinos Drive Work DEVE abrir somente para a organização ativa na aba e DEVE ser encerrado ou invalidado quando esse contexto deixar de ser válido.
+- **FR-DRIVE-001**: O sistema DEVE apresentar uma única ferramenta global denominada Rinos Drive, acessível fora dos menus pessoal e organizacional, que não abre instâncias separadas por workspace.
+- **FR-DRIVE-002**: O Rinos Drive DEVE exibir como raízes independentes o Meu Drive do usuário autenticado, cada Drive Work efetivamente acessível e a raiz virtual Compartilhados comigo, sem exigir organização ativa na aba.
+- **FR-DRIVE-003**: Uma operação organizacional DEVE continuar vinculada ao tenant indicado pela raiz ou item selecionado e ser invalidada quando sua membership, relação ou autorização deixar de ser válida, sem fechar ou invalidar os demais drives da janela.
 - **FR-DRIVE-004**: O cliente NÃO DEVE escolher livremente um proprietário ou workspace; cada operação DEVE ser resolvida contra a identidade autenticada e o contexto organizacional autorizado.
 - **FR-DRIVE-005**: O sistema DEVE exibir árvore hierárquica, localização atual, conteúdo da localização e lixeira para cada workspace acessível, sem expor árvores ou itens fora da decisão de acesso efetiva.
 - **FR-DRIVE-006**: O sistema DEVE permitir criar, renomear e mover pastas somente quando a ação for autorizada e preservar as invariantes de hierarquia, escopo e nome entre irmãos.
@@ -173,15 +210,30 @@ Como usuário autorizado, quero receber um arquivo compactado ao baixar múltipl
 - **FR-DRIVE-026**: O sistema NÃO DEVE bloquear upload pelo consumo de quota nesta entrega, mas DEVE apresentar os consumos disponíveis sem incluir exportações temporárias.
 - **FR-DRIVE-027**: O sistema NÃO DEVE exibir, alterar ou baixar ativos gerenciados pelo sistema, caminhos físicos, hashes, chaves de armazenamento, URLs públicas ou informação equivalente.
 - **FR-DRIVE-028**: A primeira entrega NÃO DEVE oferecer links externos, compartilhamento público, edição de conteúdo, prévias ou thumbnails, álbuns, classificação automática, busca global ou gestão de backends.
+- **FR-DRIVE-029**: O Rinos Drive DEVE permitir abrir um segundo painel de navegação na mesma janela, com localização, seleção, carregamento, erro e capabilities independentes por painel.
+- **FR-DRIVE-030**: Ao arrastar itens entre painéis, o sistema DEVE sempre solicitar confirmação com Cancelar, Mover e Copiar; Mover é a opção inicial para o mesmo drive e Copiar para drives distintos.
+- **FR-DRIVE-031**: Uma transferência entre drives DEVE ser uma operação lógica persistente, em segundo plano e independente da janela, sem deslocar bytes físicos. A cópia cria vínculos autorizados no destino com reutilização deduplicada quando aplicável; Mover remove a origem somente após a cópia lógica íntegra, sem transferir implicitamente quota, retenção, propriedade ou permissões da origem.
+- **FR-DRIVE-032**: A raiz virtual Compartilhados comigo DEVE listar somente itens compartilhados diretamente com o usuário e cada item DEVE continuar submetido à autorização, ao drive de origem e à revogação em tempo de operação.
+- **FR-DRIVE-033**: O sistema DEVE permitir que arquivos sejam recursos de compartilhamento direto, independentes de suas pastas, com leitura exclusiva nesta fase. O destinatário pode baixar, exportar ou copiar para destino autorizado, mas não pode renomear, mover, enviar à lixeira ou substituir o original; a relação aplica revogação, auditoria e ausência de exposição de irmãos ou ancestrais.
+- **FR-DRIVE-034**: Antes de iniciar transferência entre drives, o sistema DEVE reservar de modo exclusivo os ramos de origem e destino e recusar operações mutáveis que intersectem a reserva até terminar, falhar ou ser cancelada, sem bloquear leituras e downloads autorizados.
+- **FR-DRIVE-035**: O sistema DEVE validar a autorização de origem e destino no início e imediatamente antes da confirmação de uma transferência; se qualquer autorização for revogada, a transferência DEVE falhar de forma íntegra, sem remover a origem ou manter vínculo ativo parcial no destino.
+- **FR-DRIVE-036-INFRA-SCHED**: O sistema DEVE manter reserva de transferência com lease renovável, recuperação idempotente e limpeza automática configurável para operações interrompidas; uma falha irrecuperável DEVE liberar as reservas sem aplicar resultado parcial.
 
 ### Entidades Principais
 
-- **Alvo de workspace**: contexto pessoal do usuário autenticado ou contexto organizacional ativo e autorizado; identifica a origem funcional de toda navegação sem se tornar um seletor livre do cliente.
+- **Alvo de workspace**: contexto pessoal do usuário autenticado ou contexto organizacional autorizado, identificado pela raiz ou item selecionado; a interface não pode escolhê-lo livremente fora do catálogo seguro recebido da API.
+- **Catálogo de drives**: projeção segura das raízes pessoais e organizacionais efetivamente acessíveis, com identificador, rótulo, capacidades agregadas e consumo de cada workspace, carregada antes da árvore sob demanda.
+- **Raiz virtual Compartilhados comigo**: agrupador sem quota ou lixeira própria que referencia itens concedidos diretamente ao usuário, preservando seu workspace de origem.
+- **Painel de navegação**: uma das até duas áreas paralelas de exploração da mesma janela, vinculada a uma localização e alvo de workspace completos.
+- **Operação de transferência**: processo persistente de copiar ou mover itens entre drives, com origem, destino, modo, estado, progresso seguro e reservas exclusivas de ramos; não é uma movimentação física do conteúdo deduplicado.
+- **Reserva de transferência**: bloqueio lógico exclusivo de um ramo de origem ou destino que impede operações mutáveis concorrentes sobre o ramo ou seus descendentes enquanto a transferência está em curso.
+- **Lease de reserva**: prazo renovável associado à operação de transferência que permite detectar processamento interrompido, recuperar idempotentemente ou liberar o bloqueio sem ação manual.
 - **Localização de Drive**: raiz implícita, pasta ativa ou lixeira de um workspace, com breadcrumb e conteúdo autorizado.
 - **Item de Drive**: projeção segura de pasta ou arquivo exibida na árvore, na área de conteúdo e nas visualizações, sem dados físicos internos.
 - **Seleção de Drive**: conjunto de itens de uma localização sobre o qual ações em lote só ocorrem se a autorização permitir o conjunto completo.
 - **Exportação temporária**: resultado privado e efêmero de uma seleção múltipla, com solicitante, workspace, estado, prazo e limites próprios; não é arquivo do workspace.
 - **Relação de pasta**: concessão de leitura ou edição, direta ou por grupo, que se aplica ao ramo da pasta e aos seus descendentes conforme a autorização efetiva.
+- **Relação de arquivo**: concessão direta de acesso a um arquivo específico, sem conceder visibilidade, navegação ou inferência sobre sua pasta, ancestrais ou irmãos.
 
 ## Critérios de Sucesso
 
@@ -193,3 +245,4 @@ Como usuário autorizado, quero receber um arquivo compactado ao baixar múltipl
 - **SC-DRIVE-004**: Em testes automatizados, 100% das exportações múltiplas contêm somente itens autorizados, preservam a hierarquia selecionada e tornam-se indisponíveis após o prazo configurado.
 - **SC-DRIVE-005**: Em validações de interface, usuários completam navegação até uma pasta, upload múltiplo e download de uma seleção em até três interações principais por etapa, sem depender de instruções externas.
 - **SC-DRIVE-006**: Em validações responsivas, as ações essenciais de navegação, upload, seleção, download e lixeira permanecem disponíveis em telas estreitas, por toque e por teclado.
+- **SC-DRIVE-007**: Em testes automatizados, 100% das transferências entre drives preservam origem e destino íntegros perante conflitos, interrupção, revogação e repetição do job; operações mutáveis que intersectem uma reserva ativa são recusadas.

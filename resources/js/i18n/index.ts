@@ -30,6 +30,11 @@ for (const messages of [en, es, fr]) {
     Object.assign(authorization.tabs as Record<string, string>, advancedAuthorizationLabels.tabs as Record<string, string>);
 }
 
+const peopleLabels = (ptBR.access as unknown as { people: Record<string, string> }).people;
+for (const messages of [en, es, fr]) {
+    Object.assign((messages.access as unknown as { people: Record<string, string> }).people, peopleLabels);
+}
+
 export const i18n = createI18n({
     legacy: false,
     locale: 'pt-BR',

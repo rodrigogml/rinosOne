@@ -30,3 +30,11 @@
 
 - Itens `{auto}` foram resolvidos com as referências indicadas.
 - Não há gap de tela, comando, estado ou rastreabilidade aberto.
+
+## Evolução unificada — 2026-09-30
+
+- [x] CHK014 - A ferramenta global, o catálogo e as entradas removidas identificam estado atual, mudança de navegação, foco de retorno e comportamento após troca de tenant? [Cobertura, Interface §Estado atual e mudança desejada; INT-WEB-DRIVE-001] {auto}
+- [x] CHK015 - Os dois painéis definem estado independente, confirmação obrigatória de drop, modos sugeridos, alternativa por teclado e adaptação sem colunas comprimidas no telefone? [Completude, Interface INT-WEB-DRIVE-003; §Responsive Rules] {auto}
+- [x] CHK016 - Compartilhados comigo especifica conteúdo, ausência de lixeira virtual, capacidades read-only de arquivo, revogação e apresentação mobile? [Clareza, Interface INT-WEB-DRIVE-004; Spec FR-DRIVE-032 e 033] {auto}
+- [x] CHK017 - O progresso persistente define polling, foco, cancelamento, erro, offline, stale e recuperação sem notificação modal invasiva? [Cobertura, Interface INT-WEB-DRIVE-005] {auto}
+- [x] CHK018 - A rastreabilidade cobre todas as interações novas/modificadas até stories, requisitos, critérios, contrato e wireframes obrigatórios? [Rastreabilidade, Interface §Traceability; wireframes/drive-desktop.md; wireframes/drive-mobile.md] {auto}

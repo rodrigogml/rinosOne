@@ -13,9 +13,21 @@ Todos os endpoints requerem autenticação, contexto ativo da organização indi
 | `POST /api/v1/tenants/{tenantId}/people/{personId}/duplicate` | Duplicar Pessoa | `tenant.people.duplicate` |
 | `POST /api/v1/tenants/{tenantId}/people/{personId}/inactivate` | Inativar | `tenant.people.inactivate` |
 | `POST /api/v1/tenants/{tenantId}/people/{personId}/reactivate` | Reativar | `tenant.people.reactivate` |
+| `GET /api/v1/tenants/{tenantId}/people/{personId}/deletion-usage` | Diagnosticar usos antes de excluir | `tenant.people.delete` |
 | `DELETE /api/v1/tenants/{tenantId}/people/{personId}` | Excluir fisicamente | `tenant.people.delete` |
 
 As chaves de permissão são o contrato pretendido para integração com a fundação de autorização e serão registradas junto à implementação.
+
+## Referências core para os editores
+
+Os endpoints abaixo requerem `tenant.people.read`, usam o contexto do tenant somente para autorização e retornam exclusivamente entradas globais ativas para seleção. Não há alteração manual de catálogos por esta API.
+
+| Método e caminho | Retorno |
+| --- | --- |
+| `GET /api/v1/tenants/{tenantId}/people/references/countries` | Países ativos (`id`, ISO alpha-2 e nome). |
+| `GET /api/v1/tenants/{tenantId}/people/references/countries/{countryId}/brazil-states` | UFs ativas do país. |
+| `GET /api/v1/tenants/{tenantId}/people/references/brazil-states/{stateId}/municipalities` | Municípios ativos da UF. |
+| `GET /api/v1/tenants/{tenantId}/people/references/financial-institutions?search=` | Até 50 instituições BCB ativas. |
 
 ## Políticas gerais de operação
 
@@ -36,6 +48,7 @@ Usada em listagem e seleção.
 | `personType` | string | `PF` ou `PJ`. |
 | `displayName` | string | Nome calculado para apresentação. |
 | `document` | string ou null | CPF ou CNPJ apresentado quando houver. |
+| `contactCount` | number | Quantidade de contatos cadastrados para a Pessoa; não expõe os valores dos contatos. |
 | `status` | string | `ACTIVE` ou `INACTIVE`. |
 
 ## Criar ou atualizar Pessoa
@@ -72,9 +85,8 @@ Além da Pessoa resumida, a resposta de detalhe contém identificação compleme
 | `copyContacts` | boolean | sim | Copia contatos como novos itens. |
 | `copyBankAccounts` | boolean | sim | Copia contas como novos itens, exigindo confirmação posterior quando aplicável. |
 | `copyPixKeys` | boolean | sim | Copia chaves como novos itens, exigindo confirmação posterior quando aplicável. |
-| `copyRelationships` | boolean | sim | Copia relacionamentos somente após confirmação explícita das Pessoas relacionadas. |
 
-CPF, CNPJ e demais identificadores exclusivos não são copiados.
+Relacionamentos, CPF, CNPJ e demais identificadores exclusivos não são copiados.
 
 ## Exclusão física
 
@@ -93,3 +105,7 @@ Uma solicitação de exclusão retorna sucesso sem corpo quando a Pessoa pode se
 | `409` | `PERSON_DELETE_CONFLICT` | Impedimento de integridade não classificado impede exclusão. |
 | `409` | `PERSON_VERSION_CONFLICT` | Dados mudaram desde a leitura; o cliente deve recarregar antes de alterar. |
 | `429` | `API_RATE_LIMITED` | Limite geral de requisições autenticadas excedido. |
+| `413` | `API_REQUEST_TOO_LARGE` | Corpo JSON excede o limite global configurado. |
+| `400` | `API_IDEMPOTENCY_KEY_INVALID` | Cabeçalho `Idempotency-Key` ausente ou não é UUID v4. |
+| `409` | `API_IDEMPOTENCY_KEY_CONFLICT` | A chave foi reutilizada com outra intenção de requisição. |
+| `409` | `API_IDEMPOTENCY_IN_PROGRESS` | Uma solicitação idêntica ainda está em processamento. |

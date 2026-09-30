@@ -13,6 +13,7 @@ Defina os valores reais somente no `.env` do ambiente. O arquivo [`.env.example`
 | Retenção | `FILE_TRASH_RETENTION_DAYS`, `FILE_BACKUP_RETENTION_DAYS`, `FILE_TECHNICAL_RETENTION_DAYS`, `FILE_ORPHAN_RETENTION_DAYS` | Define lixeira, recuperação de backup, retenção física e segurança para órfãos. A retenção técnica deve ser igual ou maior que a de backup. |
 | Compactação | `FILE_COMPRESSION_RULES`, `FILE_COMPRESSION_REPROCESS_INTERVAL_MINUTES` | Seleciona MIME types/extensões para `GZIP` e agenda reprocessamento. Só há promoção quando há ganho de espaço. |
 | Manutenção | `FILE_STORAGE_RETENTION_PURGE_INTERVAL_MINUTES`, `FILE_STORAGE_RECONCILIATION_INTERVAL_MINUTES` | Define a periodicidade dos expurgos e da reconciliação. |
+| Exportações do Drive | `DRIVE_EXPORT_LIFETIME_MINUTES`, `DRIVE_EXPORT_MAXIMUM_ITEMS`, `DRIVE_EXPORT_MAXIMUM_BYTES`, `DRIVE_EXPORT_CLEANUP_INTERVAL_MINUTES` | Limita ZIPs temporários privados gerados para downloads múltiplos e determina sua limpeza. Não consomem quota do workspace. |
 | Logs técnicos | `FILE_STORAGE_LOG_LEVEL`, `FILE_STORAGE_LOG_RETENTION_DAYS` | Controla o canal `file-storage`, mantido separado do log geral. |
 
 > [!IMPORTANT]
@@ -28,7 +29,7 @@ php artisan config:cache
 php artisan queue:restart
 ```
 
-Mantenha ao menos um worker supervisionado para os jobs de expurgo, reconciliação e compactação:
+Mantenha ao menos um worker supervisionado para os jobs de expurgo, reconciliação, compactação e exportação do Drive:
 
 ```sh
 php artisan queue:work database --sleep=1 --tries=3 --max-time=3600
@@ -60,6 +61,8 @@ php artisan schedule:list
 | Limpeza de versões e objetos | Remove dados somente sem referências válidas e após a maior retenção entre backup e técnica. |
 | Reconciliação | Marca referências quebradas ou escritas antigas como `ORPHANED`; remove objetos físicos sem catálogo apenas depois da retenção de órfãos. |
 | Reprocessamento | Troca `IDENTITY` e `GZIP` apenas após validar integridade e mantém a representação substituída em retenção. |
+| Exportação do Drive | Revalida cada item no worker, produz ZIP em área privada e expira por prazo lógico. O download só é liberado no estado `READY`, ao solicitante e no mesmo contexto de workspace. |
+| Limpeza de exportações | Remove bytes privados e registros vencidos em transações curtas e independentes. Cancelamentos e falhas permanecem indisponíveis antes da remoção física. |
 
 ## Diagnóstico e recuperação
 
@@ -68,6 +71,7 @@ php artisan schedule:list
 | Backend não aceita escrita | Verificar permissões, espaço e configuração do disco privado; restaurar o backend e reiniciar o worker. Não recriar manualmente registros ou objetos. |
 | Objeto ou representação inconsistente | Consultar o canal técnico `storage/logs/file-storage-*.log`, restaurar a disponibilidade do backend e permitir a reconciliação agendada. |
 | Scheduler parado | Restaurar o agendamento; os prazos lógicos continuam sendo validados pelas operações, e a limpeza será retomada no próximo ciclo. |
+| Exportação falhou ou venceu | Não entregue arquivo parcial. Verifique o worker, a capacidade do backend privado e o canal técnico; o registro falho não é baixável e a limpeza agendada remove os artefatos vencidos. |
 | Restauração de banco | Restaurar também os volumes privados compatíveis com `FILE_BACKUP_RETENTION_DAYS`. Nunca reduza a retenção técnica antes de expirar a janela de recuperação de backup. |
 
 > [!WARNING]
@@ -78,6 +82,6 @@ php artisan schedule:list
 - [ ] Backend privado gravável e inacessível pelo servidor web.
 - [ ] `FILE_TECHNICAL_RETENTION_DAYS >= FILE_BACKUP_RETENTION_DAYS`.
 - [ ] Worker e scheduler supervisionados.
-- [ ] `php artisan schedule:list` apresenta expurgo, reconciliação e reprocessamento.
+- [ ] `php artisan schedule:list` apresenta expurgo, reconciliação, reprocessamento e limpeza de exportações do Drive.
 - [ ] `php artisan test`, `npm run type-check`, `npm test` e `npm run build` concluídos.
 - [ ] Nenhum valor real de caminho, credencial ou configuração de volume foi versionado.

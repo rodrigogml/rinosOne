@@ -11,7 +11,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
     },
     webServer: {
-        command: `py -3 -m http.server ${playwrightPort} --directory public`,
+        command: `php -S 127.0.0.1:${playwrightPort} -t public`,
         reuseExistingServer: !process.env.CI,
         url: `${baseUrl}/build/manifest.json`,
     },

@@ -1,12 +1,14 @@
 <?php
 
 use App\Jobs\FileStorage\PurgeExpiredFilePossessions;
+use App\Jobs\FileStorage\PurgeExpiredWorkspaceExports;
 use App\Jobs\FileStorage\PurgeRetainedFileStorageObjects;
 use App\Jobs\FileStorage\PurgeRetainedFileVersions;
 use App\Jobs\FileStorage\ReconcileFileStorageObjects;
 use App\Jobs\FileStorage\ReprocessFileStorageCompression;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
 use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
+use App\Services\Maintenance\PersonAuditRetentionMaintenanceService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -36,6 +38,10 @@ Schedule::call(static fn () => app(IbgeTerritoryMaintenanceService::class)->sync
     ->hourly()
     ->name('maintenance.locality-ibge-territory-catalog');
 
+Schedule::call(static fn () => app(PersonAuditRetentionMaintenanceService::class)->purgeScheduled())
+    ->daily()
+    ->name('maintenance.person-audit-retention');
+
 $fileStorageRetentionPurgeInterval = config('file-storage.maintenance.retentionPurgeIntervalMinutes');
 
 if ($fileStorageRetentionPurgeInterval < 1 || $fileStorageRetentionPurgeInterval > 60) {
@@ -47,6 +53,11 @@ $fileStorageRetentionPurgeExpression = $fileStorageRetentionPurgeInterval === 60
     : "*/{$fileStorageRetentionPurgeInterval} * * * *";
 
 Schedule::job(new PurgeExpiredFilePossessions)->cron($fileStorageRetentionPurgeExpression);
+$workspaceExportCleanupInterval = config('file-storage.workspaceExport.cleanupIntervalMinutes');
+if ($workspaceExportCleanupInterval < 1 || $workspaceExportCleanupInterval > 60) {
+    throw new LogicException('DRIVE_EXPORT_CLEANUP_INTERVAL_MINUTES must be between 1 and 60.');
+}
+Schedule::job(new PurgeExpiredWorkspaceExports)->cron($workspaceExportCleanupInterval === 60 ? '0 * * * *' : "*/{$workspaceExportCleanupInterval} * * * *");
 Schedule::job(new PurgeRetainedFileVersions)->cron($fileStorageRetentionPurgeExpression);
 Schedule::job(new PurgeRetainedFileStorageObjects)->cron($fileStorageRetentionPurgeExpression);
 

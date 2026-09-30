@@ -1,75 +1,123 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createI18n } from 'vue-i18n';
+import { nextTick } from 'vue';
 import AuthorizationAdministrationSurface from '../../../resources/js/authorization/AuthorizationAdministrationSurface.vue';
-import { i18n } from '../../../resources/js/i18n';
+import AdvancedAuthorizationControls from '../../../resources/js/authorization/AdvancedAuthorizationControls.vue';
 
-vi.mock('axios', () => ({ default: { delete: vi.fn(), get: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
-
+vi.mock('axios');
 const surface = { id: 'authorization-1', destinationId: 'tenant.authorization-administration', scope: 'tenant' as const, tenantId: 18, titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings', dirty: false, status: 'active' as const };
+const i18n = createI18n({ legacy: false, locale: 'pt-BR', messages: { 'pt-BR': { access: { authorization: { loading: 'Carregando', offline: 'Offline', requestFailed: 'Falhou', accessDenied: 'Negado', stale: 'Desatualizado', reload: 'Recarregar', filter: 'Filtrar', roleAssigned: 'Papel associado', assignRole: 'Associar papel', confirm: 'Confirmar', cancel: 'Cancelar', audit: 'Auditoria', emptyAudit: 'Nenhum evento', occurredAt: 'Ocorrido em', operation: 'Operação', target: 'Alvo', lastAdministrator: 'Último administrador' } } } } });
+const context = { scope: 'TENANT', tenantId: 18, displayName: 'Empresa', workspaceKind: 'TENANT', capabilities: { canReadAccess: true, canManageRoles: true, canManageSharing: true, canUseAdvancedControls: false } };
+const subject = { subjectId: 44, subjectType: 'USER', displayName: 'Ana', accessSources: [], effectiveCapabilities: [], expiresAt: null };
+const subjectWithSources = { ...subject, accessSources: [{ type: 'GROUP', displayName: 'Financeiro', scope: 'TENANT', expiresAt: '2026-10-01T10:00:00Z' }, { type: 'DIRECT_GRANT', displayName: 'Acesso excepcional', scope: 'TENANT', expiresAt: null }], expiresAt: '2026-10-02T10:00:00Z' };
+const role = { id: 7, catalogType: 'ROLE', key: 'tenant.viewer', displayName: 'Leitor', description: 'Consulta dados.', scope: 'TENANT', systemManaged: false, active: true };
+
+function mountSurface() { return mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } }); }
+function contextualLoad(includeAudit = false) { const request = vi.mocked(axios.get).mockResolvedValueOnce({ data: { context, contextVersion: '3' } }).mockResolvedValueOnce({ data: { subjects: [subject], pagination: { page: 1, lastPage: 1 } } }).mockResolvedValueOnce({ data: { roles: [role] } }).mockResolvedValueOnce({ data: { groups: [] } }); if (includeAudit) request.mockResolvedValueOnce({ data: { events: [] } }); }
 
 describe('AuthorizationAdministrationSurface', () => {
-    beforeEach(() => { vi.clearAllMocks(); vi.mocked(axios.get).mockResolvedValue({ data: { events: [] } }); i18n.global.locale.value = 'pt-BR'; });
+    beforeEach(() => { vi.resetAllMocks(); contextualLoad(true); });
 
-    it('loads the authorized audit and creates a role through the tenant-scoped API', async () => {
-        const wrapper = mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } });
-        await flushPromises();
-        expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/audit-events?perPage=25&page=1');
+    it('loads a route-derived context and presents subjects by name without technical ID fields', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/context');
+        expect(wrapper.text()).toContain('Empresa');
+        expect(wrapper.text()).toContain('Ana');
+        expect(wrapper.find('#authorization-assignment-user').exists()).toBe(false);
+        expect(wrapper.find('#authorization-assignment-role').exists()).toBe(false);
+    });
 
-        await wrapper.get('#authorization-role-key').setValue('tenant.billing.viewer');
-        await wrapper.get('#authorization-role-name').setValue('Billing viewer');
-        await wrapper.get('form').trigger('submit');
-        await flushPromises();
-        expect(axios.post).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/roles', { key: 'tenant.billing.viewer', displayName: 'Billing viewer', description: '' });
-        expect(wrapper.text()).toContain('Role criada com sucesso.');
+    it('moves focus to the contextual heading when the surface opens', async () => {
+        const wrapper = mount(AuthorizationAdministrationSurface, { attachTo: document.body, props: { surface }, global: { plugins: [i18n] } });
+        await nextTick();
+
+        expect(document.activeElement).toBe(wrapper.get('.authorization-administration__context h2').element);
         wrapper.unmount();
     });
 
-    it('uses accessible tabs and queries effective access without treating the client as authority', async () => {
-        const wrapper = mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } });
-        await flushPromises();
-        await wrapper.findAll('[role="tab"]')[2]!.trigger('click');
-        await wrapper.get('#authorization-subject').setValue('44');
-        vi.mocked(axios.get).mockResolvedValueOnce({ data: { effectiveAccess: { membership: { id: 2, state: 'ACTIVE' } } } });
-        await wrapper.get('.authorization-administration__form .ui-button').trigger('click');
-        await flushPromises();
-        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/tenants/18/authorization/effective-access/users/44');
-        expect(wrapper.text()).toContain('ACTIVE');
-        wrapper.unmount();
+    it('mounts advanced controls only after the context authorizes them', async () => {
+        vi.resetAllMocks();
+        const advancedContext = { ...context, capabilities: { ...context.capabilities, canUseAdvancedControls: true } };
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { context: advancedContext, contextVersion: '3' } }).mockResolvedValueOnce({ data: { subjects: [], pagination: { page: 1, lastPage: 1 } } }).mockResolvedValueOnce({ data: { roles: [] } }).mockResolvedValueOnce({ data: { groups: [] } }).mockResolvedValueOnce({ data: { events: [] } }).mockResolvedValueOnce({ data: { accessRequests: [] } });
+        const wrapper = mountSurface(); await flushPromises();
+
+        expect(wrapper.findComponent(AdvancedAuthorizationControls).exists()).toBe(true);
+        expect(wrapper.get('details.authorization-administration__advanced-disclosure').attributes('open')).toBeUndefined();
     });
 
-    it('confirms a membership removal and retains the form when the last administrator invariant refuses it', async () => {
-        const wrapper = mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } });
-        await flushPromises();
-        await wrapper.findAll('[role="tab"]')[2]!.trigger('click');
-        await wrapper.get('#authorization-membership').setValue('91');
-        await wrapper.get('.authorization-administration__form form').trigger('submit');
-        expect(wrapper.get('[role="dialog"]').text()).toContain('Confirme para continuar');
-
-        const failure = { response: { data: { error: { code: 'AUTHORIZATION_ADMINISTRATION_CONFLICT' } } } };
-        vi.mocked(axios.isAxiosError).mockImplementation((reason: unknown) => reason === failure);
-        vi.mocked(axios.delete).mockRejectedValue(failure);
-        await wrapper.get('[role="dialog"] .ui-button--destructive').trigger('click');
-        await flushPromises();
-        expect(axios.delete).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/memberships/91');
-        expect(wrapper.text()).toContain('o tenant precisa manter ao menos um administrador');
-        expect((wrapper.get('#authorization-membership').element as HTMLInputElement).value).toBe('91');
-        wrapper.unmount();
+    it('reads effective access through the selected subject type and identifier', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { effectiveAccess: { subject: subjectWithSources, effectiveCapabilities: ['tenant.people.read'] } } });
+        await wrapper.get('.authorization-administration__subject-list .ui-button').trigger('click'); await flushPromises();
+        expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/subjects/USER/44/effective-access');
+        expect(wrapper.text()).toContain('tenant.people.read');
+        expect(wrapper.text()).toContain('Financeiro');
+        expect(wrapper.text()).toContain('Acesso excepcional');
+        expect(wrapper.text()).toContain('TENANT');
     });
 
-    it('keeps the temporary access request form keyboard-operable and posts only its structured fields', async () => {
-        const wrapper = mount(AuthorizationAdministrationSurface, { props: { surface }, global: { plugins: [i18n] } });
-        await flushPromises();
-        await wrapper.findAll('[role="tab"]')[3]!.trigger('click');
-        const permission = wrapper.get('#authorization-temporary-permission');
-        expect(permission.attributes('inputmode')).toBe('numeric');
-        await permission.setValue('12');
-        await wrapper.get('#authorization-temporary-starts-at').setValue('2026-09-28T10:00');
-        await wrapper.get('#authorization-temporary-ends-at').setValue('2026-09-28T11:00');
-        await wrapper.get('.authorization-administration__form form').trigger('submit');
-        await flushPromises();
-        expect(axios.post).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/advanced/access-requests', expect.objectContaining({ permissionId: 12 }));
-        expect(wrapper.text()).toContain('Solicitações de acesso');
-        wrapper.unmount();
+    it('confirms an assignment using the selected role and contextual version', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { effectiveAccess: { subject, effectiveCapabilities: [] } } });
+        await wrapper.get('.authorization-administration__subject-list .ui-button').trigger('click'); await flushPromises();
+        await wrapper.findAll('select')[1]!.setValue(String(role.id));
+        await wrapper.findAll('.authorization-administration__form')[1]!.get('.ui-button').trigger('click');
+        expect(wrapper.text()).toContain('Associar');
+        contextualLoad(); vi.mocked(axios.post).mockResolvedValueOnce({ data: { assignment: { id: 1 } } });
+        await wrapper.get('.authorization-administration__confirmation .ui-button').trigger('click'); await flushPromises();
+        expect(axios.post).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/roles/7/assignments', { subjectType: 'USER', subjectId: 44, expectedContextVersion: '3' });
+        expect(wrapper.text()).toContain('Papel associado');
+    });
+
+    it('exposes an accessible loading state while contextual data is pending', async () => {
+        vi.resetAllMocks();
+        vi.mocked(axios.get).mockReturnValue(new Promise(() => {}) as never);
+        const wrapper = mountSurface();
+        await nextTick();
+
+        expect(wrapper.attributes('aria-busy')).toBe('true');
+    });
+
+    it('communicates an empty contextual directory without suggesting another context', async () => {
+        vi.resetAllMocks();
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { context, contextVersion: '3' } }).mockResolvedValueOnce({ data: { subjects: [], pagination: { page: 1, lastPage: 1 } } }).mockResolvedValueOnce({ data: { roles: [role] } }).mockResolvedValueOnce({ data: { groups: [] } }).mockResolvedValueOnce({ data: { events: [] } });
+        const wrapper = mountSurface(); await flushPromises();
+
+        expect(wrapper.text()).toContain('Nenhuma pessoa ou identidade disponível neste contexto.');
+    });
+
+    it('sends contextual audit filters without changing the active scope', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { events: [] } });
+        await wrapper.get('#authorization-audit-operation').setValue('ROLE_ASSIGNED');
+        await wrapper.get('#authorization-audit-target-type').setValue('ROLE');
+        await wrapper.get('#authorization-audit-target-id').setValue('7');
+        await wrapper.get('.authorization-administration__audit-filters').trigger('submit'); await flushPromises();
+
+        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/tenants/18/authorization/audit-events/contextual?perPage=25&operation=ROLE_ASSIGNED&targetType=ROLE&targetId=7');
+    });
+
+    it('communicates access denial and stale information safely', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        vi.mocked(axios.isAxiosError).mockReturnValue(true);
+        vi.mocked(axios.get).mockRejectedValueOnce({ isAxiosError: true, response: { status: 403 } });
+        await wrapper.findAll('.authorization-administration__form')[0]!.get('.ui-button').trigger('click'); await flushPromises();
+        expect(wrapper.text()).toContain('Negado');
+        expect(wrapper.emitted('accessDenied')).toHaveLength(1);
+
+        vi.mocked(axios.get).mockRejectedValueOnce({ isAxiosError: true, response: { status: 412 } });
+        await wrapper.findAll('.authorization-administration__form')[0]!.get('.ui-button').trigger('click'); await flushPromises();
+        expect(wrapper.text()).toContain('Desatualizado');
+    });
+
+    it('keeps mutations disabled while the browser is offline', async () => {
+        const online = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+        const wrapper = mountSurface(); await flushPromises();
+
+        expect(wrapper.text()).toContain('Offline');
+        expect(wrapper.findAll('.authorization-administration__form')[1]!.get('.ui-button').attributes('disabled')).toBeDefined();
+        online.mockRestore();
     });
 });

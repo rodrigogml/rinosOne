@@ -1,3 +1,6 @@
+import axios from 'axios';
+
+export type DriveWorkspaceTarget = { kind: 'personal' } | { kind: 'tenant'; tenantId: number };
 export interface DriveCapabilities { read: boolean; edit: boolean; trash: boolean; }
 export interface DriveItem {
     id: number;
@@ -75,4 +78,112 @@ export function parseDriveDetails(value: unknown): DriveDetailsProjection | null
     const location = parseDriveLocation(value.location);
     const capabilities = parseCapabilities(value.capabilities);
     return item === null || location === null || capabilities === null ? null : { item, location, capabilities, metadata: value.metadata };
+}
+
+function workspacePrefix(target: DriveWorkspaceTarget): string {
+    return target.kind === 'personal'
+        ? '/api/v1/drive/personal'
+        : `/api/v1/tenants/${target.tenantId}/drive`;
+}
+
+async function getProjection<T>(path: string, parser: (value: unknown) => T | null): Promise<T> {
+    const response = await axios.get(path);
+    const parsed = parser(response.data);
+    if (parsed === null) throw new Error('A resposta do Rinos Drive não possui o formato esperado.');
+
+    return parsed;
+}
+
+/** Carrega somente as pastas que podem integrar a árvore visível do alvo atual. */
+export function loadDriveTree(target: DriveWorkspaceTarget): Promise<DriveItem[]> {
+    return getProjection(`${workspacePrefix(target)}/tree`, parseDriveTree);
+}
+
+/** Carrega uma coleção sem aceitar caminho, proprietário ou backend vindos da interface. */
+export function loadDriveLocation(target: DriveWorkspaceTarget, location: DriveLocation): Promise<DriveLocationProjection> {
+    const prefix = workspacePrefix(target);
+    const path = location.kind === 'root'
+        ? `${prefix}/locations/root`
+        : location.kind === 'trash'
+            ? `${prefix}/trash`
+            : `${prefix}/folders/${location.id}`;
+
+    return getProjection(path, parseDriveLocationProjection);
+}
+
+/** Consulta os detalhes sanitizados de um item já visível na coleção atual. */
+export function loadDriveDetails(target: DriveWorkspaceTarget, item: Pick<DriveItem, 'id' | 'kind'>): Promise<DriveDetailsProjection> {
+    return getProjection(`${workspacePrefix(target)}/items/${item.kind}/${item.id}/details`, parseDriveDetails);
+}
+
+/** Cria uma pasta somente na localização autorizada já resolvida pelo servidor. */
+export async function createDriveFolder(target: DriveWorkspaceTarget, displayName: string, parentFolderId: number | null): Promise<void> {
+    await axios.post(`${workspacePrefix(target)}/folders`, { displayName, parentFolderId });
+}
+
+/** Moves the selected, server-authorized items to the workspace trash. */
+export async function trashDriveItems(target: DriveWorkspaceTarget, items: Array<Pick<DriveItem, 'id' | 'kind'>>): Promise<void> {
+    await axios.post(`${workspacePrefix(target)}/items/trash`, {
+        items: items.map((item) => ({ type: item.kind, id: item.id })),
+    });
+}
+
+/** Moves one item; the API remains responsible for authorization, cycles and name conflicts. */
+export async function moveDriveItem(target: DriveWorkspaceTarget, item: Pick<DriveItem, 'id' | 'kind'>, destinationFolderId: number | null): Promise<void> {
+    const resource = item.kind === 'folder' ? 'folders' : 'files';
+    await axios.post(`${workspacePrefix(target)}/${resource}/${item.id}/move`, { destinationFolderId });
+}
+
+export async function restoreDriveItems(target: DriveWorkspaceTarget, items: Array<Pick<DriveItem, 'id' | 'kind'>>): Promise<void> {
+    await axios.post(`${workspacePrefix(target)}/items/restore`, { items: items.map((item) => ({ type: item.kind, id: item.id })) });
+}
+
+export async function releaseDriveItems(target: DriveWorkspaceTarget, items: Array<Pick<DriveItem, 'id' | 'kind'>>): Promise<void> {
+    await axios.post(`${workspacePrefix(target)}/items/release`, { items: items.map((item) => ({ type: item.kind, id: item.id })), confirmation: true });
+}
+
+export async function uploadDriveFile(target: DriveWorkspaceTarget, file: File, parentFolderId: number | null, signal: AbortSignal, onProgress: (percent: number) => void): Promise<void> {
+    const form = new FormData();
+    form.append('files[]', file);
+    if (parentFolderId !== null) form.append('parentFolderId', String(parentFolderId));
+    await axios.post(`${workspacePrefix(target)}/uploads`, form, { signal, onUploadProgress: (event) => onProgress(event.total ? Math.round((event.loaded / event.total) * 100) : 0) });
+}
+
+/** Returns the private, authenticated download route for one visible file possession. */
+export function driveDownloadUrl(target: DriveWorkspaceTarget, possessionId: number): string {
+    return `${workspacePrefix(target)}/files/${possessionId}/download`;
+}
+
+export interface DriveExportProjection { exportId: string; state: string; expiresAt: string | null; }
+
+export function parseDriveExport(value: unknown): DriveExportProjection | null {
+    if (!isRecord(value) || typeof value.exportId !== 'string' || value.exportId.length === 0 || !isNullableString(value.expiresAt)) return null;
+    if (value.state !== 'PENDING' && value.state !== 'PROCESSING' && value.state !== 'READY' && value.state !== 'FAILED' && value.state !== 'CANCELLED') return null;
+
+    return { exportId: value.exportId, state: value.state, expiresAt: value.expiresAt };
+}
+
+export async function requestDriveExport(target: DriveWorkspaceTarget, items: Array<Pick<DriveItem, 'id' | 'kind'>>): Promise<DriveExportProjection> {
+    const response = await axios.post(`${workspacePrefix(target)}/exports`, { items: items.map((item) => ({ type: item.kind, id: item.id })) });
+    const parsed = parseDriveExport(response.data);
+    if (parsed === null) throw new Error('A resposta de exportação do Rinos Drive não possui o formato esperado.');
+    return parsed;
+}
+
+export async function cancelDriveExport(target: DriveWorkspaceTarget, exportId: string): Promise<DriveExportProjection> {
+    const response = await axios.post(`${workspacePrefix(target)}/exports/${exportId}/cancel`);
+    const parsed = parseDriveExport(response.data);
+    if (parsed === null) throw new Error('A resposta de exportação do Rinos Drive não possui o formato esperado.');
+    return parsed;
+}
+
+export async function loadDriveExport(target: DriveWorkspaceTarget, exportId: string): Promise<DriveExportProjection> {
+    const response = await axios.get(`${workspacePrefix(target)}/exports/${exportId}`);
+    const parsed = parseDriveExport(response.data);
+    if (parsed === null) throw new Error('A resposta de exportação do Rinos Drive não possui o formato esperado.');
+    return parsed;
+}
+
+export function driveExportDownloadUrl(target: DriveWorkspaceTarget, exportId: string): string {
+    return `${workspacePrefix(target)}/exports/${exportId}/download`;
 }

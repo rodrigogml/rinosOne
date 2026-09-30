@@ -36,8 +36,9 @@ const mobileEdgeGesture = ref<{ pointerId: number; startX: number; startY: numbe
 const mobileEdgePeekVisible = ref(false);
 let mobileEdgePeekTimeout: ReturnType<typeof setTimeout> | null = null;
 const maintenanceVisible = ref(false);
+const platformAuthorizationVisible = ref(false);
 const collapsedScopes = ref<WorkspaceDestinationScope[]>([]);
-const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null, domainAccess: maintenanceVisible.value }));
+const context = computed(() => ({ tenantId: tenantContext.context?.tenant.id ?? null, domainAccess: maintenanceVisible.value || platformAuthorizationVisible.value, canReadAuthorization: tenantContext.context?.capabilities.canReadAuthorization === true || platformAuthorizationVisible.value, canReadPeople: tenantContext.context?.capabilities.canReadPeople === true }));
 const destinations = computed(() => availableWorkspaceDestinations(workspaceDestinations.filter((destination) => destination.id !== 'platform.maintenance' || maintenanceVisible.value), context.value));
 const navigationCategories = computed(() => availableWorkspaceNavigationCategories(workspaceNavigationCategories, context.value)
     .filter((category) => destinations.value.some((destination) => destination.category === category.id)));
@@ -221,6 +222,7 @@ watch(() => destinations.value, () => {
 });
 onMounted(() => {
     void axios.get('/api/v1/platform/maintenance/routines').then((response) => { maintenanceVisible.value = Array.isArray(response.data?.routines) && response.data.routines.length > 0; }).catch(() => { maintenanceVisible.value = false; });
+    void axios.get('/api/v1/platform/authorization/context').then((response) => { platformAuthorizationVisible.value = response.data?.context?.capabilities?.canReadAccess === true; }).catch(() => { platformAuthorizationVisible.value = false; });
     document.addEventListener('pointerdown', onDocumentPointerDown);
     document.addEventListener('keydown', onDocumentKeydown);
     window.addEventListener('resize', updateMegaMenuPosition);

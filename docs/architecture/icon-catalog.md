@@ -71,6 +71,7 @@ As ações abaixo são reservadas para uma próxima inclusão visual. Até que p
 
 | Chave | Representa | Contextos permitidos |
 | --- | --- | --- |
+| `drive` | Workspace de arquivos privado | Rinos Drive Pessoal, Rinos Drive Work e seus destinos de navegação |
 | `overview` | Visão consolidada de áreas ou indicadores | Categoria Visão geral, dashboard de alto nível |
 | `documents` | Conjunto de documentos organizado | Categoria Documentos, repositório documental |
 | `attachments` | Arquivo vinculado a um registro | Anexos, arquivos e evidências relacionadas |

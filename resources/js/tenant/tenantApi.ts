@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { TenantContext, TenantCreation, TenantProvisioning, TenantState, TenantSummary } from './tenantTypes';
+import type { PeopleCapabilities, TenantContext, TenantCreation, TenantProvisioning, TenantState, TenantSummary } from './tenantTypes';
 import { TENANT_STATES } from './tenantTypes';
 
 const PROVISIONING_STATES = ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED'] as const;
@@ -37,17 +37,29 @@ function requiredObject(value: unknown): Record<string, unknown> {
     return parsed;
 }
 
+function peopleCapabilities(source: Record<string, unknown>): PeopleCapabilities {
+    return {
+        ...(typeof source.canReadPeople === 'boolean' ? { canReadPeople: source.canReadPeople } : {}),
+        ...(typeof source.canCreatePeople === 'boolean' ? { canCreatePeople: source.canCreatePeople } : {}),
+        ...(typeof source.canUpdatePeople === 'boolean' ? { canUpdatePeople: source.canUpdatePeople } : {}),
+        ...(typeof source.canDuplicatePeople === 'boolean' ? { canDuplicatePeople: source.canDuplicatePeople } : {}),
+        ...(typeof source.canInactivatePeople === 'boolean' ? { canInactivatePeople: source.canInactivatePeople } : {}),
+        ...(typeof source.canReactivatePeople === 'boolean' ? { canReactivatePeople: source.canReactivatePeople } : {}),
+        ...(typeof source.canDeletePeople === 'boolean' ? { canDeletePeople: source.canDeletePeople } : {}),
+    };
+}
+
 export function parseTenantSummary(value: unknown): TenantSummary {
     const source = requiredObject(value);
     const id = positiveInteger(source.id);
     const displayName = nonEmptyString(source.displayName);
     const state = oneOf(source.state, TENANT_STATES) as TenantState | null;
 
-    if (!id || !displayName || !state || typeof source.selectable !== 'boolean' || typeof source.canManageAvailability !== 'boolean') {
+    if (!id || !displayName || !state || typeof source.selectable !== 'boolean' || typeof source.canManageAvailability !== 'boolean' || typeof source.canReadAuthorization !== 'boolean') {
         throw new TenantResponseShapeError();
     }
 
-    return { id, displayName, state, selectable: source.selectable, canManageAvailability: source.canManageAvailability };
+    return { id, displayName, state, selectable: source.selectable, canManageAvailability: source.canManageAvailability, canReadAuthorization: source.canReadAuthorization, ...peopleCapabilities(source) };
 }
 
 export function parseTenantContext(value: unknown): TenantContext {
@@ -59,11 +71,11 @@ export function parseTenantContext(value: unknown): TenantContext {
     const displayName = nonEmptyString(tenant.displayName);
     const membershipId = positiveInteger(membership.id);
 
-    if (!id || !displayName || !membershipId || typeof capabilities.canManageAvailability !== 'boolean' || !Array.isArray(source.availableModules) || !source.availableModules.every((module) => typeof module === 'string')) {
+    if (!id || !displayName || !membershipId || typeof capabilities.canManageAvailability !== 'boolean' || typeof capabilities.canReadAuthorization !== 'boolean' || !Array.isArray(source.availableModules) || !source.availableModules.every((module) => typeof module === 'string')) {
         throw new TenantResponseShapeError();
     }
 
-    return { tenant: { id: id, displayName }, membership: { id: membershipId }, capabilities: { canManageAvailability: capabilities.canManageAvailability }, availableModules: [...source.availableModules] };
+    return { tenant: { id: id, displayName }, membership: { id: membershipId }, capabilities: { canManageAvailability: capabilities.canManageAvailability, canReadAuthorization: capabilities.canReadAuthorization, ...peopleCapabilities(capabilities) }, availableModules: [...source.availableModules] };
 }
 
 function parseProvisioning(value: unknown): TenantProvisioning {

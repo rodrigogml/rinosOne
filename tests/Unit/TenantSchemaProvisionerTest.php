@@ -31,7 +31,10 @@ class TenantSchemaProvisionerTest extends TestCase
         $migrationQuery->shouldReceive('pluck')
             ->once()
             ->with('migration')
-            ->andReturn(collect(['0001_01_01_000000_create_tenant_migration_baseline']));
+            ->andReturn(collect([
+                '0001_01_01_000000_create_tenant_migration_baseline',
+                '2026_09_28_000001_create_person_registration_tables',
+            ]));
 
         $tenantConnection = Mockery::mock(ConnectionInterface::class);
         $tenantConnection->shouldReceive('getName')->once()->andReturn('tenant-provisioning-test');

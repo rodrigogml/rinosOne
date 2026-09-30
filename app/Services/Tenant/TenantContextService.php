@@ -21,8 +21,8 @@ class TenantContextService
     }
 
     /**
-     * @param  array{canManageAvailability: bool}  $capabilities
-     * @return array{tenant: array{id: int, displayName: string}, membership: array{id: int}, capabilities: array{canManageAvailability: bool}, availableModules: array<never, never>}
+     * @param  array<string, bool>  $capabilities
+     * @return array{tenant: array{id: int, displayName: string}, membership: array{id: int}, capabilities: array<string, bool>, availableModules: array<never, never>}
      */
     public function context(TenantMembership $membership, array $capabilities): array
     {

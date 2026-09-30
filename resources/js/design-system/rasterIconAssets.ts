@@ -11,6 +11,8 @@ const pixelsBySize: Record<RasterIconSize, 24 | 32 | 48> = { sm: 24, md: 32, lg:
  */
 export const registeredRasterIconNames = [
     'drive',
+    'file',
+    'folderClose',
     'logout',
     'maintenance',
     'rinoUser',

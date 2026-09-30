@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdvancedAuthorizationControls from '../../../resources/js/authorization/AdvancedAuthorizationControls.vue';
 import { i18n } from '../../../resources/js/i18n';
 
-vi.mock('axios', () => ({ default: { post: vi.fn() } }));
+vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 const surface = { id: 'authorization-1', destinationId: 'tenant.authorization-administration', scope: 'tenant' as const, tenantId: 18, titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings', dirty: false, status: 'active' as const };
 
 describe('AdvancedAuthorizationControls', () => {
-    beforeEach(() => { vi.clearAllMocks(); i18n.global.locale.value = 'pt-BR'; });
+    beforeEach(() => { vi.clearAllMocks(); vi.mocked(axios.get).mockResolvedValue({ data: { accessRequests: [] } }); i18n.global.locale.value = 'pt-BR'; });
 
     it('publishes a closed amount policy and binding through the tenant-scoped API', async () => {
         vi.mocked(axios.post).mockResolvedValueOnce({ data: { policy: { id: 41 } } }).mockResolvedValueOnce({ data: {} });
@@ -27,13 +27,21 @@ describe('AdvancedAuthorizationControls', () => {
         wrapper.unmount();
     });
 
+    it('keeps advanced commands collapsed until the administrator explicitly opens them', () => {
+        const wrapper = mount(AdvancedAuthorizationControls, { props: { surface }, global: { plugins: [i18n] } });
+
+        expect(wrapper.get('details.authorization-administration__advanced-disclosure').attributes('open')).toBeUndefined();
+        expect(wrapper.get('summary').text()).toBe('Controles avançados');
+        wrapper.unmount();
+    });
+
     it('shows a newly issued API key only after the credential endpoint returns it', async () => {
         vi.mocked(axios.post).mockResolvedValue({ data: { apiKey: 'rinos_public_secret' } });
         const wrapper = mount(AdvancedAuthorizationControls, { props: { surface }, global: { plugins: [i18n] } });
 
         await wrapper.get('#advanced-identity-id').setValue('7');
         await wrapper.get('#advanced-credential-name').setValue('importador');
-        await wrapper.findAll('form')[4]!.trigger('submit');
+        await wrapper.findAll('form')[5]!.trigger('submit');
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledWith('/api/v1/tenants/18/authorization/advanced/service-identities/7/credentials', { displayName: 'importador' });

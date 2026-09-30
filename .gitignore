@@ -13,6 +13,7 @@
 /.zed
 /auth.json
 /database/*.sqlite
+/rinosone
 /node_modules
 /public/build
 /public/hot

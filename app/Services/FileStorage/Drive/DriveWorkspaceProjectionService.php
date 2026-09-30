@@ -163,6 +163,8 @@ class DriveWorkspaceProjectionService
     private function folderQuery(DriveWorkspaceTarget $target): Builder
     {
         if ($target->scope->value === 'PERSONAL') {
+            // Pastas pessoais compartilhadas continuam visíveis somente após a
+            // decisão por recurso abaixo; a consulta ampla não concede acesso.
             return WorkspaceFolder::query()->whereNotNull('idUser')->whereNull('idTenant');
         }
 

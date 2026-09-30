@@ -4,11 +4,12 @@ import { useI18n } from 'vue-i18n';
 import type { WorkspaceSurface } from '../workspace/workspaceTypes';
 import WorkspaceSettingsSurface from './WorkspaceSettingsSurface.vue';
 import MaintenanceHubSurface from '../maintenance/MaintenanceHubSurface.vue';
-import WorkspaceFoldersSurface from '../workspace/WorkspaceFoldersSurface.vue';
+import DriveExplorer from '../drive/DriveExplorer.vue';
 import AuthorizationAdministrationSurface from '../authorization/AuthorizationAdministrationSurface.vue';
-import AdvancedAuthorizationControls from '../authorization/AdvancedAuthorizationControls.vue';
+import PeopleWorkspace from '../people/PeopleWorkspace.vue';
 import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
+import { useTenantContextStore } from '../tenant/tenantContextStore';
 
 const props = defineProps<{
     surface: WorkspaceSurface | null;
@@ -17,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{ requestClose: [surfaceId: string]; profileUpdated: [profile: ProfilePresentation] }>();
 
 const { t } = useI18n();
+const tenantContext = useTenantContextStore();
 const mountedSurfaces = computed(() => props.surfaces?.length
     ? props.surfaces
     : props.surface ? [props.surface] : []);
@@ -41,8 +43,9 @@ const mountedSurfaces = computed(() => props.surfaces?.length
                 <div v-for="mountedSurface in mountedSurfaces" :key="mountedSurface.id" v-show="mountedSurface.id === surface.id" class="workspace-stage__surface-instance">
                     <WorkspaceSettingsSurface v-if="mountedSurface.destinationId === 'personal.settings'" :surface="mountedSurface" @profile-updated="emit('profileUpdated', $event)" />
                     <MaintenanceHubSurface v-else-if="mountedSurface.destinationId === 'platform.maintenance'" />
-                    <WorkspaceFoldersSurface v-else-if="mountedSurface.destinationId === 'personal.drive'" />
-                    <template v-else-if="mountedSurface.destinationId === 'tenant.authorization-administration'"><AuthorizationAdministrationSurface :surface="mountedSurface" /><AdvancedAuthorizationControls :surface="mountedSurface" /></template>
+                    <DriveExplorer v-else-if="mountedSurface.destinationId === 'personal.drive' || mountedSurface.destinationId === 'tenant.drive'" :surface="mountedSurface" />
+                    <AuthorizationAdministrationSurface v-else-if="['personal.authorization-administration', 'tenant.authorization-administration', 'platform.authorization-administration'].includes(mountedSurface.destinationId)" :surface="mountedSurface" @access-denied="emit('requestClose', mountedSurface.id)" />
+                    <PeopleWorkspace v-else-if="mountedSurface.destinationId === 'tenant.people'" :surface="mountedSurface" :capabilities="tenantContext.context?.capabilities" :tenant-name="tenantContext.context?.tenant.displayName" />
                     <p v-else class="workspace-stage__empty-content">{{ t('access.workspace.surface.unavailableDescription') }}</p>
                 </div>
             </slot>

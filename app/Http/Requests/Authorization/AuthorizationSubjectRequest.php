@@ -11,6 +11,16 @@ class AuthorizationSubjectRequest extends AdministrativeAuthorizationRequest
 
     public function rules(): array
     {
-        return ['userId' => ['required', 'integer', 'min:1']];
+        return [
+            'userId' => ['required_without:subjectId', 'integer', 'min:1'],
+            'subjectId' => ['required_without:userId', 'integer', 'min:1'],
+            'subjectType' => ['required_with:subjectId', 'string', 'in:USER'],
+            'expectedContextVersion' => ['nullable', 'string', 'max:64'],
+        ];
+    }
+
+    public function subjectId(): int
+    {
+        return $this->filled('subjectId') ? $this->integer('subjectId') : $this->integer('userId');
     }
 }

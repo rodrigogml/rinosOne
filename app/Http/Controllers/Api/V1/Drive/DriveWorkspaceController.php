@@ -17,6 +17,7 @@ use App\Models\FileStorage\StoredFilePossession;
 use App\Models\FileStorage\WorkspaceFolder;
 use App\Services\FileStorage\Drive\DriveWorkspaceCommandService;
 use App\Services\FileStorage\Drive\DriveWorkspaceDownloadService;
+use App\Services\FileStorage\Drive\DriveWorkspaceExportService;
 use App\Services\FileStorage\Drive\DriveWorkspaceProjectionService;
 use App\Services\FileStorage\Drive\DriveWorkspaceTargetResolver;
 use App\Services\FileStorage\Drive\DriveWorkspaceUploadService;
@@ -64,6 +65,26 @@ class DriveWorkspaceController extends Controller
     public function personalUpload(StoreDriveUploadRequest $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceUploadService $uploads): JsonResponse
     {
         return $this->respond(fn (): array => $this->uploadResponse($uploads->upload($request->user(), $targets->personal($request->user()), array_values($request->file('files', [])), $request->integer('parentFolderId') ?: null)));
+    }
+
+    public function personalRequestExport(DriveItemSelectionRequest $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->request($request->user(), $targets->personal($request->user()), $request->items())), 202);
+    }
+
+    public function personalExportStatus(string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->status($request->user(), $targets->personal($request->user()), $exportId)));
+    }
+
+    public function personalCancelExport(string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->cancel($request->user(), $targets->personal($request->user()), $exportId)));
+    }
+
+    public function personalDownloadExport(string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): StreamedResponse|JsonResponse
+    {
+        return $this->exportDownloadResponse(fn (): array => $exports->openDownload($request->user(), $targets->personal($request->user()), $exportId));
     }
 
     public function personalDownload(string $possessionId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceDownloadService $downloads): StreamedResponse|JsonResponse
@@ -161,6 +182,26 @@ class DriveWorkspaceController extends Controller
         return $this->respond(fn (): array => $this->uploadResponse($uploads->upload($request->user(), $targets->work($request->user(), (int) $tenantId), array_values($request->file('files', [])), $request->integer('parentFolderId') ?: null)));
     }
 
+    public function workRequestExport(string $tenantId, DriveItemSelectionRequest $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->request($request->user(), $targets->work($request->user(), (int) $tenantId), $request->items())), 202);
+    }
+
+    public function workExportStatus(string $tenantId, string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->status($request->user(), $targets->work($request->user(), (int) $tenantId), $exportId)));
+    }
+
+    public function workCancelExport(string $tenantId, string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->cancel($request->user(), $targets->work($request->user(), (int) $tenantId), $exportId)));
+    }
+
+    public function workDownloadExport(string $tenantId, string $exportId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceExportService $exports): StreamedResponse|JsonResponse
+    {
+        return $this->exportDownloadResponse(fn (): array => $exports->openDownload($request->user(), $targets->work($request->user(), (int) $tenantId), $exportId));
+    }
+
     public function workDownload(string $tenantId, string $possessionId, Request $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceDownloadService $downloads): StreamedResponse|JsonResponse
     {
         return $this->downloadResponse(fn (): array => $downloads->open($request->user(), $targets->work($request->user(), (int) $tenantId), (int) $possessionId));
@@ -226,6 +267,12 @@ class DriveWorkspaceController extends Controller
         ];
     }
 
+    /** @return array<string, mixed> */
+    private function exportResponse(\App\Models\FileStorage\WorkspaceExport $export): array
+    {
+        return ['exportId' => $export->publicId, 'state' => $export->state, 'expiresAt' => $export->expiresAt?->toISOString()];
+    }
+
     /** @param callable(): array{stream: resource, displayName: string, detectedMimeType: string} $download */
     private function downloadResponse(callable $download): StreamedResponse|JsonResponse
     {
@@ -240,6 +287,17 @@ class DriveWorkspaceController extends Controller
             return response()->json(['error' => ['code' => 'DRIVE_WORKSPACE_UNAVAILABLE', 'message' => 'O workspace solicitado não está disponível.']], 404);
         } catch (DriveWorkspaceProjectionException) {
             return response()->json(['error' => ['code' => 'DRIVE_LOCATION_NOT_FOUND', 'message' => 'O arquivo solicitado não está disponível.']], 404);
+        }
+    }
+
+    /** @param callable(): array{stream: resource, displayName: string} $download */
+    private function exportDownloadResponse(callable $download): StreamedResponse|JsonResponse
+    {
+        try {
+            $export = $download();
+            return response()->streamDownload(static function () use ($export): void { fpassthru($export['stream']); fclose($export['stream']); }, $export['displayName'], ['Content-Type' => 'application/zip', 'X-Content-Type-Options' => 'nosniff']);
+        } catch (DriveWorkspaceTargetException|DriveWorkspaceCommandException) {
+            return response()->json(['error' => ['code' => 'DRIVE_EXPORT_UNAVAILABLE', 'message' => 'A exportação solicitada não está disponível.']], 404);
         }
     }
 }

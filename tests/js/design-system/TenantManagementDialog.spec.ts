@@ -8,7 +8,7 @@ import { i18n } from '../../../resources/js/i18n';
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 
 const http = axios as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-const activeTenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, canManageAvailability: true };
+const activeTenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, canManageAvailability: true, canReadAuthorization: true };
 
 function mountDialog() {
     return mount(TenantManagementDialog, {
@@ -23,7 +23,7 @@ describe('tenant management dialog', () => {
 
     it('creates a single intent with a client-generated UUID and presents its preparation state', async () => {
         http.get.mockResolvedValue({ data: { tenants: [] } });
-        http.post.mockResolvedValue({ data: { tenant: { id: 1, displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false, canManageAvailability: false }, provisioning: { id: 1, state: 'QUEUED' } } });
+        http.post.mockResolvedValue({ data: { tenant: { id: 1, displayName: 'Oficina Rubi', state: 'PROVISIONING', selectable: false, canManageAvailability: false, canReadAuthorization: false }, provisioning: { id: 1, state: 'QUEUED' } } });
         const wrapper = mountDialog();
         await flushPromises();
         await wrapper.get('#tenant-display-name').setValue('Oficina Rubi');

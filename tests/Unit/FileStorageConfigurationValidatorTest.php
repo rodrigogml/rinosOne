@@ -59,4 +59,14 @@ class FileStorageConfigurationValidatorTest extends TestCase
 
         app(FileStorageConfigurationValidator::class)->validate();
     }
+
+    public function test_it_rejects_an_invalid_drive_export_policy(): void
+    {
+        config(['file-storage.workspaceExport.maximumBytes' => 0]);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The Rinos Drive export configuration is invalid.');
+
+        app(FileStorageConfigurationValidator::class)->validate();
+    }
 }

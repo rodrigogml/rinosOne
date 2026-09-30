@@ -59,6 +59,8 @@ class TenantApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('context.tenant.id', $tenant->id)
             ->assertJsonPath('context.capabilities.canManageAvailability', true)
+            ->assertJsonPath('context.capabilities.canReadAuthorization', true)
+            ->assertJsonPath('context.capabilities.canReadPeople', true)
             ->assertJsonPath('context.availableModules', []);
 
         $this->actingAs(User::factory()->create())->postJson("/api/v1/tenants/{$tenant->id}/contexts")
@@ -73,19 +75,22 @@ class TenantApiTest extends TestCase
 
         $listing = $this->actingAs($user)->getJson('/api/v1/tenants')
             ->assertOk()
-            ->assertJsonStructure(['tenants' => [['id', 'displayName', 'state', 'selectable', 'canManageAvailability']]]);
+            ->assertJsonStructure(['tenants' => [['id', 'displayName', 'state', 'selectable', 'canManageAvailability', 'canReadAuthorization']]]);
 
         $this->assertIsInt($listing->json('tenants.0.id'));
         $this->assertIsBool($listing->json('tenants.0.selectable'));
         $this->assertIsBool($listing->json('tenants.0.canManageAvailability'));
+        $this->assertIsBool($listing->json('tenants.0.canReadAuthorization'));
 
         $context = $this->actingAs($user)->postJson("/api/v1/tenants/{$tenant->id}/contexts")
             ->assertOk()
-            ->assertJsonStructure(['context' => ['tenant' => ['id', 'displayName'], 'membership' => ['id'], 'capabilities' => ['canManageAvailability'], 'availableModules']]);
+            ->assertJsonStructure(['context' => ['tenant' => ['id', 'displayName'], 'membership' => ['id'], 'capabilities' => ['canManageAvailability', 'canReadAuthorization', 'canReadPeople', 'canCreatePeople', 'canUpdatePeople', 'canDuplicatePeople', 'canInactivatePeople', 'canReactivatePeople', 'canDeletePeople'], 'availableModules']]);
 
         $this->assertIsInt($context->json('context.tenant.id'));
         $this->assertIsInt($context->json('context.membership.id'));
         $this->assertIsBool($context->json('context.capabilities.canManageAvailability'));
+        $this->assertIsBool($context->json('context.capabilities.canReadAuthorization'));
+        $this->assertIsBool($context->json('context.capabilities.canReadPeople'));
     }
 
     public function test_listing_is_ordered_by_the_latest_successful_context_selection(): void
@@ -164,7 +169,9 @@ class TenantApiTest extends TestCase
 
         $this->actingAs($user)->postJson("/api/v1/tenants/{$tenant->id}/contexts")
             ->assertOk()
-            ->assertJsonPath('context.capabilities.canManageAvailability', false);
+            ->assertJsonPath('context.capabilities.canManageAvailability', false)
+            ->assertJsonPath('context.capabilities.canReadAuthorization', false)
+            ->assertJsonPath('context.capabilities.canReadPeople', false);
     }
 
     public function test_restriction_changes_capabilities_and_the_next_protected_request_without_revealing_its_details(): void

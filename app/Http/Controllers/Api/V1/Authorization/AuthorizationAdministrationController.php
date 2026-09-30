@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Authorization;
 
 use App\Domain\Authorization\Administration\AuthorizationAdministrationAccessDeniedException;
+use App\Domain\Authorization\AuthorizationScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Authorization\AuthorizationAuditIndexRequest;
 use App\Http\Requests\Authorization\AuthorizationDisplayNameRequest;
@@ -19,6 +20,7 @@ use App\Models\AuthorizationRole;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\Authorization\Administration\AuthorizationAdministrationFacade;
+use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -53,18 +55,24 @@ class AuthorizationAdministrationController extends Controller
         return response()->noContent();
     }
 
-    public function assignRole(string $tenantId, string $roleId, AuthorizationSubjectRequest $request, AuthorizationAdministrationFacade $administration): JsonResponse
+    public function assignRole(string $tenantId, string $roleId, AuthorizationSubjectRequest $request, AuthorizationAdministrationFacade $administration, PolicyVersionService $policyVersions): JsonResponse
     {
         try {
             $this->assertCanManage($administration, $request->user(), (int) $tenantId);
-            $assignment = $administration->assignRole($request->user(), (int) $tenantId, $this->roleFor($roleId, (int) $tenantId), User::query()->findOrFail($request->integer('userId')));
+            $this->assertExpectedContextVersion($request, (int) $tenantId, $policyVersions);
+            $assignment = $administration->assignRole($request->user(), (int) $tenantId, $this->roleFor($roleId, (int) $tenantId), User::query()->findOrFail($request->subjectId()));
         } catch (AuthorizationAdministrationAccessDeniedException) {
             return $this->denied();
         } catch (LogicException|ModelNotFoundException) {
             return $this->notAvailable();
         }
 
-        return response()->json(['assignment' => ['id' => $assignment->id, 'roleId' => $assignment->idRole, 'userId' => $assignment->idUser, 'tenantId' => $assignment->idTenant, 'state' => $assignment->state]], 201);
+        $response = ['assignment' => ['id' => $assignment->id, 'roleId' => $assignment->idRole, 'userId' => $assignment->idUser, 'tenantId' => $assignment->idTenant, 'state' => $assignment->state]];
+        if ($request->filled('subjectId')) {
+            $response['contextVersion'] = (string) $policyVersions->current(AuthorizationScope::Tenant, (int) $tenantId);
+        }
+
+        return response()->json($response, 201);
     }
 
     public function removeRoleAssignment(string $tenantId, string $roleId, string $userId, AuthorizationAdministrationFacade $administration): JsonResponse|Response
@@ -96,11 +104,12 @@ class AuthorizationAdministrationController extends Controller
         return response()->json(['group' => ['id' => $group->id, 'displayName' => $group->displayName]], 201);
     }
 
-    public function addGroupMember(string $tenantId, string $groupId, AuthorizationSubjectRequest $request, AuthorizationAdministrationFacade $administration): JsonResponse|Response
+    public function addGroupMember(string $tenantId, string $groupId, AuthorizationSubjectRequest $request, AuthorizationAdministrationFacade $administration, PolicyVersionService $policyVersions): JsonResponse|Response
     {
         try {
             $this->assertCanManage($administration, $request->user(), (int) $tenantId);
-            $administration->addGroupMember($request->user(), (int) $tenantId, $this->groupFor($groupId, (int) $tenantId), User::query()->findOrFail($request->integer('userId')));
+            $this->assertExpectedContextVersion($request, (int) $tenantId, $policyVersions);
+            $administration->addGroupMember($request->user(), (int) $tenantId, $this->groupFor($groupId, (int) $tenantId), User::query()->findOrFail($request->subjectId()));
         } catch (AuthorizationAdministrationAccessDeniedException) {
             return $this->denied();
         } catch (LogicException|ModelNotFoundException) {
@@ -276,5 +285,16 @@ class AuthorizationAdministrationController extends Controller
     private function assertCanRead(AuthorizationAdministrationFacade $administration, User $actor, int $tenantId): void
     {
         $administration->assertCanRead($actor, $tenantId);
+    }
+
+    private function assertExpectedContextVersion(AuthorizationSubjectRequest $request, int $tenantId, PolicyVersionService $policyVersions): void
+    {
+        if (! $request->filled('expectedContextVersion')) {
+            return;
+        }
+
+        if (! hash_equals((string) $policyVersions->current(AuthorizationScope::Tenant, $tenantId), $request->string('expectedContextVersion')->toString())) {
+            abort(response()->json(['error' => ['code' => 'AUTHORIZATION_ADMINISTRATION_CONTEXT_STALE', 'message' => 'O contexto de autorização foi alterado. Atualize os dados e tente novamente.']], 412));
+        }
     }
 }

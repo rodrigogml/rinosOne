@@ -1,23 +1,28 @@
-# Wireframe — Rinos Drive desktop
+# Wireframe — Rinos Drive unificado em desktop
 
 ```text
-┌──────────────────────────────── Rinos Drive Pessoal / Work ────────────────────────────────┐
-│ [ícone Drive] Rinos Drive Pessoal                         [Atualizar] [Nova pasta] [Upload] │
-│ ┌───────────────────────┬────────────────────────────────────────────────────────────────┐ │
-│ │ ÁRVORE                │ [←]  Meus arquivos / Documentos / 2026       [Buscar] [Detalhes]│ │
-│ │ ▾ Meus arquivos       │ ────────────────────────────────────────────────────────────── │ │
-│ │   ▸ Projetos          │ [Grade] [Lista] [Detalhes] [Tabela]       Seleção: 2 [Baixar]   │ │
-│ │   ▾ Documentos        │                                                                │ │
-│ │     ▸ 2026            │   ┌──────────┐   ┌──────────┐   ┌──────────┐                    │ │
-│ │   Lixeira             │   │ ícone    │   │ ícone    │   │ pasta    │                    │ │
-│ │                       │   │ Contrato │   │ Proposta │   │ Fiscal   │                    │ │
-│ │ [uso do workspace]    │   └──────────┘   └──────────┘   └──────────┘                    │ │
-│ └───────────────────────┴────────────────────────────────────────────────────────────────┘ │
-│                                  [taskbar estrutural da aplicação]                           │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────── Rinos Drive ──────────────────────────────────────────────┐
+│ [ícone Drive] Rinos Drive                         [Atualizar] [Abrir painel paralelo]              │
+│ ┌───────────────────────┬──────────────────────────────────────┬──────────────────────────────────┐ │
+│ │ CATÁLOGO E ÁRVORE     │ PAINEL A                             │ PAINEL B                         │ │
+│ │ ▾ Meu Drive           │ Meu Drive / Projetos                 │ Organização Alfa / Financeiro    │ │
+│ │   ▸ Projetos          │ [Grade][Lista][Detalhes][Tabela]     │ [Grade][Lista][Detalhes][Tabela]│ │
+│ │   Lixeira             │ ──────────────────────────────────── │ ──────────────────────────────── │ │
+│ │ ▾ Organização Alfa    │ ┌─────────┐ ┌─────────┐              │ ┌─────────┐ ┌─────────┐            │ │
+│ │   ▸ Financeiro        │ │ Pasta A │ │ Plano   │  ── arrastar ▶│ │ Pasta B │ │ Proposta│            │ │
+│ │   Lixeira             │ └─────────┘ └─────────┘              │ └─────────┘ └─────────┘            │ │
+│ │ ▸ Organização Beta    │                                      │                                  │ │
+│ │ ◇ Compartilhados      │ [progresso seguro da transferência]  │ [uso do drive de origem]          │ │
+│ │   comigo              │                                      │                                  │ │
+│ └───────────────────────┴──────────────────────────────────────┴──────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- A árvore ocupa uma coluna redimensionável dentro da janela, não o menu estrutural da aplicação.
-- Breadcrumb e toolbar permanecem visíveis dentro da superfície; somente a coleção de conteúdo rola.
-- O painel de detalhes abre à direita sobre a largura da coleção sem deslocar a janela ou a taskbar.
-- Em Work, “Meus arquivos” é substituído pelo nome da organização; um membro sem acesso recebe estado vazio no lugar da árvore e coleção.
+## Regiões e regras
+
+- A janela é instância única e abre pelo botão global Drive na topbar, não por menu pessoal ou tenant.
+- A coluna esquerda contém catálogo e árvore lazy. Cada drive real possui lixeira própria; Compartilhados comigo é raiz virtual sem lixeira.
+- Um painel é o padrão. O botão de painel paralelo cria a segunda coluna; ambas possuem localização, seleção, toolbar, rolagem e estados próprios.
+- Drop de um painel no outro nunca executa diretamente: abre diálogo local com Copiar, Mover e Cancelar. Mesmo drive sugere Mover; drives diferentes sugerem Copiar.
+- Detalhes continuam drawer/painel interno e não alteram taskbar ou canva da aplicação.
+- Quando a largura não comportar dois painéis com conteúdo útil, o segundo painel muda para drawer/modal, conforme regra responsiva.

@@ -26,3 +26,11 @@
 
 - A feature não define LGPD ou consentimento, conforme decisão de escopo vigente da plataforma; este checklist cobre somente os requisitos técnicos de segurança autorizados.
 - Itens `{auto}` foram resolvidos com as referências indicadas.
+
+## Evolução unificada — 2026-09-30
+
+- [x] CHK013 - O catálogo de drives é filtrado por acesso efetivo, sem tratar membership ou tenant informado pelo cliente como autorização suficiente? [Autorização, Spec FR-DRIVE-002 a 004, 020 a 024; Plan §Catálogo e alvos seguros] {auto}
+- [x] CHK014 - A relação direta de arquivo está limitada a `READ` e impede que o destinatário descubra ou altere pasta, ancestrais, irmãos e posse de origem? [Privacidade, Spec FR-DRIVE-033; Data Model §Evolução unificada; Research §Decisão 8] {auto}
+- [x] CHK015 - A autorização de origem e destino é revalidada antes do commit lógico de transferência e revogação resulta em falha íntegra? [Autorização, Spec FR-DRIVE-035; Plan §Transferência lógica e reservas] {auto}
+- [x] CHK016 - A reserva persistente bloqueia somente mutações intersectantes, preserva leitura autorizada e possui lease/recovery para não produzir bloqueio permanente? [Concorrência, Spec FR-DRIVE-034 e 036; Data Model §Nova entidade file_workspaceTransfer] {auto}
+- [x] CHK017 - Status, erros, progresso e telemetria de transferência excluem titular, item, caminho, hash, conteúdo e identificação de operação concorrente? [Privacidade, Plan §Convenções de Borda; Interface INT-WEB-DRIVE-003 e 005] {auto}

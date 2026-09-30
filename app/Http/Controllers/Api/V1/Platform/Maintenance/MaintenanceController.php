@@ -13,6 +13,7 @@ use App\Services\Maintenance\MaintenanceAdministrativeAuditView;
 use App\Services\Maintenance\MaintenanceExecutionView;
 use App\Services\Maintenance\MaintenanceHubService;
 use App\Services\Maintenance\MaintenanceRoutineDetail;
+use App\Services\Maintenance\PersonAuditRetentionMaintenanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -91,6 +92,7 @@ class MaintenanceController extends Controller
         return match ($routineKey) {
             FinancialInstitutionMaintenanceService::ROUTINE_KEY => $hub->financialInstitutionCatalog($principal),
             IbgeTerritoryMaintenanceService::ROUTINE_KEY => $hub->ibgeTerritoryCatalog($principal),
+            PersonAuditRetentionMaintenanceService::ROUTINE_KEY => $hub->personAuditRetentionCatalog($principal),
             default => null,
         };
     }

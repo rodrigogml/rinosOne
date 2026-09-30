@@ -29,6 +29,15 @@ describe('workspace runtime store', () => {
         expect(availableWorkspaceDestinations([personal, tenant, domain], { tenantId: 1, domainAccess: true })).toEqual([personal, tenant, domain]);
     });
 
+    it('does not expose the access-administration entry until its minimum capability is projected', () => {
+        const accessAdministration = workspaceDestinations.find((candidate) => candidate.id === 'tenant.authorization-administration')!;
+        const store = useWorkspaceStore();
+
+        expect(availableWorkspaceDestinations([accessAdministration], { tenantId: 1 })).toEqual([]);
+        expect(availableWorkspaceDestinations([accessAdministration], { tenantId: 1, canReadAuthorization: true })).toEqual([accessAdministration]);
+        expect(store.openDestination(accessAdministration, { tenantId: 1 })).toBeNull();
+    });
+
     it('keeps navigation contexts aligned with destination visibility', () => {
         const categories = [
             { id: 'personal', scope: 'personal' as const, scopeLabel: 'Pessoal', titleKey: 'workspace', icon: 'overview' },
@@ -50,9 +59,12 @@ describe('workspace runtime store', () => {
         ]);
         expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
             'personal.drive',
+            'personal.authorization-administration',
             'tenant.drive',
+            'tenant.people',
             'tenant.authorization-administration',
             'platform.maintenance',
+            'platform.authorization-administration',
         ]);
         expect(workspaceDestinations.find((candidate) => candidate.id === 'personal.drive')).toMatchObject({
             label: 'Rinos Drive Pessoal',

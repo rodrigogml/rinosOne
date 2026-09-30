@@ -9,8 +9,8 @@ import { useTenantContextStore } from '../../../resources/js/tenant/tenantContex
 vi.mock('axios', () => ({ default: { delete: vi.fn(), get: vi.fn(), post: vi.fn() } }));
 
 const http = axios as unknown as { delete: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
-const tenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, canManageAvailability: true };
-const context = { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: true }, availableModules: [] };
+const tenant = { id: 1, displayName: 'Oficina Rubi', state: 'ACTIVE', selectable: true, canManageAvailability: true, canReadAuthorization: true };
+const context = { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: true, canReadAuthorization: true }, availableModules: [] };
 
 function mountSelector() {
     const pinia = createPinia();

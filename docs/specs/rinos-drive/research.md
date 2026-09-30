@@ -64,3 +64,59 @@
 **Alternativas consideradas**:
 
 - Gerar miniaturas apenas para imagens: rejeitada por criar comportamento inconsistente e antecipar uma cadeia de processamento ainda não especificada.
+
+## Decisão 7 — Catálogo unificado e lazy de drives
+
+**Decisão**: uma janela global obtém um catálogo filtrado de drives acessíveis e carrega cada árvore/localização somente quando o painel navega até ela. A organização ativa em outros módulos não é entrada desse catálogo.
+
+**Racional**: uma única ferramenta reduz duplicação visual e permite comparar workspaces. Carregar todas as árvores antecipadamente ampliaria latência e exposição de metadados; membership isolada não é suficiente para exibir uma raiz Work.
+
+**Alternativas consideradas**:
+
+- Continuar com uma janela por organização ativa: rejeitada por duplicar acesso e impedir comparação natural entre drives.
+- Carregar todos os arquivos de todos os drives ao abrir: rejeitada por custo e risco de enumeração.
+
+## Decisão 8 — Arquivo como recurso compartilhável somente leitura
+
+**Decisão**: `file_filePossession` recebe adapter de autorização próprio para relação direta `READ`. O item aparece em Compartilhados comigo e pode ser baixado, exportado ou copiado, mas não sofre alteração no workspace de origem.
+
+**Racional**: compartilhar um arquivo isolado não pode conceder navegação à pasta, nem permitir que o destinatário modifique o acervo de outro responsável. A futura edição online terá contrato e lifecycle independentes.
+
+**Alternativas consideradas**:
+
+- Exigir que todo compartilhamento seja de pasta: rejeitada por não atender a necessidade de encontrar um arquivo isolado.
+- Conceder `EDIT` direto no arquivo: rejeitada nesta fase por misturar colaboração de conteúdo com operação de organização.
+
+## Decisão 9 — Transferência inter-drive é lógica e assíncrona
+
+**Decisão**: cópia/movimento entre drives usa uma operação persistente em fila. Ela cria ou libera posses e referências sem mover bytes de `file_fileContent`; a janela somente acompanha progresso seguro.
+
+**Racional**: os workspaces usam a mesma fundação deduplicada. Um job persistente mantém a operação ativa após fechar a interface e permite árvore grande, retry e revalidação sem bloquear a requisição HTTP.
+
+**Alternativas consideradas**:
+
+- Copiar bytes entre backends: rejeitada por contrariar deduplicação e gerar custo sem valor.
+- Executar toda transferência na requisição: rejeitada por timeout, indisponibilidade e ausência de recuperação.
+
+## Decisão 10 — Reserva de ramo com lease renovável
+
+**Decisão**: uma transferência reserva os ramos de origem e destino de forma exclusiva antes de executar. A reserva tem lease renovável; rotina agendada recupera ou falha operações abandonadas e libera os ramos.
+
+**Racional**: o bloqueio lógico evita que operações concorrentes alterem parte de uma árvore que já está comprometida, sem manter transação de banco aberta durante todo o job. O lease evita bloqueio eterno após falha de worker.
+
+**Alternativas consideradas**:
+
+- Transação aberta até terminar a transferência: rejeitada por locks longos, deadlocks e indisponibilidade.
+- Lock em cache sem persistência: rejeitada por não sobreviver reinício nem oferecer auditoria/recovery.
+- Liberação manual por administrador: rejeitada por risco operacional e custo desnecessário.
+
+## Decisão 11 — Revalidar autorização antes da confirmação
+
+**Decisão**: origem e destino são autorizados ao solicitar a operação e imediatamente antes do commit lógico. Revogação no intervalo falha a transferência sem ativar destino parcial ou remover a origem.
+
+**Racional**: reserva protege consistência, não substitui autorização. A segunda decisão preserva o princípio de revogação efetiva na próxima operação relevante.
+
+**Alternativas consideradas**:
+
+- Concluir com a autorização da solicitação: rejeitada por permitir alteração depois de revogação.
+- Impedir revogação enquanto houver operação: rejeitada por transformar operação de arquivo em bloqueio administrativo.

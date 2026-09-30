@@ -21,6 +21,7 @@ final class MaintenanceHubService
         private readonly AuthorizationService $authorization,
         private readonly FinancialInstitutionMaintenanceService $financialInstitutionMaintenance,
         private readonly IbgeTerritoryMaintenanceService $ibgeTerritoryMaintenance,
+        private readonly PersonAuditRetentionMaintenanceService $personAuditRetention,
     ) {}
 
     /**
@@ -31,6 +32,7 @@ final class MaintenanceHubService
         return array_values(array_filter([
             $this->financialInstitutionCatalog($principal),
             $this->ibgeTerritoryCatalog($principal),
+            $this->personAuditRetentionCatalog($principal),
         ]));
     }
 
@@ -92,6 +94,27 @@ final class MaintenanceHubService
             description: 'Atualiza o catálogo territorial global com dados oficiais do IBGE.',
             state: $lastExecution === null ? 'NOT_EXECUTED' : ($lastExecution->completedAt === null ? 'RUNNING' : $lastExecution->state),
             scheduleDescription: 'Inicial automática e mensal',
+            supportsManualSynchronization: false,
+            lastExecution: $lastExecution === null ? null : $this->executionView($lastExecution),
+            executionHistory: $executionHistory->map(fn (MaintenanceExecutionHistory $execution): MaintenanceExecutionView => $this->executionView($execution))->all(),
+            administrativeAudits: [],
+        );
+    }
+
+    public function personAuditRetentionCatalog(User $principal, int $historyLimit = 20): ?MaintenanceRoutineDetail
+    {
+        if (! $this->authorization->check($principal, PersonAuditRetentionMaintenanceService::READ_PERMISSION_KEY, AuthorizationScope::Platform)->allowed) {
+            return null;
+        }
+        $executionHistory = MaintenanceExecutionHistory::query()->where('routineKey', PersonAuditRetentionMaintenanceService::ROUTINE_KEY)->orderByDesc('startedAt')->limit($this->validatedLimit($historyLimit))->get();
+        $lastExecution = $executionHistory->first();
+
+        return new MaintenanceRoutineDetail(
+            routineKey: PersonAuditRetentionMaintenanceService::ROUTINE_KEY,
+            title: 'Auditoria de Pessoas',
+            description: 'Remove eventos vencidos conforme a política de retenção configurada.',
+            state: $lastExecution === null ? 'NOT_EXECUTED' : ($lastExecution->completedAt === null ? 'RUNNING' : $lastExecution->state),
+            scheduleDescription: 'Diária',
             supportsManualSynchronization: false,
             lastExecution: $lastExecution === null ? null : $this->executionView($lastExecution),
             executionHistory: $executionHistory->map(fn (MaintenanceExecutionHistory $execution): MaintenanceExecutionView => $this->executionView($execution))->all(),

@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia } from 'pinia';
 import WorkspaceStage from '../../../resources/js/design-system/WorkspaceStage.vue';
+import AuthorizationAdministrationSurface from '../../../resources/js/authorization/AuthorizationAdministrationSurface.vue';
 import type { WorkspaceSurface } from '../../../resources/js/workspace/workspaceTypes';
 import { i18n } from '../../../resources/js/i18n';
 
@@ -51,6 +52,18 @@ describe('WorkspaceStage', () => {
         });
 
         expect(wrapper.get('.workspace-stage__header img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_48.png');
+    });
+
+    it('returns safely to the workspace when the authorization surface loses access', async () => {
+        const wrapper = mount(WorkspaceStage, {
+            props: { surface: { ...activeSurface, destinationId: 'tenant.authorization-administration', scope: 'tenant', tenantId: 7 } },
+            global: { plugins: [createPinia(), i18n] },
+        });
+
+        wrapper.findComponent(AuthorizationAdministrationSurface).vm.$emit('accessDenied');
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.emitted('requestClose')).toEqual([['surface-1']]);
     });
 
 });

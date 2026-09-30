@@ -39,6 +39,13 @@ return [
         'temporaryRetentionMinutes' => (int) env('DRIVE_UPLOAD_TEMPORARY_RETENTION_MINUTES', 60),
     ],
 
+    'workspaceExport' => [
+        'lifetimeMinutes' => (int) env('DRIVE_EXPORT_LIFETIME_MINUTES', 60),
+        'maximumItems' => (int) env('DRIVE_EXPORT_MAXIMUM_ITEMS', 100),
+        'maximumBytes' => (int) env('DRIVE_EXPORT_MAXIMUM_BYTES', 1073741824),
+        'cleanupIntervalMinutes' => (int) env('DRIVE_EXPORT_CLEANUP_INTERVAL_MINUTES', 15),
+    ],
+
     'maintenance' => [
         'retentionPurgeIntervalMinutes' => (int) env('FILE_STORAGE_RETENTION_PURGE_INTERVAL_MINUTES', 60),
         'reconciliationIntervalMinutes' => (int) env('FILE_STORAGE_RECONCILIATION_INTERVAL_MINUTES', 60),

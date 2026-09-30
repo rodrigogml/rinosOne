@@ -61,6 +61,16 @@ class FileStorageConfigurationValidator
             throw new LogicException('The Rinos Drive upload configuration is invalid.');
         }
 
+        $workspaceExport = config('file-storage.workspaceExport');
+        if (! is_array($workspaceExport)
+            || ! $this->isPositiveInteger($workspaceExport['lifetimeMinutes'] ?? null)
+            || ! $this->isPositiveInteger($workspaceExport['maximumItems'] ?? null)
+            || ! $this->isPositiveInteger($workspaceExport['maximumBytes'] ?? null)
+            || ! $this->isPositiveInteger($workspaceExport['cleanupIntervalMinutes'] ?? null)
+            || $workspaceExport['cleanupIntervalMinutes'] > 60) {
+            throw new LogicException('The Rinos Drive export configuration is invalid.');
+        }
+
         $compressionRules = config('file-storage.compression.rules');
 
         if (! is_array($compressionRules)) {

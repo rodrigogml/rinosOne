@@ -16,7 +16,7 @@ const http = axios as unknown as {
 const tenantContext = {
     tenant: { id: 1, displayName: 'Oficina Rubi' },
     membership: { id: 1 },
-    capabilities: { canManageAvailability: true },
+    capabilities: { canManageAvailability: true, canReadAuthorization: true },
     availableModules: [],
 };
 
