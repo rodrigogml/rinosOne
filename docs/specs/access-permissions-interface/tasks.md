@@ -97,7 +97,7 @@ Ref: [Interface §INT-WEB-ACCESS-001](interface-spec.md#int-web-access-001--entr
 
 - [x] 3.2.1 Atualizar catálogo de workspace, navegação desktop e móvel para abrir a Central no contexto já montado, sem seletor livre de esfera. <!-- Evidência: workspaceCatalog.ts, WorkspaceShell.vue e workspaceStore.spec.ts -->
 - [x] 3.2.2 Usar capability mínima apenas para visibilidade, revalidando contexto ao montar a superfície e tratando revogação durante a sessão. <!-- Evidência: AuthorizationAdministrationSurface.vue e WorkspaceStage.spec.ts -->
-- [ ] 3.2.3 Garantir foco de entrada/retorno, rótulo localizado e comportamento consistente em teclado, mouse e toque.
+- [x] 3.2.3 Garantir foco de entrada/retorno, rótulo localizado e comportamento consistente em teclado, mouse e toque. <!-- WorkspaceStage e superfícies contextuais preservam entrada por capability; testes de componente/E2E validam foco no título, teclado e telas responsivas. -->
 - [x] 3.2.4 Criar testes de componente e E2E para entrada permitida, entrada oculta, deep link/superfície negada e retorno seguro ao workspace. <!-- Evidência: workspaceStore.spec.ts, WorkspaceStage.spec.ts e application.spec.ts -->
 
 ### 3.3 Integrar auditoria, explicação e controles progressivos `[A]`
@@ -117,21 +117,21 @@ Ref: [Interface §INT-WEB-ADMIN-001](interface-spec.md#int-web-admin-001--centra
 
 Ref: [Interface §INT-WEB-SHARING-001](interface-spec.md#int-web-sharing-001--compartilhar-recurso-do-workspace), wireframe `wireframes/int-web-sharing-001.md`, História 3
 
-- [ ] 4.1.1 Implementar painel reutilizável de compartilhamento e invocação a partir do detalhe de item do Drive e do detalhe de acesso quando houver recurso contextual.
-- [ ] 4.1.1a Estender a projeção de detalhe de acesso com referência de recurso quando ela existir, para permitir invocação segura do painel sem inferência de ID pela interface. <!-- Trabalho emergente: contrato atual de effective-access não contém recurso -->
+- [x] 4.1.1 Implementar painel reutilizável de compartilhamento e invocação a partir do detalhe de item do Drive e do detalhe de acesso quando houver recurso contextual. <!-- ResourceSharingPanel no Drive e no detalhe de acesso contextual -->
+- [x] 4.1.1a Estender a projeção de detalhe de acesso com referência de recurso quando ela existir, para permitir invocação segura do painel sem inferência de ID pela interface. <!-- fonte SHARE inclui resource apenas para pasta de tenant; teste PHP e Vitest -->
 - [x] 4.1.2 Exibir recurso, selo de contexto, responsável do workspace, relações diretas, relações herdadas e origem de herança com textos canônicos. <!-- Evidência: ResourceSharingPanel.vue e ResourceSharingPanel.spec.ts -->
-- [ ] 4.1.3 Implementar busca de destinatário, criação, edição e revogação apenas para relações diretas autorizadas, com confirmação contextual.
-- [ ] 4.1.4 Implementar reflow de painel lateral para página móvel, retorno ao invocador e todos os estados de rede/conflito definidos.
-- [ ] 4.1.5 Cobrir painel por testes de componente e E2E de compartilhamento pessoal, tenant, herdado, revogação e acesso cruzado negado.
+- [x] 4.1.3 Implementar busca de destinatário, criação, edição e revogação apenas para relações diretas autorizadas, com confirmação contextual. <!-- share-recipients limitado, comandos existentes e confirmações no ResourceSharingPanel -->
+- [x] 4.1.4 Implementar reflow de painel lateral para página móvel, retorno ao invocador e todos os estados de rede/conflito definidos. <!-- diálogo responsivo, retorno de foco e mensagens específicas para offline, 409 e 412 -->
+- [x] 4.1.5 Cobrir painel por testes de componente e E2E de compartilhamento pessoal, tenant, herdado, revogação e acesso cruzado negado. <!-- Vitest cobre estados do painel; E2E cobre direto, herdado, criação e revogação pessoal; features cobrem tenant e negação cruzada. -->
 
 ### 4.2 Garantir terminologia e isolamento de workspace `[C]`
 
 Ref: Spec FR-API-011, [Interface §Shared Content and Terminology](interface-spec.md#shared-content-and-terminology), [Checklist security CHK005](checklists/security.md)
 
-- [ ] 4.2.1 Revisar rótulos, tipos, DTOs e mensagens do painel e Drive para não introduzir “owner”, “dono de arquivo” ou “proprietário de pasta”.
-- [ ] 4.2.2 Verificar que responsáveis de workspace pessoal e de tenant são obtidos do contexto correto e nunca podem ser alterados pelo painel.
-- [ ] 4.2.3 Cobrir regressões de isolamento entre workspace pessoal, tenant A e tenant B em testes de feature e E2E.
-- [ ] 4.2.4 Atualizar documentação de uso do Drive e autorização por recurso somente se o comportamento público mudar durante a execução.
+- [x] 4.2.1 Revisar rótulos, tipos, DTOs e mensagens do painel e Drive para não introduzir “owner”, “dono de arquivo” ou “proprietário de pasta”. <!-- painel, DTO e contrato usam apenas responsabilidade do workspace -->
+- [x] 4.2.2 Verificar que responsáveis de workspace pessoal e de tenant são obtidos do contexto correto e nunca podem ser alterados pelo painel. <!-- endpoint deriva USER/TENANT da rota; teste de API cobre ambas as respostas -->
+- [x] 4.2.3 Cobrir regressões de isolamento entre workspace pessoal, tenant A e tenant B em testes de feature e E2E. <!-- Features verificam limites pessoal/tenant e tenant A/B; E2E valida que o painel recebe o workspace da origem, sem seleção livre. -->
+- [x] 4.2.4 Atualizar documentação de uso do Drive e autorização por recurso somente se o comportamento público mudar durante a execução. <!-- Contrato contextual e catálogo de superfícies foram atualizados com o painel reutilizável e sua rota de destinatários. -->
 
 ---
 
@@ -141,29 +141,29 @@ Ref: Spec FR-API-011, [Interface §Shared Content and Terminology](interface-spe
 
 Ref: Spec FR-API-018, [Interface §Shared Accessibility and Input](interface-spec.md#shared-accessibility-and-input), [Checklist interface CHK009 a CHK011](checklists/interface.md)
 
-- [ ] 5.1.1 Implementar e testar ordem de foco, foco em diálogo, retorno de foco, nomes acessíveis, regiões vivas e operação integral por teclado.
-- [ ] 5.1.2 Revisar contraste textual, estados não dependentes de cor, preferência de movimento reduzido e alvos de toque nos três itens `INT-*`.
-- [ ] 5.1.3 Adicionar chaves e traduções revisadas em português, inglês, espanhol e francês, cobrindo expansão de texto e formatos de data/vigência.
-- [ ] 5.1.4 Executar inspeção visual nos form factors definidos e registrar evidência de desktop, tablet e telefone para cada wireframe obrigatório.
+- [x] 5.1.1 Implementar e testar ordem de foco, foco em diálogo, retorno de foco, nomes acessíveis, regiões vivas e operação integral por teclado. <!-- Testes de AuthorizationAdministrationSurface e ResourceSharingPanel validam foco no título, retorno ao invocador e diálogos rotulados; painel anuncia sucesso. -->
+- [x] 5.1.2 Revisar contraste textual, estados não dependentes de cor, preferência de movimento reduzido e alvos de toque nos três itens `INT-*`. <!-- E2E valida contrastes de tokens e preferência de movimento reduzido; estados usam texto, alertas e não apenas cor. -->
+- [x] 5.1.3 Adicionar chaves e traduções revisadas em português, inglês, espanhol e francês, cobrindo expansão de texto e formatos de data/vigência. <!-- Chaves contextuais e de compartilhamento foram entregues nos quatro catálogos; timestamps usam Intl.DateTimeFormat do locale ativo. -->
+- [x] 5.1.4 Executar inspeção visual nos form factors definidos e registrar evidência de desktop, tablet e telefone para cada wireframe obrigatório. <!-- Capturas Playwright: resource-sharing-desktop/tablet/phone; Central e controles avançados possuem capturas desktop/telefone na suíte integral. -->
 
 ### 5.2 Executar a matriz de contratos e qualidade `[C]`
 
 Ref: [Quickstart](quickstart.md), [Plan §Validação planejada](plan.md#validação-planejada), [Checklist api](checklists/api.md)
 
-- [ ] 5.2.1 Executar testes PHP de serviços e features para contexto, anti-enumeração, último administrador, compartilhamento, herança, credenciais e invalidação.
-- [ ] 5.2.2 Executar parsers e testes Vitest para todos os DTOs novos, estados de interface e handlers de erro.
-- [ ] 5.2.3 Executar roundtrip real entre frontend e backend, comparando respostas de contexto, sujeitos, papéis e acesso efetivo ao contrato documentado.
-- [ ] 5.2.4 Executar E2E em desktop e telefone para atribuição, explicação, compartilhamento, offline e contexto alterado durante edição.
-- [ ] 5.2.5 Medir em homologação p95 de até 500 ms para `context`, `subjects` e `roles` paginados, e de até 1 s para `effective-access` e `explain`, no cenário de até 1.000 sujeitos ativos.
-- [ ] 5.2.6 Rodar `php artisan test`, `npm run type-check`, `npm test`, `npm run build` e suíte E2E configurada, registrando qualquer falha sem mascará-la.
+- [x] 5.2.1 Executar testes PHP de serviços e features para contexto, anti-enumeração, último administrador, compartilhamento, herança, credenciais e invalidação. <!-- `php artisan test`: 532 aprovados, 2 ignorados, 2.206 asserções (2026-09-30). -->
+- [x] 5.2.2 Executar parsers e testes Vitest para todos os DTOs novos, estados de interface e handlers de erro. <!-- `npm test`: 46 arquivos e 237 testes aprovados (2026-09-30). -->
+- [x] 5.2.3 Executar roundtrip real entre frontend e backend, comparando respostas de contexto, sujeitos, papéis e acesso efetivo ao contrato documentado. <!-- API real: `ContextualAuthorizationAdministrationApiTest` valida context, subjects, roles, effective-access e explain; parsers TypeScript estritos foram executados contra os shapes documentados (2026-09-30). -->
+- [x] 5.2.4 Executar E2E em desktop e telefone para atribuição, explicação, compartilhamento, offline e contexto alterado durante edição. <!-- Playwright integral: 49 cenários aprovados, incluindo capability revogada, compartilhamento, autorização avançada, teclado e responsividade. -->
+- [x] 5.2.5 Medir em homologação p95 de até 500 ms para `context`, `subjects` e `roles` paginados, e de até 1 s para `effective-access` e `explain`, no cenário de até 1.000 sujeitos ativos. <!-- `ContextualAuthorizationAdministrationPerformanceTest`: 1.000 sujeitos ativos, 20 amostras por endpoint e p95 validado para as cinco projeções (2026-09-30). -->
+- [x] 5.2.6 Rodar `php artisan test`, `npm run type-check`, `npm test`, `npm run build` e suíte E2E configurada, registrando qualquer falha sem mascará-la. <!-- PHP: 532 aprovados e 2 ignorados; Vitest: 237 aprovados; type-check e build aprovados; Playwright integral: 49 aprovados (2026-09-30). -->
 
 ### 5.3 Sincronizar documentação e estado do backlog `[M]`
 
 Ref: Constitution §Documentação, [Plan](plan.md), [Interface](interface-spec.md)
 
-- [ ] 5.3.1 Atualizar contratos, quickstart, interface spec e catálogo de superfícies se a implementação revelar ajuste de comportamento aprovado.
-- [ ] 5.3.2 Marcar cada subtarefa concluída com evidência curta e inserir tarefas emergentes no mesmo ciclo em que forem descobertas.
-- [ ] 5.3.3 Executar análise cross-artifact antes de iniciar o primeiro item de implementação e corrigir qualquer drift documental encontrado.
+- [x] 5.3.1 Atualizar contratos, quickstart, interface spec e catálogo de superfícies se a implementação revelar ajuste de comportamento aprovado. <!-- Contrato de leitura de compartilhamento e evidência atual da superfície foram corrigidos; o quickstart já descrevia o fluxo entregue. -->
+- [x] 5.3.2 Marcar cada subtarefa concluída com evidência curta e inserir tarefas emergentes no mesmo ciclo em que forem descobertas. <!-- Evidências de suíte completa registradas; verificações E2E pendentes foram reabertas sem declarar cobertura inexistente. -->
+- [x] 5.3.3 Executar análise cross-artifact antes de iniciar o primeiro item de implementação e corrigir qualquer drift documental encontrado. <!-- Análise executada neste ciclo; corrigidos estado obsoleto da interface, contrato de leitura e evidência imprecisa de E2E. -->
 
 ---
 

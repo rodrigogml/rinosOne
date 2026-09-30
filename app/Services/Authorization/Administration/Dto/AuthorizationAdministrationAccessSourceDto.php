@@ -15,15 +15,18 @@ final readonly class AuthorizationAdministrationAccessSourceDto
         public string $displayName,
         public string $scope,
         public ?DateTimeInterface $expiresAt = null,
+        /** @var array{resourceType: string, resourceId: int}|null */
+        public ?array $resource = null,
     ) {
         if (! in_array($type, ['ROLE', 'GROUP', 'DIRECT_GRANT', 'SHARE', 'DELEGATION', 'POLICY'], true)
             || ! in_array($scope, ['PERSONAL', 'TENANT', 'PLATFORM'], true)
-            || trim($displayName) === '') {
+            || trim($displayName) === ''
+            || ($resource !== null && (! is_string($resource['resourceType'] ?? null) || trim($resource['resourceType']) === '' || ! is_int($resource['resourceId'] ?? null) || $resource['resourceId'] < 1))) {
             throw new InvalidArgumentException('Invalid authorization access source projection.');
         }
     }
 
-    /** @return array{type: string, displayName: string, scope: string, expiresAt: ?string} */
+    /** @return array{type: string, displayName: string, scope: string, expiresAt: ?string, resource: ?array{resourceType: string, resourceId: int}} */
     public function toArray(): array
     {
         return [
@@ -31,6 +34,7 @@ final readonly class AuthorizationAdministrationAccessSourceDto
             'displayName' => $this->displayName,
             'scope' => $this->scope,
             'expiresAt' => $this->expiresAt?->format(DATE_ATOM),
+            'resource' => $this->resource,
         ];
     }
 }

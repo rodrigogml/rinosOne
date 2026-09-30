@@ -8,7 +8,7 @@ import AdvancedAuthorizationControls from '../../../resources/js/authorization/A
 
 vi.mock('axios');
 const surface = { id: 'authorization-1', destinationId: 'tenant.authorization-administration', scope: 'tenant' as const, tenantId: 18, titleKey: 'access.authorization.title', label: 'Segurança', icon: 'settings', dirty: false, status: 'active' as const };
-const i18n = createI18n({ legacy: false, locale: 'pt-BR', messages: { 'pt-BR': { access: { authorization: { loading: 'Carregando', offline: 'Offline', requestFailed: 'Falhou', accessDenied: 'Negado', stale: 'Desatualizado', reload: 'Recarregar', filter: 'Filtrar', roleAssigned: 'Papel associado', assignRole: 'Associar papel', confirm: 'Confirmar', cancel: 'Cancelar', audit: 'Auditoria', emptyAudit: 'Nenhum evento', occurredAt: 'Ocorrido em', operation: 'Operação', target: 'Alvo', lastAdministrator: 'Último administrador' } } } } });
+const i18n = createI18n({ legacy: false, locale: 'pt-BR', messages: { 'pt-BR': { access: { authorization: { loading: 'Carregando', offline: 'Offline', requestFailed: 'Falhou', accessDenied: 'Negado', stale: 'Desatualizado', reload: 'Recarregar', filter: 'Filtrar', roleAssigned: 'Papel associado', assignRole: 'Associar papel', confirm: 'Confirmar', cancel: 'Cancelar', audit: 'Auditoria', emptyAudit: 'Nenhum evento', occurredAt: 'Ocorrido em', operation: 'Operação', target: 'Alvo', lastAdministrator: 'Último administrador', contextual: { noExpiration: 'Sem expiração', peopleAndIdentities: 'Pessoas e identidades', searchSubject: 'Buscar pessoa ou identidade', emptySubjects: 'Nenhuma pessoa ou identidade disponível neste contexto.', serviceIdentity: 'Identidade de serviço', person: 'Pessoa', viewAccess: 'Ver acessos', participantPagination: 'Paginação de participantes', subjectCanDo: 'O que {name} pode fazer?', accessValidity: 'Vigência do acesso: {value}.', whyAccess: 'Por que este acesso existe?', emptySources: 'Nenhuma fonte adicional de acesso foi identificada.', openSharing: 'Abrir compartilhamento', effectiveCapabilities: 'Capacidades efetivas', emptyCapabilities: 'Nenhuma capacidade efetiva disponível.' } } } } } });
 const context = { scope: 'TENANT', tenantId: 18, displayName: 'Empresa', workspaceKind: 'TENANT', capabilities: { canReadAccess: true, canManageRoles: true, canManageSharing: true, canUseAdvancedControls: false } };
 const subject = { subjectId: 44, subjectType: 'USER', displayName: 'Ana', accessSources: [], effectiveCapabilities: [], expiresAt: null };
 const subjectWithSources = { ...subject, accessSources: [{ type: 'GROUP', displayName: 'Financeiro', scope: 'TENANT', expiresAt: '2026-10-01T10:00:00Z' }, { type: 'DIRECT_GRANT', displayName: 'Acesso excepcional', scope: 'TENANT', expiresAt: null }], expiresAt: '2026-10-02T10:00:00Z' };
@@ -56,6 +56,17 @@ describe('AuthorizationAdministrationSurface', () => {
         expect(wrapper.text()).toContain('Financeiro');
         expect(wrapper.text()).toContain('Acesso excepcional');
         expect(wrapper.text()).toContain('TENANT');
+    });
+
+    it('opens a folder sharing panel only from a server-provided contextual resource reference', async () => {
+        const wrapper = mountSurface(); await flushPromises();
+        const sharedSubject = { ...subject, accessSources: [{ type: 'SHARE', displayName: 'Pasta compartilhada diretamente', scope: 'TENANT', expiresAt: null, resource: { resourceType: 'FOLDER', resourceId: 31 } }] };
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { effectiveAccess: { subject: sharedSubject, effectiveCapabilities: [] } } }).mockResolvedValueOnce({ data: { workspaceResponsible: { type: 'TENANT', id: 18, displayName: 'Empresa' }, shares: [] } });
+        await wrapper.get('.authorization-administration__subject-list .ui-button').trigger('click'); await flushPromises();
+        await wrapper.get('.authorization-administration__result .ui-button').trigger('click'); await flushPromises();
+
+        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/tenants/18/authorization/resources/FOLDER/31/shares');
+        expect(wrapper.text()).toContain('Pasta compartilhada');
     });
 
     it('confirms an assignment using the selected role and contextual version', async () => {

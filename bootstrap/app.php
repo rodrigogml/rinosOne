@@ -9,6 +9,7 @@ use App\Domain\Profile\Exception\AvatarProcessingUnavailableException;
 use App\Domain\Profile\Exception\AvatarValidationException;
 use App\Http\Middleware\AuthenticateServiceApiKey;
 use App\Http\Middleware\EnforceJsonRequestSize;
+use App\Http\Middleware\EnsureGlobalSchemaCompatibility;
 use App\Http\Middleware\LimitAuthenticatedApiRequests;
 use App\Http\Middleware\MeasurePersonApiRequest;
 use App\Http\Middleware\NormalizePersistentAuthenticationSession;
@@ -17,15 +18,15 @@ use App\Http\Middleware\ResolvePersonTenantContext;
 use App\Http\Middleware\RestorePersistentAuthentication;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Responses\ApiErrorResponse;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -45,7 +46,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->appendToGroup('web', NormalizePersistentAuthenticationSession::class);
         $middleware->prependToPriorityList(Authenticate::class, RestorePersistentAuthentication::class);
-        $middleware->append(SecurityHeaders::class);
+        $middleware->prepend(EnsureGlobalSchemaCompatibility::class);
+        $middleware->prepend(SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $exception, Request $request) {

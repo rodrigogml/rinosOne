@@ -27,6 +27,7 @@ class DriveWorkspaceCommandService
         private readonly DriveWorkspaceNameResolver $names,
         private readonly FileStoragePossessionLifecycleService $possessions,
         private readonly WorkspaceFolderService $folders,
+        private readonly DriveTransferReservationService $transferReservations,
     ) {}
 
     public function createFolder(User $principal, DriveWorkspaceTarget $target, string $displayName, ?int $parentFolderId): WorkspaceFolder
@@ -34,6 +35,7 @@ class DriveWorkspaceCommandService
         return DB::transaction(function () use ($principal, $target, $displayName, $parentFolderId): WorkspaceFolder {
             $ownerTarget = $this->targetForParent($principal, $target, $parentFolderId);
             $this->lockWorkspace($ownerTarget);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $parentFolderId);
             $this->assertEditableLocation($principal, $ownerTarget, $parentFolderId);
             $name = $this->names->resolve($ownerTarget, $parentFolderId, $displayName);
 
@@ -58,6 +60,7 @@ class DriveWorkspaceCommandService
     {
         $ownerTarget = $this->targetForParent($principal, $target, $parentFolderId);
         $this->lockWorkspace($ownerTarget);
+        $this->transferReservations->assertMutationAvailable($ownerTarget, $parentFolderId);
         $this->assertEditableLocation($principal, $ownerTarget, $parentFolderId);
 
         return $ownerTarget;
@@ -69,6 +72,7 @@ class DriveWorkspaceCommandService
             $folder = $this->activeFolder($target, $folderId);
             $ownerTarget = $this->targetForFolder($target, $folder);
             $this->lockWorkspace($ownerTarget);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $folder->id);
             $this->assertEditableFolder($principal, $ownerTarget, $folder);
             $folder->forceFill(['displayName' => $this->names->resolve($ownerTarget, $folder->idParentFolder, $displayName, $folder->id)])->save();
 
@@ -82,6 +86,8 @@ class DriveWorkspaceCommandService
             $folder = $this->activeFolder($target, $folderId);
             $ownerTarget = $this->targetForFolder($target, $folder);
             $this->lockWorkspace($ownerTarget);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $folder->id);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $destinationFolderId);
             $this->assertEditableFolder($principal, $ownerTarget, $folder);
             $this->assertEditableLocation($principal, $ownerTarget, $destinationFolderId);
             $this->assertDestinationIsNotInFolderTree($folder, $destinationFolderId);
@@ -100,6 +106,8 @@ class DriveWorkspaceCommandService
             $possession = $this->activePossession($target, $possessionId);
             $ownerTarget = $this->targetForPossession($target, $possession);
             $this->lockWorkspace($ownerTarget);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $possession->idWorkspaceFolder);
+            $this->transferReservations->assertMutationAvailable($ownerTarget, $destinationFolderId);
             $this->assertEditablePossession($principal, $ownerTarget, $possession);
             $this->assertEditableLocation($principal, $ownerTarget, $destinationFolderId);
             $possession->forceFill([
@@ -160,6 +168,7 @@ class DriveWorkspaceCommandService
         $folder = $this->folder($target, $folderId, $state);
         $ownerTarget = $this->targetForFolder($target, $folder);
         $this->lockWorkspace($ownerTarget);
+        $this->transferReservations->assertMutationAvailable($ownerTarget, $folder->id);
         $this->assertEditableFolder($principal, $ownerTarget, $folder);
 
         if ($operation === 'trash') {
@@ -183,6 +192,7 @@ class DriveWorkspaceCommandService
         $possession = $this->possession($target, $possessionId, $state);
         $ownerTarget = $this->targetForPossession($target, $possession);
         $this->lockWorkspace($ownerTarget);
+        $this->transferReservations->assertMutationAvailable($ownerTarget, $possession->idWorkspaceFolder);
         $this->assertEditablePossession($principal, $ownerTarget, $possession);
         $request = new FilePossessionOperationRequest($ownerTarget->ownerType, $ownerTarget->ownerId, $possession->id);
 

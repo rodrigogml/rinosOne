@@ -14,7 +14,7 @@ const context = {
 };
 const subject = {
     subjectId: 7, subjectType: 'USER', displayName: 'Ana', effectiveCapabilities: ['tenant.authorization.read'], expiresAt: null,
-    accessSources: [{ type: 'ROLE', displayName: 'Administradores', scope: 'TENANT', expiresAt: '2026-01-01T00:00:00+00:00' }],
+    accessSources: [{ type: 'ROLE', displayName: 'Administradores', scope: 'TENANT', expiresAt: '2026-01-01T00:00:00+00:00', resource: null }],
 };
 
 describe('contextual authorization administration parsers', () => {

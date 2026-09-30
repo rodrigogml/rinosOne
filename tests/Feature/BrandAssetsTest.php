@@ -13,6 +13,7 @@ class BrandAssetsTest extends TestCase
         $this->assertFileExists($publicPath.'/assets/brand/logo-768.png');
         $this->assertFileExists($publicPath.'/assets/brand/icon-32.png');
         $this->assertFileExists($publicPath.'/assets/brand/icon-180.png');
+        $this->assertFileExists($publicPath.'/assets/brand/crest-192.png');
         $this->assertFileExists($publicPath.'/assets/brand/icon-192.png');
         $this->assertFileExists($publicPath.'/assets/brand/icon-512.png');
         $this->assertFileExists($publicPath.'/favicon.ico');
@@ -22,7 +23,7 @@ class BrandAssetsTest extends TestCase
         $icon512Dimensions = getimagesize($publicPath.'/assets/brand/icon-512.png');
 
         $this->assertSame(768, $logoDimensions[0]);
-        $this->assertSame(380, $logoDimensions[1]);
+        $this->assertSame(162, $logoDimensions[1]);
         $this->assertSame(192, $icon192Dimensions[0]);
         $this->assertSame(192, $icon192Dimensions[1]);
         $this->assertSame(512, $icon512Dimensions[0]);
@@ -31,7 +32,7 @@ class BrandAssetsTest extends TestCase
         $manifest = json_decode(file_get_contents($publicPath.'/manifest.webmanifest'), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame('Rinos One', $manifest['name']);
-        $this->assertSame('/assets/brand/icon-192.png', $manifest['icons'][0]['src']);
-        $this->assertSame('/assets/brand/icon-512.png', $manifest['icons'][1]['src']);
+        $this->assertSame('/assets/brand/icon-192.png?v=20260930', $manifest['icons'][0]['src']);
+        $this->assertSame('/assets/brand/icon-512.png?v=20260930', $manifest['icons'][1]['src']);
     }
 }

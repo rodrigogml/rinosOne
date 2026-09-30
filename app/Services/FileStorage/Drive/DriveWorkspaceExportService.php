@@ -2,16 +2,19 @@
 
 namespace App\Services\FileStorage\Drive;
 
+use App\Contracts\FileStorage\V1\FilePrivateReadRequest;
+use App\Domain\Authorization\AuthorizationScope;
+use App\Domain\Authorization\Resource\ResourceReference;
 use App\Domain\FileStorage\Drive\DriveWorkspaceTarget;
 use App\Domain\FileStorage\Exception\DriveWorkspaceCommandException;
-use App\Contracts\FileStorage\V1\FilePrivateReadRequest;
-use App\Jobs\FileStorage\GenerateWorkspaceExport;
 use App\Infrastructure\FileStorage\FileStorageBackendResolver;
-use App\Services\FileStorage\FileStoragePrivateReadService;
+use App\Jobs\FileStorage\GenerateWorkspaceExport;
 use App\Models\FileStorage\StoredFilePossession;
-use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\FileStorage\WorkspaceExport;
+use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\User;
+use App\Services\Authorization\AuthorizationService;
+use App\Services\FileStorage\FileStoragePrivateReadService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -24,6 +27,7 @@ class DriveWorkspaceExportService
         private readonly DriveWorkspaceProjectionService $projections,
         private readonly FileStoragePrivateReadService $privateReads,
         private readonly FileStorageBackendResolver $backends,
+        private readonly AuthorizationService $authorization,
     ) {}
 
     /**
@@ -59,6 +63,54 @@ class DriveWorkspaceExportService
         return $export;
     }
 
+    /**
+     * Registers a private export of direct-file shares from one origin workspace.
+     *
+     * @param  list<array{type: string, id: int}>  $items
+     */
+    public function requestDirectFiles(User $principal, array $items): WorkspaceExport
+    {
+        if (count($items) < 2 || count($items) > (int) config('file-storage.workspaceExport.maximumItems', 100)) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
+        }
+
+        return DB::transaction(function () use ($principal, $items): WorkspaceExport {
+            $target = null;
+            $manifest = [];
+            foreach ($items as $item) {
+                if ($item['type'] !== 'file') {
+                    throw new DriveWorkspaceCommandException('DRIVE_ACCESS_DENIED');
+                }
+                $possession = $this->directSharedPossession($principal, $item['id']);
+                $itemTarget = $possession->idTenant === null
+                    ? DriveWorkspaceTarget::personal((int) $possession->idUser)
+                    : DriveWorkspaceTarget::work((int) $possession->idTenant);
+                if ($target !== null && ($target->scope !== $itemTarget->scope || $target->ownerId !== $itemTarget->ownerId)) {
+                    throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
+                }
+                $target = $itemTarget;
+                $manifest[] = ['type' => 'file', 'id' => $possession->id, 'directShare' => true];
+            }
+            if ($target === null) {
+                throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
+            }
+
+            $export = WorkspaceExport::query()->create([
+                'publicId' => (string) Str::ulid(),
+                'idRequestingUser' => $principal->id,
+                'idTenant' => $target->tenantId,
+                'workspaceScope' => $target->scope->value,
+                'selectionManifest' => $manifest,
+                'state' => 'PENDING',
+                'displayName' => 'Rinos Drive export.zip',
+                'expiresAt' => now()->addMinutes((int) config('file-storage.workspaceExport.lifetimeMinutes', 60)),
+            ]);
+            GenerateWorkspaceExport::dispatch($export->publicId)->afterCommit();
+
+            return $export;
+        });
+    }
+
     /** Returns only an export requested by this user in this exact workspace context. */
     public function status(User $principal, DriveWorkspaceTarget $target, string $publicId): WorkspaceExport
     {
@@ -69,7 +121,9 @@ class DriveWorkspaceExportService
             ->where('idTenant', $target->tenantId)
             ->first();
 
-        if ($export === null || $export->expiresAt->isPast()) throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_FOUND');
+        if ($export === null || $export->expiresAt->isPast()) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_FOUND');
+        }
 
         return $export;
     }
@@ -79,7 +133,9 @@ class DriveWorkspaceExportService
     {
         return DB::transaction(function () use ($principal, $target, $publicId): WorkspaceExport {
             $export = $this->status($principal, $target, $publicId);
-            if ($export->state === 'PENDING') $export->update(['state' => 'CANCELLED']);
+            if ($export->state === 'PENDING') {
+                $export->update(['state' => 'CANCELLED']);
+            }
 
             return $export->refresh();
         });
@@ -89,13 +145,60 @@ class DriveWorkspaceExportService
     public function openDownload(User $principal, DriveWorkspaceTarget $target, string $publicId): array
     {
         $export = $this->status($principal, $target, $publicId);
-        if ($export->state !== 'READY' || $export->storageKey === null) throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        if ($export->state !== 'READY' || $export->storageKey === null) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        }
         try {
             $stream = $this->backends->disk()->readStream($export->storageKey);
         } catch (Throwable) {
             throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
         }
-        if (! is_resource($stream)) throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        if (! is_resource($stream)) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        }
+
+        return ['stream' => $stream, 'displayName' => $export->displayName];
+    }
+
+    /** Returns status only while every directly shared item remains authorized. */
+    public function statusDirect(User $principal, string $publicId): WorkspaceExport
+    {
+        $export = $this->directExport($principal, $publicId);
+        foreach ($export->selectionManifest as $item) {
+            $this->directSharedPossession($principal, (int) $item['id']);
+        }
+
+        return $export;
+    }
+
+    /** Cancels a pending direct-share export owned by the current principal. */
+    public function cancelDirect(User $principal, string $publicId): WorkspaceExport
+    {
+        return DB::transaction(function () use ($principal, $publicId): WorkspaceExport {
+            $export = $this->directExport($principal, $publicId);
+            if ($export->state === 'PENDING') {
+                $export->update(['state' => 'CANCELLED']);
+            }
+
+            return $export->refresh();
+        });
+    }
+
+    /** @return array{stream: resource, displayName: string} */
+    public function openDirectDownload(User $principal, string $publicId): array
+    {
+        $export = $this->statusDirect($principal, $publicId);
+        if ($export->state !== 'READY' || $export->storageKey === null) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        }
+        try {
+            $stream = $this->backends->disk()->readStream($export->storageKey);
+        } catch (Throwable) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        }
+        if (! is_resource($stream)) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_READY');
+        }
 
         return ['stream' => $stream, 'displayName' => $export->displayName];
     }
@@ -106,8 +209,12 @@ class DriveWorkspaceExportService
         WorkspaceExport::query()->where('expiresAt', '<=', now())->orderBy('id')->limit($batchSize)->get()->each(function (WorkspaceExport $export): void {
             DB::transaction(function () use ($export): void {
                 $locked = WorkspaceExport::query()->whereKey($export->id)->lockForUpdate()->first();
-                if ($locked === null || $locked->expiresAt->isFuture()) return;
-                if ($locked->storageKey !== null) $this->backends->disk()->delete($locked->storageKey);
+                if ($locked === null || $locked->expiresAt->isFuture()) {
+                    return;
+                }
+                if ($locked->storageKey !== null) {
+                    $this->backends->disk()->delete($locked->storageKey);
+                }
                 $locked->delete();
             });
         });
@@ -121,9 +228,13 @@ class DriveWorkspaceExportService
         $known = WorkspaceExport::query()->whereNotNull('storageKey')->pluck('storageKey')->flip();
         $threshold = now()->subMinutes((int) config('file-storage.workspaceExport.lifetimeMinutes', 60))->getTimestamp();
         foreach ($disk->allFiles('workspace-exports') as $storageKey) {
-            if ($known->has($storageKey) || ! str_ends_with($storageKey, '.zip')) continue;
+            if ($known->has($storageKey) || ! str_ends_with($storageKey, '.zip')) {
+                continue;
+            }
             try {
-                if ($disk->lastModified($storageKey) <= $threshold) $disk->delete($storageKey);
+                if ($disk->lastModified($storageKey) <= $threshold) {
+                    $disk->delete($storageKey);
+                }
             } catch (Throwable) {
                 // A transient backend failure must not stop cleanup of other export rows.
             }
@@ -135,18 +246,27 @@ class DriveWorkspaceExportService
     {
         $export = DB::transaction(function () use ($publicId): ?WorkspaceExport {
             $candidate = WorkspaceExport::query()->where('publicId', $publicId)->lockForUpdate()->first();
-            if ($candidate === null || $candidate->expiresAt->isPast() || $candidate->state !== 'PENDING') return null;
+            if ($candidate === null || $candidate->expiresAt->isPast() || $candidate->state !== 'PENDING') {
+                return null;
+            }
             $candidate->update(['state' => 'PROCESSING']);
+
             return $candidate->fresh();
         });
-        if ($export === null) return;
+        if ($export === null) {
+            return;
+        }
 
         $temporary = tempnam(sys_get_temp_dir(), 'rinos-drive-export-');
-        if ($temporary === false) throw new RuntimeException('Unable to create export staging file.');
+        if ($temporary === false) {
+            throw new RuntimeException('Unable to create export staging file.');
+        }
 
         try {
-            $archive = new ZipArchive();
-            if ($archive->open($temporary, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) throw new RuntimeException('Unable to open export archive.');
+            $archive = new ZipArchive;
+            if ($archive->open($temporary, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new RuntimeException('Unable to open export archive.');
+            }
             $principal = User::query()->findOrFail($export->idRequestingUser);
             $target = $export->workspaceScope === 'TENANT' ? DriveWorkspaceTarget::work((int) $export->idTenant) : DriveWorkspaceTarget::personal($principal->id);
             $added = [];
@@ -159,36 +279,48 @@ class DriveWorkspaceExportService
             }
             $archive->close();
             $stream = fopen($temporary, 'rb');
-            if (! is_resource($stream)) throw new RuntimeException('Unable to read completed export.');
+            if (! is_resource($stream)) {
+                throw new RuntimeException('Unable to read completed export.');
+            }
             $key = 'workspace-exports/'.$export->publicId.'.zip';
-            try { if ($this->backends->disk()->writeStream($key, $stream) !== true) throw new RuntimeException('Unable to persist export.'); }
-            finally { fclose($stream); }
+            try {
+                if ($this->backends->disk()->writeStream($key, $stream) !== true) {
+                    throw new RuntimeException('Unable to persist export.');
+                }
+            } finally {
+                fclose($stream);
+            }
             $export->update(['state' => 'READY', 'storageKey' => $key, 'storedSizeBytes' => filesize($temporary) ?: 0]);
         } catch (Throwable $exception) {
             $export->update(['state' => 'FAILED', 'failureCode' => 'DRIVE_EXPORT_GENERATION_FAILED']);
             throw $exception;
         } finally {
-            foreach ($temporaryFiles ?? [] as $temporaryFile) @unlink($temporaryFile);
+            foreach ($temporaryFiles ?? [] as $temporaryFile) {
+                @unlink($temporaryFile);
+            }
             @unlink($temporary);
         }
     }
 
     /**
-     * @param array{type: string, id: int} $item
-     * @param array<int, bool> $added
-     * @param array<string, bool> $reservedPaths
-     * @param list<string> $temporaryFiles
+     * @param  array{type: string, id: int}  $item
+     * @param  array<int, bool>  $added
+     * @param  array<string, bool>  $reservedPaths
+     * @param  list<string>  $temporaryFiles
      */
     private function appendSelection(ZipArchive $archive, User $principal, DriveWorkspaceTarget $target, array $item, string $prefix, array &$added, array &$reservedPaths, array &$temporaryFiles, int &$totalBytes, int $maximumBytes): void
     {
         if ($item['type'] === 'file') {
-            $this->appendFile($archive, $principal, $target, $item['id'], $prefix, $added, $reservedPaths, $temporaryFiles, $totalBytes, $maximumBytes);
+            $this->appendFile($archive, $principal, $target, $item['id'], $prefix, $added, $reservedPaths, $temporaryFiles, $totalBytes, $maximumBytes, (bool) ($item['directShare'] ?? false));
+
             return;
         }
         $folder = WorkspaceFolder::query()->findOrFail($item['id']);
         $this->projections->details($principal, $target, 'folder', $folder->id);
         $folderPrefix = $this->reserveZipPath($prefix.$this->zipName($folder->displayName), $reservedPaths).'/';
-        if ($archive->addEmptyDir(rtrim($folderPrefix, '/')) === false) throw new RuntimeException('Unable to append export folder.');
+        if ($archive->addEmptyDir(rtrim($folderPrefix, '/')) === false) {
+            throw new RuntimeException('Unable to append export folder.');
+        }
         $ownerColumn = $target->ownerType->value === 'USER' ? 'idUser' : 'idTenant';
         $ownerId = $target->scope->value === 'PERSONAL' ? $folder->idUser : $target->ownerId;
         foreach (StoredFilePossession::query()->where($ownerColumn, $ownerId)->where('idWorkspaceFolder', $folder->id)->where('state', 'ACTIVE')->get() as $possession) {
@@ -200,17 +332,25 @@ class DriveWorkspaceExportService
     }
 
     /**
-     * @param array<int, bool> $added
-     * @param array<string, bool> $reservedPaths
-     * @param list<string> $temporaryFiles
+     * @param  array<int, bool>  $added
+     * @param  array<string, bool>  $reservedPaths
+     * @param  list<string>  $temporaryFiles
      */
-    private function appendFile(ZipArchive $archive, User $principal, DriveWorkspaceTarget $target, int $possessionId, string $prefix, array &$added, array &$reservedPaths, array &$temporaryFiles, int &$totalBytes, int $maximumBytes): void
+    private function appendFile(ZipArchive $archive, User $principal, DriveWorkspaceTarget $target, int $possessionId, string $prefix, array &$added, array &$reservedPaths, array &$temporaryFiles, int &$totalBytes, int $maximumBytes, bool $directShare = false): void
     {
-        if (isset($added[$possessionId])) return;
-        $item = $this->projections->details($principal, $target, 'file', $possessionId)['item'];
-        $possession = StoredFilePossession::query()->findOrFail($possessionId);
+        if (isset($added[$possessionId])) {
+            return;
+        }
+        $possession = $directShare
+            ? $this->directSharedPossession($principal, $possessionId)
+            : StoredFilePossession::query()->findOrFail($possessionId);
+        $item = $directShare
+            ? ['logicalSizeBytes' => $possession->logicalSizeBytes, 'displayName' => $possession->displayName]
+            : $this->projections->details($principal, $target, 'file', $possessionId)['item'];
         $logicalSize = (int) ($item['logicalSizeBytes'] ?? 0);
-        if ($logicalSize < 0 || $totalBytes + $logicalSize > $maximumBytes) throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
+        if ($logicalSize < 0 || $totalBytes + $logicalSize > $maximumBytes) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
+        }
         $read = $this->privateReads->authorize(new FilePrivateReadRequest(
             $target->ownerType,
             $target->scope->value === 'PERSONAL' ? (int) $possession->idUser : $target->ownerId,
@@ -227,15 +367,21 @@ class DriveWorkspaceExportService
         }
         try {
             $destination = fopen($temporary, 'wb');
-            if (! is_resource($destination)) throw new RuntimeException('Unable to stage export file.');
+            if (! is_resource($destination)) {
+                throw new RuntimeException('Unable to stage export file.');
+            }
             try {
-                if (stream_copy_to_stream($stream, $destination) === false) throw new RuntimeException('Unable to stage export file.');
+                if (stream_copy_to_stream($stream, $destination) === false) {
+                    throw new RuntimeException('Unable to stage export file.');
+                }
             } finally {
                 fclose($destination);
                 fclose($stream);
             }
             $zipPath = $this->reserveZipPath($prefix.$this->zipName((string) $item['displayName']), $reservedPaths);
-            if ($archive->addFile($temporary, $zipPath) === false) throw new RuntimeException('Unable to append export file.');
+            if ($archive->addFile($temporary, $zipPath) === false) {
+                throw new RuntimeException('Unable to append export file.');
+            }
             $temporaryFiles[] = $temporary;
         } catch (Throwable $exception) {
             @unlink($temporary);
@@ -245,7 +391,10 @@ class DriveWorkspaceExportService
         $totalBytes += $logicalSize;
     }
 
-    private function zipName(string $name): string { return str_replace(['/', '\\', "\0"], '_', $name); }
+    private function zipName(string $name): string
+    {
+        return str_replace(['/', '\\', "\0"], '_', $name);
+    }
 
     /** @param array<string, bool> $reservedPaths */
     private function reserveZipPath(string $path, array &$reservedPaths): string
@@ -268,5 +417,56 @@ class DriveWorkspaceExportService
     private function assertReadable(User $principal, DriveWorkspaceTarget $target, array $item): void
     {
         $this->projections->details($principal, $target, $item['type'], $item['id']);
+    }
+
+    private function directSharedPossession(User $principal, int $possessionId): StoredFilePossession
+    {
+        $possession = StoredFilePossession::query()
+            ->whereKey($possessionId)
+            ->where('storageArea', 'WORKSPACE')
+            ->where('state', 'ACTIVE')
+            ->first();
+        if ($possession === null) {
+            throw new DriveWorkspaceCommandException('DRIVE_ACCESS_DENIED');
+        }
+        $scope = $possession->idTenant === null ? AuthorizationScope::Personal : AuthorizationScope::Tenant;
+        $type = $scope === AuthorizationScope::Personal ? 'personal.file' : 'tenant.file';
+        $resource = new ResourceReference($type, $possession->id, $scope, $possession->idTenant);
+        if (! $this->hasDirectReadRelation($principal, $resource)
+            || ! $this->authorization->check($principal, $type.'.read', $scope, $resource->tenantId, $resource)->allowed) {
+            throw new DriveWorkspaceCommandException('DRIVE_ACCESS_DENIED');
+        }
+
+        return $possession;
+    }
+
+    /**
+     * The virtual Shared with me root is populated exclusively by direct user relations.
+     * Ownership and inherited folder access remain valid for their normal Drive endpoints,
+     * but must not turn this endpoint into another path to enumerate private workspaces.
+     */
+    private function hasDirectReadRelation(User $principal, ResourceReference $resource): bool
+    {
+        return DB::table('auth_resource_relation')
+            ->join('auth_resource_type', 'auth_resource_type.id', '=', 'auth_resource_relation.idResourceType')
+            ->where('auth_resource_relation.idUser', $principal->id)
+            ->where('auth_resource_relation.resourceId', $resource->id)
+            ->where('auth_resource_relation.scope', $resource->scope->value)
+            ->where('auth_resource_relation.idTenant', $resource->tenantId)
+            ->where('auth_resource_relation.relationKey', 'READ')
+            ->where('auth_resource_relation.active', true)
+            ->where('auth_resource_type.key', $resource->type)
+            ->where('auth_resource_type.active', true)
+            ->exists();
+    }
+
+    private function directExport(User $principal, string $publicId): WorkspaceExport
+    {
+        $export = WorkspaceExport::query()->where('publicId', $publicId)->where('idRequestingUser', $principal->id)->first();
+        if ($export === null || $export->expiresAt->isPast() || collect($export->selectionManifest)->contains(fn (array $item): bool => ($item['directShare'] ?? false) !== true)) {
+            throw new DriveWorkspaceCommandException('DRIVE_EXPORT_NOT_FOUND');
+        }
+
+        return $export;
     }
 }

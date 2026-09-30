@@ -14,6 +14,9 @@ interface AuthorizationResourceAdapter
     /** @return list<string> */
     public function supportedRelations(): array;
 
+    /** Declares whether a resource relation may be granted to a group. */
+    public function allowsGroupRelations(): bool;
+
     /** @return list<int> IDs do recurso avaliado e de seus ancestrais autorizáveis. */
     public function inheritedResourceIds(ResourceReference $resource): array;
 

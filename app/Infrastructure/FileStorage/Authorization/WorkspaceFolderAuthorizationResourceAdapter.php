@@ -46,6 +46,11 @@ class WorkspaceFolderAuthorizationResourceAdapter implements AuthorizationResour
         return ['READ', 'EDIT'];
     }
 
+    public function allowsGroupRelations(): bool
+    {
+        return true;
+    }
+
     public function inheritedResourceIds(ResourceReference $resource): array
     {
         if (! $this->exists($resource)) {

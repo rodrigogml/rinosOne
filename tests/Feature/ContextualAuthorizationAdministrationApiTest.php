@@ -44,6 +44,12 @@ class ContextualAuthorizationAdministrationApiTest extends TestCase
         $this->actingAs($administrator)->getJson("/api/v1/tenants/{$tenant->id}/authorization/subjects/USER/{$member->id}/effective-access")
             ->assertOk()
             ->assertJsonPath('effectiveAccess.subject.subjectType', 'USER');
+        $this->actingAs($administrator)->getJson("/api/v1/tenants/{$tenant->id}/authorization/roles?perPage=25")
+            ->assertOk()
+            ->assertJsonStructure(['roles' => [['id', 'catalogType', 'key', 'displayName', 'description', 'scope', 'systemManaged', 'active']], 'pagination' => ['page', 'perPage', 'total', 'lastPage']]);
+        $this->actingAs($administrator)->postJson("/api/v1/tenants/{$tenant->id}/authorization/subjects/USER/{$member->id}/explain", ['permissionKey' => 'tenant.authorization.read'])
+            ->assertOk()
+            ->assertJsonStructure(['explanation']);
         $this->actingAs($administrator)->getJson("/api/v1/tenants/{$tenant->id}/authorization/subjects/USER/999999/effective-access")
             ->assertNotFound()
             ->assertJsonPath('error.code', 'AUTHORIZATION_ADMINISTRATION_NOT_AVAILABLE');

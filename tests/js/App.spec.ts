@@ -22,7 +22,7 @@ describe('access entry and account creation', () => {
     it('renders the centered brand, unified login fields and presentation controls', () => {
         const wrapper = mount(App);
 
-        expect(wrapper.get('img[alt="Rinos One"]').attributes('src')).toBe('/assets/brand/logo-768.png');
+        expect(wrapper.get('img[alt="Rinos One"]').attributes('src')).toBe('/assets/brand/logo-768.png?v=20260930');
         expect(wrapper.get('h1').text()).toBe('Acesse sua conta');
         expect(wrapper.find('#email').exists()).toBe(true);
         expect(wrapper.find('#password').exists()).toBe(true);

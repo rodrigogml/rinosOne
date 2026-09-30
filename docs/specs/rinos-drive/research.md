@@ -78,7 +78,7 @@
 
 ## Decisão 8 — Arquivo como recurso compartilhável somente leitura
 
-**Decisão**: `file_filePossession` recebe adapter de autorização próprio para relação direta `READ`. O item aparece em Compartilhados comigo e pode ser baixado, exportado ou copiado, mas não sofre alteração no workspace de origem.
+**Decisão**: `file_filePossession` recebe adapter de autorização próprio para relação direta `READ` destinada a um usuário. O item aparece em Compartilhados comigo e pode ser baixado, exportado ou copiado, mas não sofre alteração no workspace de origem nem cria uma raiz Work no catálogo.
 
 **Racional**: compartilhar um arquivo isolado não pode conceder navegação à pasta, nem permitir que o destinatário modifique o acervo de outro responsável. A futura edição online terá contrato e lifecycle independentes.
 
@@ -86,6 +86,7 @@
 
 - Exigir que todo compartilhamento seja de pasta: rejeitada por não atender a necessidade de encontrar um arquivo isolado.
 - Conceder `EDIT` direto no arquivo: rejeitada nesta fase por misturar colaboração de conteúdo com operação de organização.
+- Conceder a grupos nesta fase: rejeitada para manter a primeira política de arquivo direto inequívoca; grupos poderão receber decisão e SDD próprias.
 
 ## Decisão 9 — Transferência inter-drive é lógica e assíncrona
 
@@ -120,3 +121,25 @@
 
 - Concluir com a autorização da solicitação: rejeitada por permitir alteração depois de revogação.
 - Impedir revogação enquanto houver operação: rejeitada por transformar operação de arquivo em bloqueio administrativo.
+
+## Decisão 12 — Idempotência de transferência reutiliza a infraestrutura da API
+
+**Decisão**: a criação de transferência usa o middleware `api.idempotency` e `api_idempotency_records` como autoridade de deduplicação por solicitante, escopo, operação e chave. A transferência guarda a chave apenas para auditoria, sem índice parcial próprio.
+
+**Racional**: MySQL não oferece um índice único parcial para a noção de operação ativa. Reutilizar o mecanismo da plataforma evita duplicidade entre camadas e preserva respostas repetíveis.
+
+**Alternativas consideradas**:
+
+- Índice único por solicitante e chave na tabela de transferência: rejeitado porque impediria reutilização legítima após retenção ou exigiria apagar histórico.
+- Aceitar repetição sem controle: rejeitado por poder criar cópias e reservas duplicadas.
+
+## Decisão 13 — Limites preventivos de seleção para transferência
+
+**Decisão**: a instância configura quantidade máxima de itens e profundidade máxima da árvore por transferência. A validação ocorre antes de persistir a operação, adquirir reservas ou enfileirar o job.
+
+**Racional**: assíncrono não significa ilimitado; limites evitam manifestos excessivos, pressão de banco e reservas extensas acidentais, sem impor bloqueio por quota nesta fase.
+
+**Alternativas consideradas**:
+
+- Limitar apenas pelo tempo de execução: rejeitado porque uma seleção grande já poderia consumir recursos antes do timeout.
+- Não impor limite: rejeitado por tornar a estabilidade dependente do comportamento do usuário.

@@ -25,6 +25,7 @@ export interface ContextualAdministrationAccessSource {
     displayName: string;
     scope: AuthorizationAdministrationScope;
     expiresAt: string | null;
+    resource: ContextualAdministrationResourceReference | null;
 }
 
 export interface ContextualAdministrationSubject {
@@ -153,6 +154,7 @@ export function parseContextualAdministrationAccessSource(value: unknown): Conte
         displayName: text(item.displayName),
         scope: enumValue(item.scope, ['PERSONAL', 'TENANT', 'PLATFORM'] as const),
         expiresAt: nullableIsoTimestamp(item.expiresAt),
+        resource: item.resource === undefined || item.resource === null ? null : parseContextualAdministrationResourceReference(item.resource),
     };
 }
 

@@ -32,8 +32,8 @@ class AuthorizationResourceRelationService
         ?string $correlationId = null,
     ): AuthorizationResourceRelation {
         return DB::transaction(function () use ($resource, $relationKey, $user, $group, $actorUserId, $correlationId): AuthorizationResourceRelation {
-            $this->assertSubject($resource, $user, $group);
             $adapter = $this->registry->adapterFor($resource);
+            $this->assertSubject($resource, $user, $group, $adapter->allowsGroupRelations());
             if (! in_array($relationKey, $adapter->supportedRelations(), true)) {
                 throw new LogicException('The resource relation is not supported by this resource type.');
             }
@@ -117,10 +117,13 @@ class AuthorizationResourceRelationService
         });
     }
 
-    private function assertSubject(ResourceReference $resource, ?User $user, ?AuthorizationGroup $group): void
+    private function assertSubject(ResourceReference $resource, ?User $user, ?AuthorizationGroup $group, bool $allowsGroupRelations): void
     {
         if (($user === null) === ($group === null)) {
             throw new LogicException('A resource relation requires exactly one user or group subject.');
+        }
+        if ($group !== null && ! $allowsGroupRelations) {
+            throw new LogicException('This resource relation requires a user subject.');
         }
         if ($group !== null && ($group->scope !== $resource->scope->value || $group->idTenant !== $resource->tenantId)) {
             throw new LogicException('The resource relation group does not belong to the resource context.');

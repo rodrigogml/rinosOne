@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Authorization\ResourceShareRequest;
 use App\Http\Requests\Authorization\UpdateResourceShareRequest;
 use App\Models\Tenant;
+use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\Authorization\Administration\AuthorizationAdministrationContext;
 use App\Services\Authorization\Administration\AuthorizationAdministrationContextResolver;
@@ -15,6 +16,7 @@ use App\Services\Authorization\Administration\ContextualAuthorizationResourceSha
 use App\Services\Authorization\Performance\PolicyVersionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use LogicException;
 
 /** Exposes route-bound workspace-folder sharing without introducing item ownership. */
@@ -35,6 +37,16 @@ class ContextualAuthorizationResourceShareController extends Controller
     public function personalStore(string $resourceType, string $resourceId, ResourceShareRequest $request, AuthorizationAdministrationContextResolver $contexts, ContextualAuthorizationResourceShareService $shares, AuthorizationAdministrationProjectionSerializer $serializer): JsonResponse
     {
         return $this->store($request->user(), $this->personal($request->user(), $contexts), $resourceType, (int) $resourceId, $request, $shares, $serializer);
+    }
+
+    public function personalRecipients(Request $request, AuthorizationAdministrationContextResolver $contexts): JsonResponse
+    {
+        return $this->recipients($this->personal($request->user(), $contexts), $request);
+    }
+
+    public function tenantRecipients(string $tenantId, Request $request, AuthorizationAdministrationContextResolver $contexts): JsonResponse
+    {
+        return $this->recipients($this->tenant($request->user(), (int) $tenantId, $contexts), $request);
     }
 
     public function tenantStore(string $tenantId, string $resourceType, string $resourceId, ResourceShareRequest $request, AuthorizationAdministrationContextResolver $contexts, ContextualAuthorizationResourceShareService $shares, AuthorizationAdministrationProjectionSerializer $serializer): JsonResponse
@@ -73,7 +85,7 @@ class ContextualAuthorizationResourceShareController extends Controller
             return $this->notAvailable();
         }
 
-        return response()->json(['resource' => ['resourceType' => 'FOLDER', 'resourceId' => $resourceId], 'workspaceResponsible' => $this->workspaceResponsible($actor, $context), 'shares' => $serializer->shares($items)]);
+        return response()->json(['resource' => ['resourceType' => 'FOLDER', 'resourceId' => $resourceId], 'workspaceResponsible' => $this->workspaceResponsible($actor, $context), 'shares' => $serializer->shares($items), 'contextVersion' => $this->version($context)]);
     }
 
     private function store(User $actor, AuthorizationAdministrationContext $context, string $resourceType, int $resourceId, ResourceShareRequest $request, ContextualAuthorizationResourceShareService $shares, AuthorizationAdministrationProjectionSerializer $serializer): JsonResponse
@@ -151,6 +163,27 @@ class ContextualAuthorizationResourceShareController extends Controller
         return $context->scope === AuthorizationScope::Personal
             ? ['type' => 'USER', 'id' => $actor->id, 'displayName' => $actor->displayName]
             : ['type' => 'TENANT', 'id' => $context->tenantId, 'displayName' => Tenant::query()->whereKey($context->tenantId)->value('displayName')];
+    }
+
+    private function recipients(AuthorizationAdministrationContext $context, Request $request): JsonResponse
+    {
+        if (! $context->capabilities->canManageSharing) {
+            return response()->json(['error' => ['code' => 'AUTHORIZATION_ADMINISTRATION_DENIED', 'message' => 'Compartilhamento não permitido neste contexto.']], 403);
+        }
+
+        $query = trim($request->string('query')->toString());
+        if (mb_strlen($query) < 2) {
+            return response()->json(['recipients' => []]);
+        }
+
+        $users = $context->scope === AuthorizationScope::Tenant
+            ? User::query()->join('tenantMembership as membership', 'membership.idUser', '=', 'user.id')->where('membership.idTenant', $context->tenantId)->where('membership.state', 'ACTIVE')
+            : User::query();
+
+        /** @var Collection<int, User> $recipients */
+        $recipients = $users->where('user.displayName', 'like', '%'.$query.'%')->orderBy('user.displayName')->orderBy('user.id')->limit(25)->get(['user.id', 'user.displayName']);
+
+        return response()->json(['recipients' => $recipients->map(static fn (User $user): array => ['subjectId' => $user->id, 'displayName' => $user->displayName])->values()->all()]);
     }
 
     private function stale(Request $request, AuthorizationAdministrationContext $context): ?JsonResponse

@@ -14,6 +14,7 @@ Defina os valores reais somente no `.env` do ambiente. O arquivo [`.env.example`
 | Compactação | `FILE_COMPRESSION_RULES`, `FILE_COMPRESSION_REPROCESS_INTERVAL_MINUTES` | Seleciona MIME types/extensões para `GZIP` e agenda reprocessamento. Só há promoção quando há ganho de espaço. |
 | Manutenção | `FILE_STORAGE_RETENTION_PURGE_INTERVAL_MINUTES`, `FILE_STORAGE_RECONCILIATION_INTERVAL_MINUTES` | Define a periodicidade dos expurgos e da reconciliação. |
 | Exportações do Drive | `DRIVE_EXPORT_LIFETIME_MINUTES`, `DRIVE_EXPORT_MAXIMUM_ITEMS`, `DRIVE_EXPORT_MAXIMUM_BYTES`, `DRIVE_EXPORT_CLEANUP_INTERVAL_MINUTES` | Limita ZIPs temporários privados gerados para downloads múltiplos e determina sua limpeza. Não consomem quota do workspace. |
+| Transferências do Drive | `DRIVE_TRANSFER_LEASE_MINUTES`, `DRIVE_TRANSFER_HEARTBEAT_SECONDS`, `DRIVE_TRANSFER_MAXIMUM_ATTEMPTS`, `DRIVE_TRANSFER_MAXIMUM_ITEMS`, `DRIVE_TRANSFER_MAXIMUM_TREE_DEPTH`, `DRIVE_TRANSFER_RECOVERY_INTERVAL_MINUTES`, `DRIVE_TRANSFER_TERMINAL_RETENTION_DAYS` | Controla operações lógicas de copiar/mover, suas reservas de ramos e a recuperação segura de worker interrompido. Não move bytes físicos. |
 | Logs técnicos | `FILE_STORAGE_LOG_LEVEL`, `FILE_STORAGE_LOG_RETENTION_DAYS` | Controla o canal `file-storage`, mantido separado do log geral. |
 
 > [!IMPORTANT]
@@ -29,7 +30,7 @@ php artisan config:cache
 php artisan queue:restart
 ```
 
-Mantenha ao menos um worker supervisionado para os jobs de expurgo, reconciliação, compactação e exportação do Drive:
+Mantenha ao menos um worker supervisionado para os jobs de expurgo, reconciliação, compactação, exportação e transferência do Drive:
 
 ```sh
 php artisan queue:work database --sleep=1 --tries=3 --max-time=3600
@@ -63,6 +64,7 @@ php artisan schedule:list
 | Reprocessamento | Troca `IDENTITY` e `GZIP` apenas após validar integridade e mantém a representação substituída em retenção. |
 | Exportação do Drive | Revalida cada item no worker, produz ZIP em área privada e expira por prazo lógico. O download só é liberado no estado `READY`, ao solicitante e no mesmo contexto de workspace. |
 | Limpeza de exportações | Remove bytes privados e registros vencidos em transações curtas e independentes. Cancelamentos e falhas permanecem indisponíveis antes da remoção física. |
+| Recuperação de transferência | Examina leases vencidos no intervalo configurado. Reagenda operação ainda recuperável; ao atingir o máximo de tentativas, marca falha, libera reservas e nunca mantém resultado parcial. |
 
 ## Diagnóstico e recuperação
 
@@ -72,6 +74,7 @@ php artisan schedule:list
 | Objeto ou representação inconsistente | Consultar o canal técnico `storage/logs/file-storage-*.log`, restaurar a disponibilidade do backend e permitir a reconciliação agendada. |
 | Scheduler parado | Restaurar o agendamento; os prazos lógicos continuam sendo validados pelas operações, e a limpeza será retomada no próximo ciclo. |
 | Exportação falhou ou venceu | Não entregue arquivo parcial. Verifique o worker, a capacidade do backend privado e o canal técnico; o registro falho não é baixável e a limpeza agendada remove os artefatos vencidos. |
+| Transferência parada | Confirme worker e `php artisan schedule:list`. Aguarde a recuperação pelo lease; não libere reservas, altere estado ou recrie posses manualmente. O status da API mostra somente código categorizado ao solicitante. |
 | Restauração de banco | Restaurar também os volumes privados compatíveis com `FILE_BACKUP_RETENTION_DAYS`. Nunca reduza a retenção técnica antes de expirar a janela de recuperação de backup. |
 
 > [!WARNING]
@@ -82,6 +85,6 @@ php artisan schedule:list
 - [ ] Backend privado gravável e inacessível pelo servidor web.
 - [ ] `FILE_TECHNICAL_RETENTION_DAYS >= FILE_BACKUP_RETENTION_DAYS`.
 - [ ] Worker e scheduler supervisionados.
-- [ ] `php artisan schedule:list` apresenta expurgo, reconciliação, reprocessamento e limpeza de exportações do Drive.
+- [ ] `php artisan schedule:list` apresenta expurgo, reconciliação, reprocessamento, limpeza de exportações e recuperação de transferências do Drive.
 - [ ] `php artisan test`, `npm run type-check`, `npm test` e `npm run build` concluídos.
 - [ ] Nenhum valor real de caminho, credencial ou configuração de volume foi versionado.

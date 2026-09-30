@@ -207,7 +207,7 @@ class AuthorizationService
                     ->where('auth_resource_relation.active', true)
                     ->when($scope === AuthorizationScope::Tenant, fn ($query) => $query->where('auth_resource_relation.idTenant', $tenantId), fn ($query) => $query->whereNull('auth_resource_relation.idTenant'))
                     ->exists();
-                $groupRelationApplies = $this->groupResourceRelationApplies(
+                $groupRelationApplies = $adapter->allowsGroupRelations() && $this->groupResourceRelationApplies(
                     $principal->id,
                     $resource->type,
                     $resourceIds,

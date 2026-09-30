@@ -18,6 +18,14 @@ const rootProjection = {
 };
 const personalSurface: WorkspaceSurface = { id: 'personal-drive', destinationId: 'personal.drive', scope: 'personal', tenantId: null, titleKey: 'access.workspace.title', label: 'Rinos Drive Pessoal', icon: 'drive', dirty: false, status: 'active' };
 const tenantSurface: WorkspaceSurface = { ...personalSurface, id: 'tenant-drive', destinationId: 'tenant.drive', scope: 'tenant', tenantId: 42, label: 'Rinos Drive Work' };
+const globalSurface: WorkspaceSurface = { id: 'global-drive', destinationId: 'global.drive', scope: 'global', tenantId: null, titleKey: 'access.workspace.title', label: 'Rinos Drive', icon: 'drive', dirty: false, status: 'active' };
+const globalCatalog = {
+    drives: [
+        { target: { kind: 'personal', tenantId: null }, displayName: 'Meu Drive', category: 'PERSONAL', usage: rootProjection.usage },
+        { target: { kind: 'tenant', tenantId: 42 }, displayName: 'Oficina Rubi', category: 'TENANT', usage: rootProjection.usage },
+    ],
+    sharedWithMe: { kind: 'shared-with-me', displayName: 'Compartilhados comigo' },
+};
 
 function queueInitialLoad(projection: Record<string, unknown> & { folders: unknown[] } = rootProjection): void {
     vi.mocked(axios.get).mockResolvedValueOnce({ data: { folders: projection.folders } });
@@ -54,6 +62,35 @@ describe('DriveExplorer', () => {
         expect(axios.get).toHaveBeenNthCalledWith(2, '/api/v1/tenants/42/drive/locations/root');
         expect(wrapper.text()).toContain('Rinos Drive Work');
         expect(wrapper.find('.drive-explorer__tree-list').text()).toContain('Projetos');
+    });
+
+    it('opens one global Drive surface with every accessible workspace and direct shares', async () => {
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: globalCatalog });
+        queueInitialLoad();
+        const wrapper = mountDrive(globalSurface);
+        await flushPromises();
+
+        expect(axios.get).toHaveBeenNthCalledWith(1, '/api/v1/drive/catalog');
+        expect(axios.get).toHaveBeenNthCalledWith(2, '/api/v1/drive/personal/tree');
+        expect(wrapper.text()).toContain('Meu Drive');
+        expect(wrapper.text()).toContain('Oficina Rubi');
+        expect(wrapper.text()).toContain('Compartilhados comigo');
+        await wrapper.findAll('.drive-explorer__actions .ui-button').find((button) => button.text().includes('Abrir segundo painel'))!.trigger('click');
+        await flushPromises();
+        expect(wrapper.find('.drive-explorer__panes').classes()).toContain('drive-explorer__panes--split');
+        expect(wrapper.find('.drive-navigation-pane').exists()).toBe(true);
+        expect(window.localStorage.getItem('rinos-one.drive.secondary-pane.v1')).toBe('open');
+
+        queueInitialLoad({ ...rootProjection, location: { ...rootProjection.location, displayName: 'Oficina Rubi' } });
+        await wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
+        await flushPromises();
+        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/tenants/42/drive/locations/root');
+
+        vi.mocked(axios.get).mockResolvedValueOnce({ data: { folders: [], files: [] } });
+        await wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Compartilhados comigo'))!.trigger('click');
+        await flushPromises();
+        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/shared-with-me');
+        expect(wrapper.findAll('.drive-explorer__actions .ui-button').find((button) => button.text().includes('Nova pasta'))?.attributes('disabled')).toBeDefined();
     });
 
     it('keeps prior content marked stale after an unavailable refresh', async () => {

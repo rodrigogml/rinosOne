@@ -264,7 +264,7 @@ class ContextualAuthorizationAdministrationQuery
     {
         $sources = $row->subjectType === 'SERVICE_IDENTITY'
             ? [new AuthorizationAdministrationAccessSourceDto('DIRECT_GRANT', 'Permissões diretas da identidade de serviço', $context->scope->value)]
-            : [];
+            : $this->resourceAccessSources((int) $row->subjectId, $context);
 
         return new AuthorizationAdministrationSubjectDto(
             (int) $row->subjectId,
@@ -303,6 +303,62 @@ class ContextualAuthorizationAdministrationQuery
             ->where(fn ($builder) => $builder->whereNull('endsAt')->orWhere('endsAt', '>', now()))
             ->selectRaw("id as subjectId, 'SERVICE_IDENTITY' as subjectType, displayName, endsAt as expiresAt")
             ->first();
+    }
+
+    /** @return list<AuthorizationAdministrationAccessSourceDto> */
+    private function resourceAccessSources(int $subjectId, AuthorizationAdministrationContext $context): array
+    {
+        if ($context->scope !== AuthorizationScope::Tenant) {
+            return [];
+        }
+
+        $resourceType = 'tenant.folder';
+        $groupTenantPredicate = ' = ?';
+
+        $rows = DB::select(
+            "WITH RECURSIVE eligible_group(id, displayName) AS (
+                SELECT direct_group.id, direct_group.displayName
+                FROM auth_group_user
+                INNER JOIN auth_group direct_group ON direct_group.id = auth_group_user.idGroup
+                WHERE auth_group_user.idUser = ?
+                    AND direct_group.active = 1
+                    AND direct_group.scope = ?
+                    AND direct_group.idTenant{$groupTenantPredicate}
+                UNION
+                SELECT parent_group.id, parent_group.displayName
+                FROM auth_group_group group_relation
+                INNER JOIN eligible_group ON eligible_group.id = group_relation.idChildGroup
+                INNER JOIN auth_group parent_group ON parent_group.id = group_relation.idParentGroup
+                WHERE parent_group.active = 1
+                    AND parent_group.scope = ?
+                    AND parent_group.idTenant{$groupTenantPredicate}
+            )
+            SELECT relation.resourceId, relation.idUser, relation.idGroup, eligible_group.displayName AS groupDisplayName
+            FROM auth_resource_relation relation
+            INNER JOIN auth_resource_type resource_type ON resource_type.id = relation.idResourceType
+            LEFT JOIN eligible_group ON eligible_group.id = relation.idGroup
+            WHERE resource_type.key = ?
+                AND resource_type.active = 1
+                AND relation.scope = ?
+                AND relation.active = 1
+                AND relation.idTenant = ?
+                AND (relation.idUser = ? OR relation.idGroup IN (SELECT id FROM eligible_group))
+            ORDER BY relation.resourceId, relation.id",
+            $this->resourceAccessSourceParameters($subjectId, $context, $resourceType),
+        );
+
+        return array_map(static fn (object $row): AuthorizationAdministrationAccessSourceDto => new AuthorizationAdministrationAccessSourceDto(
+            'SHARE',
+            $row->idUser === null ? 'Pasta compartilhada pelo grupo '.$row->groupDisplayName : 'Pasta compartilhada diretamente',
+            $context->scope->value,
+            resource: ['resourceType' => 'FOLDER', 'resourceId' => (int) $row->resourceId],
+        ), $rows);
+    }
+
+    /** @return list<int|string> */
+    private function resourceAccessSourceParameters(int $subjectId, AuthorizationAdministrationContext $context, string $resourceType): array
+    {
+        return [$subjectId, $context->scope->value, $context->tenantId, $context->scope->value, $context->tenantId, $resourceType, $context->scope->value, $context->tenantId, $subjectId];
     }
 
     /** @return list<string> */

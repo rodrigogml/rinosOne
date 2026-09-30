@@ -5,9 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="theme-color" content="#aa2643">
-        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
-        <link rel="apple-touch-icon" href="{{ asset('assets/brand/icon-180.png') }}">
-        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+        <link rel="icon" href="{{ asset('favicon.ico?v=20260930') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('assets/brand/icon-180.png?v=20260930') }}">
+        <link rel="manifest" href="{{ asset('manifest.webmanifest?v=20260930') }}">
         <title>{{ config('app.name') }}</title>
         <script>
             (() => {

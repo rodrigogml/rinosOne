@@ -60,7 +60,7 @@ As projeções novas são aditivas e usam os tipos abaixo, sempre em `camelCase`
 | Projeção | Campos mínimos |
 |---|---|
 | sujeito | `subjectId`, `subjectType` (`USER` ou `SERVICE_IDENTITY`), `displayName`, `accessSources`, `effectiveCapabilities`, `expiresAt` |
-| fonte de acesso | `type`, `displayName`, `scope`, `expiresAt` |
+| fonte de acesso | `type`, `displayName`, `scope`, `expiresAt`, `resource` opcional (`resourceType`, `resourceId`) apenas quando a fonte se refere a um recurso contextual que a interface pode abrir |
 | catálogo | `id`, `catalogType` (`ROLE` ou `PERMISSION`), `key`, `displayName`, `description`, `scope`, `systemManaged`, `active` |
 | compartilhamento | `id`, `resourceType`, `resourceId`, `grantee`, `relation`, `origin`, `inheritedFrom` |
 | auditoria segura | `id`, `occurredAt`, `actorUserId`, `operation`, `targetType`, `targetId` |
@@ -85,13 +85,14 @@ Enquanto o endpoint compatível aceitar `userId`, o adaptador de API da UI conve
 
 | Método e rota | Corpo | Resposta |
 |---|---|---|
-| `GET /authorization/personal/resources/{resourceType}/{resourceId}/shares` | — | `{ context, resource, workspaceResponsible, shares }` |
-| `GET /tenants/{tenantId}/authorization/resources/{resourceType}/{resourceId}/shares` | — | `{ context, resource, workspaceResponsible, shares }` |
+| `GET /authorization/personal/resources/{resourceType}/{resourceId}/shares` | — | `{ resource, workspaceResponsible, shares, contextVersion }` |
+| `GET /tenants/{tenantId}/authorization/resources/{resourceType}/{resourceId}/shares` | — | `{ resource, workspaceResponsible, shares, contextVersion }` |
+| `GET .../share-recipients?query=` | consulta de destinatários por texto (mínimo de 2 caracteres) | `{ recipients: [{ subjectId, displayName }] }` |
 | `POST .../shares` | `subjectId`, `relation`, `expectedContextVersion` | `201 { share, contextVersion }` |
 | `PATCH .../shares/{shareId}` | `relation`, `expectedContextVersion` | `200 { share, contextVersion }` |
 | `DELETE .../shares/{shareId}` | pré-condição opcional | `204` |
 
-Uma resposta de compartilhamento declara `origin` como `DIRECT` ou `INHERITED`. Vínculos herdados expõem `inheritedFrom` somente quando a pessoa pode consultar o recurso de origem e não aceitam alteração no recurso descendente. `workspaceResponsible` é informativo e não é proprietário de arquivo ou pasta.
+Uma resposta de compartilhamento declara `origin` como `DIRECT` ou `INHERITED`. A esfera é derivada exclusivamente da rota já usada para ler ou escrever a relação; o painel recebe a identificação humana do workspace a partir da origem do Drive ou da Central. Vínculos herdados expõem `inheritedFrom` somente quando a pessoa pode consultar o recurso de origem e não aceitam alteração no recurso descendente. `workspaceResponsible` é informativo e não é proprietário de arquivo ou pasta.
 
 ## Controles avançados
 

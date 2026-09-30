@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\V1\Access\PasswordlessSessionController;
 use App\Http\Controllers\Api\V1\Access\StartRegistrationController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', static fn () => response()->json(['status' => 'ok']));
 Route::post('/auth/registrations', StartRegistrationController::class);
 Route::post('/auth/email-verifications', [CompleteEmailVerificationController::class, 'byCode']);
 Route::post('/auth/email-verifications/link-confirmations', [CompleteEmailVerificationController::class, 'byLink']);

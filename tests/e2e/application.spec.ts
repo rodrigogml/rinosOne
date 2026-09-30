@@ -1069,6 +1069,12 @@ for (const viewport of [
             height: viewport.height,
         });
         await page.goto("/");
+        const crest = await page.locator('.access-frame__crest').boundingBox();
+        const logo = await page.locator('.access-frame__brand').boundingBox();
+        const accessCard = await page.locator('.access-frame .ui-card').boundingBox();
+        expect(crest!.y).toBeGreaterThanOrEqual(0);
+        expect(crest!.y + crest!.height).toBeLessThanOrEqual(logo!.y);
+        expect(logo!.y + logo!.height).toBeLessThanOrEqual(accessCard!.y);
         if (viewport.width < 640) {
             const accessFrame = page.locator(".access-frame");
             const viewportHeight = await page.evaluate(
@@ -1442,6 +1448,55 @@ test("rechecks a Drive folder location and preserves the workspace after revocat
         ),
     ).toBe(true);
     await captureState(page, testInfo, "authorized-folder-phone-revoked");
+});
+
+test("shares a personal Drive folder through the contextual panel without selecting another workspace", async ({ page }, testInfo) => {
+    const capabilities = { read: true, edit: true, trash: true };
+    const folder = { id: 7, kind: "folder", displayName: "Projetos", parentFolderId: null, logicalSizeBytes: null, detectedMimeType: null, modifiedAt: null, capabilities };
+    const projection = { location: { kind: "root", id: null, displayName: "Meus arquivos", parentFolderId: null }, breadcrumbs: [], folders: [folder], files: [], capabilities, usage: { workspaceBytes: 0, systemManagedBytes: 0, trashBytes: 0, totalBytes: 0 } };
+    let shares: unknown[] = [{ id: 12, resourceType: "FOLDER", resourceId: 7, grantee: { subjectId: 8, subjectType: "USER", displayName: "Bruno", accessSources: [], effectiveCapabilities: [], expiresAt: null }, relation: "READ", origin: "INHERITED", inheritedFrom: { resourceType: "FOLDER", resourceId: 2 } }];
+    await mockAuthenticatedSession(page);
+    await page.route("**/api/v1/drive/personal/tree", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ folders: [folder] }) }));
+    await page.route("**/api/v1/drive/personal/locations/root", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(projection) }));
+    await page.route("**/api/v1/drive/personal/items/folder/7/details", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ item: folder, location: projection.location, capabilities, metadata: [] }) }));
+    await page.route("**/api/v1/authorization/personal/share-recipients?query=Ana", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ recipients: [{ subjectId: 3, displayName: "Ana" }] }) }));
+    await page.route("**/api/v1/authorization/personal/resources/FOLDER/7/shares", async (route) => {
+        if (route.request().method() === "POST") {
+            expect(route.request().postDataJSON()).toEqual({ subjectId: 3, relation: "READ", expectedContextVersion: "5" });
+            shares = [{ id: 13, resourceType: "FOLDER", resourceId: 7, grantee: { subjectId: 3, subjectType: "USER", displayName: "Ana", accessSources: [], effectiveCapabilities: [], expiresAt: null }, relation: "READ", origin: "DIRECT", inheritedFrom: null }, ...shares];
+            await route.fulfill({ contentType: "application/json", status: 201, body: JSON.stringify({ share: shares[0], contextVersion: "6" }) });
+            return;
+        }
+        if (route.request().method() === "DELETE") {
+            shares = shares.filter((share) => (share as { id: number }).id !== 13);
+            await route.fulfill({ status: 204 });
+            return;
+        }
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify({ workspaceResponsible: { type: "USER", id: 1, displayName: "Pessoa" }, contextVersion: "5", shares }) });
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Biblioteca" }).click();
+    await page.getByRole("button", { name: "Arquivos" }).click();
+    await page.locator(".drive-explorer__item").filter({ hasText: "Projetos" }).click();
+    await page.getByRole("button", { name: "Detalhes", exact: true }).click();
+    await page.getByRole("button", { name: "Compartilhar" }).click();
+    const dialog = page.getByRole("dialog", { name: "Projetos" });
+    await expect(dialog.getByText("Responsável pelo workspace: Pessoa.")).toBeVisible();
+    await expect(dialog.getByText("Acesso herdado da pasta #2")).toBeVisible();
+    await dialog.locator("#share-recipient-query").fill("Ana");
+    await dialog.getByLabel("Destinatário encontrado").selectOption("3");
+    await dialog.getByRole("button", { name: "Confirmar compartilhamento" }).click();
+    await expect(dialog.getByText("Ana")).toBeVisible();
+    await dialog.getByRole("button", { name: "Revogar" }).click();
+    await dialog.getByRole("alertdialog").getByRole("button", { name: "Confirmar revogação" }).click();
+    await expect(dialog.getByText("Ana")).not.toBeVisible();
+    await captureState(page, testInfo, "resource-sharing-desktop");
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await captureState(page, testInfo, "resource-sharing-tablet");
+    await page.setViewportSize({ width: 375, height: 667 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await captureState(page, testInfo, "resource-sharing-phone");
 });
 
 test("publishes an advanced authorization policy from the tenant security surface", async ({

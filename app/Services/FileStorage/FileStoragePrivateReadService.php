@@ -108,6 +108,16 @@ class FileStoragePrivateReadService
         if ($possession->idUser === $principal->id) {
             return;
         }
+        $scope = $possession->idTenant === null ? AuthorizationScope::Personal : AuthorizationScope::Tenant;
+        $fileResource = new ResourceReference(
+            $scope === AuthorizationScope::Tenant ? 'tenant.file' : 'personal.file',
+            $possession->id,
+            $scope,
+            $possession->idTenant,
+        );
+        if ($this->authorization->check($principal, $fileResource->type.'.read', $scope, $fileResource->tenantId, $fileResource)->allowed) {
+            return;
+        }
         $folder = $possession->idWorkspaceFolder === null ? null : WorkspaceFolder::query()->find($possession->idWorkspaceFolder);
         if ($folder === null) {
             if ($possession->idTenant !== null) {

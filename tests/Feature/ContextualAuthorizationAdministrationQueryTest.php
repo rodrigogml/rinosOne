@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Domain\Authorization\Administration\AuthorizationAdministrationSubjectNotAvailableException;
 use App\Domain\Authorization\AuthorizationScope;
+use App\Domain\Authorization\Resource\ResourceReference;
 use App\Models\AuthorizationAuditEvent;
 use App\Models\AuthorizationGroup;
 use App\Models\AuthorizationPermission;
 use App\Models\AuthorizationRole;
 use App\Models\AuthorizationRoleAssignment;
+use App\Models\FileStorage\WorkspaceFolder;
 use App\Models\AuthorizationServiceIdentity;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
@@ -16,6 +18,7 @@ use App\Models\User;
 use App\Services\Authorization\Administration\AuthorizationAdministrationCapabilities;
 use App\Services\Authorization\Administration\AuthorizationAdministrationContext;
 use App\Services\Authorization\Administration\ContextualAuthorizationAdministrationQuery;
+use App\Services\Authorization\Resource\AuthorizationResourceRelationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -83,6 +86,27 @@ class ContextualAuthorizationAdministrationQueryTest extends TestCase
 
         $this->expectException(AuthorizationAdministrationSubjectNotAvailableException::class);
         app(ContextualAuthorizationAdministrationQuery::class)->effectiveAccess($actor, $this->tenantContext($tenant->id), 'USER', $otherMember->id);
+    }
+
+    public function test_it_projects_a_tenant_folder_share_with_an_explicit_resource_reference(): void
+    {
+        $tenant = Tenant::query()->create(['displayName' => 'Empresa', 'state' => 'ACTIVE']);
+        $administrator = User::factory()->create();
+        $member = User::factory()->create();
+        foreach ([$administrator, $member] as $user) {
+            TenantMembership::query()->create(['idTenant' => $tenant->id, 'idUser' => $user->id, 'state' => 'ACTIVE']);
+        }
+        $folder = WorkspaceFolder::query()->create(['idUser' => null, 'idTenant' => $tenant->id, 'displayName' => 'Fiscal', 'state' => 'ACTIVE']);
+        app(AuthorizationResourceRelationService::class)->create(
+            new ResourceReference('tenant.folder', $folder->id, AuthorizationScope::Tenant, $tenant->id),
+            'READ',
+            $member,
+        );
+
+        $access = app(ContextualAuthorizationAdministrationQuery::class)->effectiveAccess($administrator, $this->tenantContext($tenant->id), 'USER', $member->id);
+
+        $this->assertSame('SHARE', $access['subject']->accessSources[0]->type);
+        $this->assertSame(['resourceType' => 'FOLDER', 'resourceId' => $folder->id], $access['subject']->accessSources[0]->resource);
     }
 
     public function test_personal_and_platform_subject_lists_do_not_enumerate_other_users(): void

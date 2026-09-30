@@ -154,19 +154,19 @@ Ref: [Quickstart](quickstart.md); [Checklists](checklists/); [Spec](spec.md) SC-
 
 Ref: [Spec](spec.md) FR-DRIVE-001 a 005, 032 e 033; [Plan](plan.md) §Catálogo e alvos seguros; [Checklist de segurança](checklists/security.md) CHK013 e CHK014.
 
-- [ ] 7.1.1 Registrar tipos e permissões `personal.file`/`tenant.file`, adapter de posse e regra `READ` exclusiva para relação direta.
-- [ ] 7.1.2 Garantir que o adapter exclua posse inativa, `SYSTEM_MANAGED`, owner/contexto incompatível e qualquer herança de pasta para arquivo direto.
-- [ ] 7.1.3 Criar `DriveCatalogService` e projeção lazy de Meu Drive, Work efetivamente acessível e raiz virtual Compartilhados comigo.
-- [ ] 7.1.4 Cobrir catálogo, isolamento por membership, administrador, relação de pasta/arquivo, deduplicação de atalho e revogação em testes unitários e feature.
+- [x] 7.1.1 Registrar tipos e permissões `personal.file`/`tenant.file`, adapter de posse e regra `READ` exclusiva para relação direta por usuário, recusando `idGroup` nesta fase.
+- [x] 7.1.2 Garantir que o adapter exclua posse inativa, `SYSTEM_MANAGED`, owner/contexto incompatível e qualquer herança de pasta para arquivo direto.
+- [x] 7.1.3 Criar `DriveCatalogService` e projeção lazy de Meu Drive, Work de administrador ou relação de pasta navegável e raiz virtual Compartilhados comigo, sem root Work por arquivo direto.
+- [x] 7.1.4 Cobrir catálogo, isolamento por membership, administrador, relação de pasta/arquivo, ausência de root Work por arquivo direto, deduplicação de atalho e revogação em testes unitários e feature.
 
 ### 7.2 Expor catálogo e compartilhados sem enumeração `[A]`
 
 Ref: [Contrato](contracts/drive-workspace-api.md) §Catálogo unificado e compartilhados; [Interface](interface-spec.md) INT-WEB-DRIVE-001 e 004.
 
-- [ ] 7.2.1 Adicionar rotas, controller, requests e respostas seguras para catálogo e Compartilhados comigo.
-- [ ] 7.2.2 Atualizar resolvedor de alvo para validar tenant e autorização efetiva sem depender da organização ativa da interface.
-- [ ] 7.2.3 Estender download, detalhes e exportação para arquivo diretamente compartilhado, preservando somente leitura e origem opaca.
-- [ ] 7.2.4 Criar testes de contrato/HTTP que comprovem ausência de enumeração, de metadados sensíveis e de alterações no arquivo compartilhado.
+- [x] 7.2.1 Adicionar rotas, controller, requests e respostas seguras para catálogo e Compartilhados comigo.
+- [x] 7.2.2 Atualizar resolvedor de alvo para validar tenant e autorização efetiva sem depender da organização ativa da interface.
+- [x] 7.2.3 Estender download, detalhes e exportação para arquivo diretamente compartilhado, preservando somente leitura e origem opaca.
+- [x] 7.2.4 Criar testes de contrato/HTTP que comprovem ausência de enumeração, de metadados sensíveis e de alterações no arquivo compartilhado.
 
 ---
 
@@ -176,20 +176,20 @@ Ref: [Contrato](contracts/drive-workspace-api.md) §Catálogo unificado e compar
 
 Ref: [Spec](spec.md) FR-DRIVE-031, 034 a 036; [Data Model](data-model.md) §Nova entidade `file_workspaceTransfer`.
 
-- [ ] 8.1.1 Criar migrations, models, enums e índices para transferência, reserva, correlation/idempotency key, progresso e lease renovável.
-- [ ] 8.1.2 Acrescentar configuração comentada de lease, heartbeat, tentativas e manutenção em `config/file-storage.php` e `.env.example`.
-- [ ] 8.1.3 Implementar máquina de estados e limpeza idempotente de reserva para conclusão, falha, cancelamento e expiração de lease.
-- [ ] 8.1.4 Cobrir constraints, transições, idempotência e configuração inválida com PHPUnit.
+- [x] 8.1.1 Criar migrations, models, enums e índices para transferência, reserva, correlation, referência de auditoria à idempotency key, progresso e lease renovável, reutilizando `api_idempotency_records` como autoridade de repetição.
+- [x] 8.1.2 Acrescentar configuração comentada de lease, heartbeat, tentativas, limites de itens/profundidade e manutenção em `config/file-storage.php` e `.env.example`.
+- [x] 8.1.3 Implementar máquina de estados e limpeza idempotente de reserva para conclusão, falha, cancelamento e expiração de lease.
+- [x] 8.1.4 Cobrir constraints, transições, idempotência e configuração inválida com PHPUnit.
 
 ### 8.2 Implementar comando transacional e bloqueio de ramos `[C]`
 
-Ref: [Plan](plan.md) §Transferência lógica e reservas; [Research](research.md) Decisões 9 a 11; [Checklist de segurança](checklists/security.md) CHK015 e CHK016.
+Ref: [Plan](plan.md) §Transferência lógica e reservas; [Research](research.md) Decisões 9 a 13; [Checklist de segurança](checklists/security.md) CHK015, CHK016 e CHK018.
 
-- [ ] 8.2.1 Validar seleção de origem única, destinos autorizados, modos `COPY`/`MOVE` e interseção proibida com origem, descendente ou reserva ativa.
-- [ ] 8.2.2 Adquirir locks em ordem estável e gravar reservas de origem/destino na mesma transação da criação da operação.
-- [ ] 8.2.3 Integrar verificação de reserva às mutações de pasta, posse, upload, lixeira, restauro e limpeza sem bloquear leitura/download.
-- [ ] 8.2.4 Implementar cópia lógica com deduplicação e movimento como cópia íntegra seguida de release da origem, preservando quota/retenção/permissão do destino.
-- [ ] 8.2.5 Cobrir concorrência, seleção mista, conflito, rollback e integridade origem/destino em testes de domínio e feature.
+- [x] 8.2.1 Validar seleção de origem única, destinos autorizados, modos `COPY`/`MOVE`, limites de itens/profundidade e interseção proibida com origem, descendente ou reserva ativa.
+- [x] 8.2.2 Adquirir locks em ordem estável e gravar reservas de origem/destino na mesma transação da criação da operação.
+- [x] 8.2.3 Integrar verificação de reserva às mutações de pasta, posse, upload, lixeira, restauro e limpeza sem bloquear leitura/download.
+- [x] 8.2.4 Implementar cópia lógica com deduplicação e movimento como cópia íntegra seguida de release da origem, preservando quota/retenção/permissão do destino.
+- [x] 8.2.5 Cobrir concorrência, seleção mista, conflito, rollback e integridade origem/destino em testes de domínio e feature.
 
 ---
 
@@ -199,20 +199,20 @@ Ref: [Plan](plan.md) §Transferência lógica e reservas; [Research](research.md
 
 Ref: [Spec](spec.md) FR-DRIVE-031, 035 e 036; [Plan](plan.md) §Transferência lógica e reservas.
 
-- [ ] 9.1.1 Criar job `ProcessWorkspaceTransfer` com heartbeat, revalidação de origem/destino e progresso seguro.
-- [ ] 9.1.2 Criar job/comando agendado de recuperação que renove/reagende ou falhe operação abandonada e libere reservas.
-- [ ] 9.1.3 Implementar cancelamento somente em `PENDING`, retenção operacional de estado terminal e limpeza idempotente.
-- [ ] 9.1.4 Registrar agendamento, configuração e diagnóstico seguro de job nos documentos operacionais.
+- [x] 9.1.1 Criar job `ProcessWorkspaceTransfer` com heartbeat, revalidação de origem/destino e progresso seguro.
+- [x] 9.1.2 Criar job/comando agendado de recuperação que renove/reagende ou falhe operação abandonada e libere reservas.
+- [x] 9.1.3 Implementar cancelamento somente em `PENDING`, retenção operacional de estado terminal e limpeza idempotente.
+- [x] 9.1.4 Registrar agendamento, configuração e diagnóstico seguro de job nos documentos operacionais.
 - [ ] 9.1.5 Cobrir reinício de worker, lease vencido, retry, cancelamento, revogação antes do commit e ausência de resultado parcial.
 
 ### 9.2 Expor contratos de transferência e estados seguros `[A]`
 
 Ref: [Contrato](contracts/drive-workspace-api.md) §Transferências entre painéis; [Interface](interface-spec.md) INT-WEB-DRIVE-003 e 005.
 
-- [ ] 9.2.1 Adicionar requests, controller e rotas para criação, status e cancelamento de transferência com id opaco.
-- [ ] 9.2.2 Validar idempotency key e assegurar que somente o solicitante consulta/cancela sua própria operação.
-- [ ] 9.2.3 Padronizar erros de reserva, estado inválido, revogação e operação expirada no envelope seguro.
-- [ ] 9.2.4 Criar testes HTTP de roundtrip para criação, polling, cancelamento, negação cruzada e sem vazamento de dados concorrentes.
+- [x] 9.2.1 Adicionar requests, controller e rotas para criação, status e cancelamento de transferência com id opaco.
+- [x] 9.2.2 Aplicar o middleware `api.idempotency` à criação, validar a chave e assegurar que somente o solicitante consulta/cancela sua própria operação.
+- [x] 9.2.3 Padronizar erros de reserva, estado inválido, revogação e operação expirada no envelope seguro.
+- [x] 9.2.4 Criar testes HTTP de roundtrip para criação, polling, cancelamento, negação cruzada e sem vazamento de dados concorrentes.
 
 ---
 
@@ -333,7 +333,7 @@ flowchart TD
 | FR-DRIVE-015 a 017 | Lixeira, visualizações, acessibilidade e responsividade. | 2, 5, 6 |
 | FR-DRIVE-018 a 025 | Relações por pasta, administrador integral e restrições. | 1, 2, 3, 4 |
 | FR-DRIVE-026 a 028 | Sem bloqueio de quota, sem ativos de sistema ou funcionalidades adiadas. | Todas |
-| FR-DRIVE-029 a 036 | Painéis paralelos, transferências lógicas, compartilhados, reservas, revogação e recuperação. | 7 a 11 |
+| FR-DRIVE-029 a 037 | Painéis paralelos, transferências lógicas, compartilhados, reservas, revogação, recuperação e limites de seleção. | 7 a 11 |
 
 ## Escopo Excluído
 

@@ -36,4 +36,9 @@ class Tenant extends Model
     {
         return $this->hasOne(TenantProvisioning::class, 'idTenant');
     }
+
+    public function schemaUpdates(): HasMany
+    {
+        return $this->hasMany(TenantSchemaUpdate::class, 'idTenant');
+    }
 }

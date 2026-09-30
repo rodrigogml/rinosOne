@@ -1,12 +1,15 @@
 import { mount } from '@vue/test-utils';
+import { createPinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 import AppShell from '../../../resources/js/design-system/AppShell.vue';
+import AccessFrame from '../../../resources/js/design-system/AccessFrame.vue';
 import BrandMark from '../../../resources/js/design-system/BrandMark.vue';
 import IconButton from '../../../resources/js/design-system/IconButton.vue';
 import UiAlert from '../../../resources/js/design-system/UiAlert.vue';
 import UiButton from '../../../resources/js/design-system/UiButton.vue';
 import UiDialog from '../../../resources/js/design-system/UiDialog.vue';
 import UiField from '../../../resources/js/design-system/UiField.vue';
+import { i18n } from '../../../resources/js/i18n';
 
 describe('design system base components', () => {
     it('provides a labelled main shell and derived brand assets', () => {
@@ -16,8 +19,16 @@ describe('design system base components', () => {
 
         expect(shell.get('main').classes()).toContain('app-shell--centered');
         expect(shell.get('main').attributes('aria-labelledby')).toBe('page-title');
-        expect(logo.get('img').attributes('src')).toBe('/assets/brand/logo-768.png');
-        expect(icon.get('img').attributes('src')).toBe('/assets/brand/icon-192.png');
+        expect(logo.get('img').attributes('src')).toBe('/assets/brand/logo-768.png?v=20260930');
+        expect(icon.get('img').attributes('src')).toBe('/assets/brand/crest-192.png?v=20260930');
+    });
+
+    it('composes the access identity with a decorative crest above the landscape logo', () => {
+        const frame = mount(AccessFrame, { global: { plugins: [createPinia(), i18n] }, slots: { default: 'Access form' } });
+
+        expect(frame.get('.access-frame__crest').attributes('src')).toBe('/assets/brand/crest-192.png?v=20260930');
+        expect(frame.get('.access-frame__crest').attributes('alt')).toBe('');
+        expect(frame.get('.access-frame__brand').attributes('src')).toBe('/assets/brand/logo-768.png?v=20260930');
     });
 
     it('exposes field labels, descriptions and errors to the contained control', () => {

@@ -17,10 +17,13 @@ O `tenantId` é validado no servidor; ele não basta para conceder acesso e não
 | --- | --- | --- |
 | `GET /api/v1/drive/catalog` | Raízes de drives disponíveis ao principal. | `drives[]` e raiz virtual `sharedWithMe`. |
 | `GET /api/v1/drive/shared-with-me` | Itens diretamente concedidos ao principal. | `folders[]`, `files[]` e capabilities seguras. |
+| `GET /api/v1/drive/shared-with-me/files/{possessionId}/details` | Detalhe seguro de arquivo concedido diretamente. | Item read-only, origem tipada e metadados permitidos. |
+| `GET /api/v1/drive/shared-with-me/files/{possessionId}/download` | Download privado de arquivo concedido diretamente. | Stream autenticado, sem URL física. |
+| `POST /api/v1/drive/shared-with-me/exports` | Exporta dois ou mais arquivos diretos da mesma origem. | Exportação privada opaca e assíncrona. |
 
-Cada item de `drives[]` contém somente `target` (`scope`, `tenantId` quando aplicável), `displayName`, categoria (`PERSONAL` ou `TENANT`) e `usage` do workspace. O catálogo não contém árvore, contagem de itens, caminho, quota de outro drive nem tenant sem acesso efetivo.
+Cada item de `drives[]` contém somente `target` (`kind: "personal"|"tenant"`, `tenantId` quando aplicável), `displayName`, categoria (`PERSONAL` ou `TENANT`) e `usage` do workspace. O catálogo não contém árvore, contagem de itens, caminho, quota de outro drive nem tenant sem acesso efetivo. O servidor converte `kind` para o enum interno `scope`; este não é exposto no JSON.
 
-Compartilhados comigo não possui alvo mutável próprio. Cada item retornado inclui seu `originTarget` autorizado e um arquivo compartilhado diretamente sempre tem `capabilities.edit=false` e `capabilities.trash=false`.
+Compartilhados comigo não possui alvo mutável próprio. Cada item retornado inclui seu `originTarget` autorizado e um arquivo compartilhado diretamente sempre tem `capabilities.edit=false` e `capabilities.trash=false`. Concessão direta de arquivo não acrescenta o Drive Work de origem a `drives[]`.
 
 ## Leitura e navegação
 
@@ -56,7 +59,7 @@ Para criação, renomeação, movimentação e upload, o servidor calcula e rese
 | `GET /api/v1/drive/transfers/{transferId}` | nenhum | Estado, modo, total/processado, prazo de lease e erro categorizado ao solicitante. |
 | `POST /api/v1/drive/transfers/{transferId}/cancel` | nenhum | Cancela somente uma operação do próprio solicitante ainda `PENDING`; libera reservas. |
 
-`sourceTarget` e `destinationTarget` usam `{ "scope": "PERSONAL"|"TENANT", "tenantId": number|null, "folderId": number|null }`; ambos são resolvidos contra catálogo e autorização atuais. `items[]` aceita somente `folder` ou `file` de uma única origem. `mode` aceita `COPY` ou `MOVE`.
+`sourceTarget` e `destinationTarget` usam `{ "kind": "personal"|"tenant", "tenantId": number|null, "folderId": number|null }`; ambos são resolvidos contra catálogo e autorização atuais. `items[]` aceita somente `folder` ou `file` de uma única origem. `mode` aceita `COPY` ou `MOVE`. A criação exige o cabeçalho `Idempotency-Key` e respeita limites configuráveis de quantidade de itens e profundidade de árvore.
 
 O servidor adquire reservas antes de responder sucesso. Operações mutáveis que intersectem reserva ativa retornam `DRIVE_TRANSFER_IN_PROGRESS`, sem identificar a transferência concorrente. Transferências entre drives retornam HTTP 202 e continuam após fechar a interface; o cliente consulta somente seu `transferId` opaco.
 
@@ -90,7 +93,7 @@ O servidor adquire reservas antes de responder sucesso. Operações mutáveis qu
 
 Erros previstos usam o envelope seguro da plataforma. Códigos principais: `DRIVE_WORKSPACE_UNAVAILABLE`, `DRIVE_LOCATION_NOT_FOUND`, `DRIVE_ACCESS_DENIED`, `DRIVE_NAME_CONFLICT_RESOLVED`, `DRIVE_UPLOAD_LIMIT_EXCEEDED`, `DRIVE_EXPORT_LIMIT_EXCEEDED`, `DRIVE_EXPORT_NOT_READY` e `DRIVE_EXPORT_EXPIRED`.
 
-Para o catálogo e transferências, códigos adicionais são `DRIVE_TRANSFER_INVALID`, `DRIVE_TRANSFER_IN_PROGRESS`, `DRIVE_TRANSFER_CANCELLED`, `DRIVE_TRANSFER_FAILED` e `DRIVE_TRANSFER_STALE`. Nenhum deles revela nome, titular, caminho, item ou contexto da operação de terceiro.
+Para o catálogo e transferências, códigos adicionais são `DRIVE_TRANSFER_INVALID`, `DRIVE_TRANSFER_LIMIT_EXCEEDED`, `DRIVE_TRANSFER_IN_PROGRESS`, `DRIVE_TRANSFER_CANCELLED`, `DRIVE_TRANSFER_FAILED` e `DRIVE_TRANSFER_STALE`. Nenhum deles revela nome, titular, caminho, item ou contexto da operação de terceiro.
 
 O upload sempre devolve HTTP 200 quando a localização é autorizada e uma lista está estruturada corretamente. Cada `results[]` traz `clientIndex`, `state` (`STORED` ou `REJECTED`) e, no sucesso, o item seguro criado; na rejeição, somente `error.code`. Limites, MIME real, nome inválido ou falha de ingestão de um item não criam posse ativa daquele item nem desfazem os demais. A autorização do destino é repetida antes da posse ser criada.
 

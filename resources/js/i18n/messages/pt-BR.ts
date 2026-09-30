@@ -365,6 +365,14 @@ Object.assign(
     >,
     { advanced: "Acesso temporário" },
 );
+
+Object.assign(ptBR.access.authorization as unknown as Record<string, unknown>, {
+    sharing: {
+        folderSharing: 'Compartilhamento de pasta · {workspace}', personalWorkspace: 'Workspace pessoal', tenantWorkspace: 'Workspace da organização', close: 'Fechar compartilhamento', workspaceResponsible: 'Responsável pelo workspace: {name}.', loading: 'Carregando compartilhamentos…', loadFailed: 'Não foi possível carregar os compartilhamentos desta pasta.', newShare: 'Novo compartilhamento', recipient: 'Destinatário', recipientFound: 'Destinatário encontrado', selectRecipient: 'Selecione uma pessoa', accessLevel: 'Nível de acesso', read: 'Leitura', edit: 'Edição', confirm: 'Confirmar compartilhamento', empty: 'Esta pasta não possui compartilhamentos visíveis.', direct: 'Acesso direto', inheritedFrom: 'Acesso herdado da pasta #{resourceId}', change: 'Alterar', revoke: 'Revogar', newAccessLevel: 'Novo nível de acesso', confirmChange: 'Confirmar alteração', cancel: 'Cancelar', revokeQuestion: 'Revogar o acesso direto selecionado nesta pasta?', confirmRevoke: 'Confirmar revogação', reload: 'Recarregar', created: 'Compartilhamento criado.', updated: 'Compartilhamento atualizado.', revoked: 'Compartilhamento revogado.', stale: 'O contexto foi alterado. Recarregue os compartilhamentos antes de confirmar novamente.', conflict: 'Este compartilhamento não pode mais ser alterado nesta pasta; ele pode ser herdado ou ter sido modificado.', commandFailed: 'Não foi possível concluir a alteração. Atualize os dados e tente novamente.', offline: 'Você está sem conexão. Reconecte-se antes de alterar compartilhamentos.',
+    },
+});
+
+Object.assign(ptBR.access.authorization as unknown as Record<string, unknown>, { contextual: { noExpiration: 'Sem expiração', peopleAndIdentities: 'Pessoas e identidades', searchSubject: 'Buscar pessoa ou identidade', emptySubjects: 'Nenhuma pessoa ou identidade disponível neste contexto.', serviceIdentity: 'Identidade de serviço', person: 'Pessoa', viewAccess: 'Ver acessos', participantPagination: 'Paginação de participantes', subjectCanDo: 'O que {name} pode fazer?', accessValidity: 'Vigência do acesso: {value}.', whyAccess: 'Por que este acesso existe?', emptySources: 'Nenhuma fonte adicional de acesso foi identificada.', openSharing: 'Abrir compartilhamento', effectiveCapabilities: 'Capacidades efetivas', emptyCapabilities: 'Nenhuma capacidade efetiva disponível.' } });
 Object.assign(ptBR.access.authorization as unknown as Record<string, string>, {
     permissionId: "ID da permission",
     startsAt: "Início",
@@ -494,6 +502,8 @@ Object.assign(
             "Não foi possível mover os itens para a lixeira agora. Tente novamente.",
     },
 );
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { openSecondPanel: 'Abrir segundo painel', closeSecondPanel: 'Fechar segundo painel' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferTitle: 'Transferir itens', transferDescription: 'Confirme como deseja transferir {count} item(ns).', transferSource: 'Origem', transferDestination: 'Destino', transferMode: 'Ação', copy: 'Copiar' });
 Object.assign(
     (ptBR.access as unknown as { drive: Record<string, string> }).drive,
     {

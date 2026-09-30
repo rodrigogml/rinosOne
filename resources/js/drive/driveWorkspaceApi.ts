@@ -16,6 +16,14 @@ export interface DriveLocation { kind: 'root' | 'folder' | 'trash'; id: number |
 export interface DriveUsage { workspaceBytes: number; systemManagedBytes: number; trashBytes: number; totalBytes: number; }
 export interface DriveLocationProjection { location: DriveLocation; breadcrumbs: DriveLocation[]; folders: DriveItem[]; files: DriveItem[]; capabilities: DriveCapabilities; usage: DriveUsage; purgeAfter?: string | null; }
 export interface DriveDetailsProjection { item: DriveItem; location: DriveLocation; capabilities: DriveCapabilities; metadata: unknown[]; }
+export interface DriveCatalogEntry { target: DriveWorkspaceTarget; displayName: string; category: 'PERSONAL' | 'TENANT'; usage: DriveUsage; }
+export interface DriveCatalogProjection { drives: DriveCatalogEntry[]; sharedWithMe: { kind: 'shared-with-me'; displayName: string }; }
+export interface SharedDriveItem { id: number; kind: 'folder' | 'file'; displayName: string; logicalSizeBytes?: number | null; detectedMimeType?: string | null; originTarget: DriveWorkspaceTarget; capabilities: DriveCapabilities; }
+export interface SharedWithMeProjection { folders: SharedDriveItem[]; files: SharedDriveItem[]; }
+export type DriveTransferMode = 'COPY' | 'MOVE';
+export type DriveTransferTarget = DriveWorkspaceTarget & { folderId: number | null; };
+export interface DriveTransferRequest { sourceTarget: DriveTransferTarget; destinationTarget: DriveTransferTarget; items: Array<Pick<DriveItem, 'id' | 'kind'>>; mode: DriveTransferMode; }
+export interface DriveTransfer { transferId: string; state: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'; mode: DriveTransferMode; totalItems: number; processedItems: number; destinationTarget: DriveWorkspaceTarget; failureCode: string | null; }
 
 function isPositiveInteger(value: unknown): value is number { return typeof value === 'number' && Number.isInteger(value) && value > 0; }
 function isNullablePositiveInteger(value: unknown): value is number | null { return value === null || isPositiveInteger(value); }
@@ -51,6 +59,55 @@ function parseUsage(value: unknown): DriveUsage | null {
     const { workspaceBytes, systemManagedBytes, trashBytes, totalBytes } = value;
     if (!Number.isInteger(workspaceBytes) || !Number.isInteger(systemManagedBytes) || !Number.isInteger(trashBytes) || !Number.isInteger(totalBytes)) return null;
     return { workspaceBytes: workspaceBytes as number, systemManagedBytes: systemManagedBytes as number, trashBytes: trashBytes as number, totalBytes: totalBytes as number };
+}
+
+function parseTarget(value: unknown): DriveWorkspaceTarget | null {
+    if (!isRecord(value) || (value.kind !== 'personal' && value.kind !== 'tenant')) return null;
+    if (value.kind === 'personal') return value.tenantId === null ? { kind: 'personal' } : null;
+    return isPositiveInteger(value.tenantId) ? { kind: 'tenant', tenantId: value.tenantId } : null;
+}
+
+export function parseDriveCatalog(value: unknown): DriveCatalogProjection | null {
+    if (!isRecord(value) || !Array.isArray(value.drives) || !isRecord(value.sharedWithMe) || value.sharedWithMe.kind !== 'shared-with-me' || typeof value.sharedWithMe.displayName !== 'string') return null;
+    const drives = value.drives.map((entry): DriveCatalogEntry | null => {
+        if (!isRecord(entry) || typeof entry.displayName !== 'string' || (entry.category !== 'PERSONAL' && entry.category !== 'TENANT')) return null;
+        const target = parseTarget(entry.target);
+        const usage = parseUsage(entry.usage);
+        if (target === null || usage === null || (entry.category === 'PERSONAL') !== (target.kind === 'personal')) return null;
+
+        return { target, displayName: entry.displayName, category: entry.category, usage };
+    });
+    return drives.some((entry) => entry === null) ? null : { drives: drives as DriveCatalogEntry[], sharedWithMe: { kind: 'shared-with-me', displayName: value.sharedWithMe.displayName } };
+}
+
+function parseSharedItem(value: unknown): SharedDriveItem | null {
+    if (!isRecord(value) || !isPositiveInteger(value.id) || (value.kind !== 'folder' && value.kind !== 'file') || typeof value.displayName !== 'string') return null;
+    const originTarget = parseTarget(value.originTarget);
+    const capabilities = parseCapabilities(value.capabilities);
+    if (originTarget === null || capabilities === null || !capabilities.read) return null;
+    if (value.kind === 'file' && (!isNullableNonNegativeInteger(value.logicalSizeBytes) || !isNullableString(value.detectedMimeType))) return null;
+
+    return {
+        id: value.id, kind: value.kind, displayName: value.displayName, originTarget, capabilities,
+        ...(value.kind === 'file' ? { logicalSizeBytes: value.logicalSizeBytes as number | null, detectedMimeType: value.detectedMimeType as string | null } : {}),
+    };
+}
+
+export function parseSharedWithMe(value: unknown): SharedWithMeProjection | null {
+    if (!isRecord(value) || !Array.isArray(value.folders) || !Array.isArray(value.files)) return null;
+    const folders = value.folders.map(parseSharedItem);
+    const files = value.files.map(parseSharedItem);
+    if (folders.some((item) => item === null || item.kind !== 'folder') || files.some((item) => item === null || item.kind !== 'file')) return null;
+
+    return { folders: folders as SharedDriveItem[], files: files as SharedDriveItem[] };
+}
+
+export function parseDriveTransfer(value: unknown): DriveTransfer | null {
+    if (!isRecord(value) || typeof value.transferId !== 'string' || !['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'].includes(String(value.state)) || (value.mode !== 'COPY' && value.mode !== 'MOVE') || !isNullableNonNegativeInteger(value.totalItems) || !isNullableNonNegativeInteger(value.processedItems) || !isNullableString(value.failureCode)) return null;
+    const destinationTarget = parseTarget(value.destinationTarget);
+    if (destinationTarget === null || value.totalItems === null || value.processedItems === null || value.processedItems > value.totalItems) return null;
+
+    return { transferId: value.transferId, state: value.state as DriveTransfer['state'], mode: value.mode, totalItems: value.totalItems, processedItems: value.processedItems, destinationTarget, failureCode: value.failureCode };
 }
 
 export function parseDriveLocationProjection(value: unknown): DriveLocationProjection | null {
@@ -91,6 +148,35 @@ async function getProjection<T>(path: string, parser: (value: unknown) => T | nu
     const parsed = parser(response.data);
     if (parsed === null) throw new Error('A resposta do Rinos Drive não possui o formato esperado.');
 
+    return parsed;
+}
+
+/** Carrega raízes disponíveis sem confiar em contexto de tenant mantido na interface. */
+export function loadDriveCatalog(): Promise<DriveCatalogProjection> {
+    return getProjection('/api/v1/drive/catalog', parseDriveCatalog);
+}
+
+/** Carrega somente concessões diretas, sem reconstruir o caminho de origem. */
+export function loadSharedWithMe(): Promise<SharedWithMeProjection> {
+    return getProjection('/api/v1/drive/shared-with-me', parseSharedWithMe);
+}
+
+function transferTarget(target: DriveTransferTarget): { kind: DriveWorkspaceTarget['kind']; tenantId: number | null; folderId?: number | null } {
+    return { kind: target.kind, tenantId: target.kind === 'tenant' ? target.tenantId : null, ...(Object.hasOwn(target, 'folderId') ? { folderId: target.folderId } : {}) };
+}
+function idempotencyKey(): string { return globalThis.crypto?.randomUUID?.() ?? `00000000-0000-4000-8000-${Date.now().toString().padStart(12, '0').slice(-12)}`; }
+
+/** Starts an opaque, idempotent logical transfer. The server resolves every target again. */
+export async function requestDriveTransfer(request: DriveTransferRequest): Promise<DriveTransfer> {
+    const parsed = parseDriveTransfer((await axios.post('/api/v1/drive/transfers', { sourceTarget: transferTarget(request.sourceTarget), destinationTarget: transferTarget(request.destinationTarget), items: request.items.map((item) => ({ type: item.kind, id: item.id })), mode: request.mode }, { headers: { 'Idempotency-Key': idempotencyKey() } })).data);
+    if (parsed === null) throw new Error('A resposta de transferência do Rinos Drive não possui o formato esperado.');
+    return parsed;
+}
+
+export function loadDriveTransfer(transferId: string): Promise<DriveTransfer> { return getProjection(`/api/v1/drive/transfers/${transferId}`, parseDriveTransfer); }
+export async function cancelDriveTransfer(transferId: string): Promise<DriveTransfer> {
+    const parsed = parseDriveTransfer((await axios.post(`/api/v1/drive/transfers/${transferId}/cancel`)).data);
+    if (parsed === null) throw new Error('A resposta de transferência do Rinos Drive não possui o formato esperado.');
     return parsed;
 }
 

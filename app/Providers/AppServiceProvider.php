@@ -7,6 +7,7 @@ use App\Infrastructure\FinancialInstitution\FinancialInstitutionSource;
 use App\Infrastructure\Locality\IbgeTerritoryApiSource;
 use App\Infrastructure\Locality\IbgeTerritorySource;
 use App\Infrastructure\Session\DatabaseSessionHandler;
+use App\Services\Tenant\GlobalSchemaCompatibilityService;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
 
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(FinancialInstitutionSource::class, BcbFinancialInstitutionSource::class);
         $this->app->bind(IbgeTerritorySource::class, IbgeTerritoryApiSource::class);
+        $this->app->singleton(GlobalSchemaCompatibilityService::class);
     }
 
     /**

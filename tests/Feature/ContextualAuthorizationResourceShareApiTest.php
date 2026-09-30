@@ -65,4 +65,49 @@ class ContextualAuthorizationResourceShareApiTest extends TestCase
             ->assertNotFound()
             ->assertJsonPath('error.code', 'AUTHORIZATION_ADMINISTRATION_NOT_AVAILABLE');
     }
+
+    public function test_recipient_search_requires_a_term_and_keeps_tenant_membership_boundary(): void
+    {
+        $administrator = User::factory()->create(['displayName' => 'Administradora']);
+        $member = User::factory()->create(['displayName' => 'Ana membro']);
+        $outsider = User::factory()->create(['displayName' => 'Ana externa']);
+        $tenant = Tenant::query()->create(['displayName' => 'Empresa', 'state' => 'ACTIVE']);
+        foreach ([$administrator, $member] as $user) {
+            TenantMembership::query()->create(['idTenant' => $tenant->id, 'idUser' => $user->id, 'state' => 'ACTIVE']);
+        }
+        $role = AuthorizationRole::query()->where('key', 'tenant.administrator')->firstOrFail();
+        AuthorizationRoleAssignment::query()->create(['idRole' => $role->id, 'idUser' => $administrator->id, 'idTenant' => $tenant->id, 'state' => 'ACTIVE']);
+
+        $this->actingAs($administrator)->getJson("/api/v1/tenants/{$tenant->id}/authorization/share-recipients?query=A")
+            ->assertOk()
+            ->assertJsonCount(0, 'recipients');
+        $this->actingAs($administrator)->getJson("/api/v1/tenants/{$tenant->id}/authorization/share-recipients?query=Ana")
+            ->assertOk()
+            ->assertJsonPath('recipients.0.subjectId', $member->id)
+            ->assertJsonMissing(['subjectId' => $outsider->id]);
+    }
+
+    public function test_personal_and_tenant_share_routes_cannot_cross_workspace_boundaries(): void
+    {
+        $user = User::factory()->create(['displayName' => 'Responsável pessoal']);
+        $tenant = Tenant::query()->create(['displayName' => 'Empresa', 'state' => 'ACTIVE']);
+        TenantMembership::query()->create(['idTenant' => $tenant->id, 'idUser' => $user->id, 'state' => 'ACTIVE']);
+        $role = AuthorizationRole::query()->where('key', 'tenant.administrator')->firstOrFail();
+        AuthorizationRoleAssignment::query()->create(['idRole' => $role->id, 'idUser' => $user->id, 'idTenant' => $tenant->id, 'state' => 'ACTIVE']);
+        $personalFolder = WorkspaceFolder::query()->create(['idUser' => $user->id, 'idTenant' => null, 'displayName' => 'Pessoal', 'state' => 'ACTIVE']);
+        $tenantFolder = WorkspaceFolder::query()->create(['idUser' => null, 'idTenant' => $tenant->id, 'displayName' => 'Organização', 'state' => 'ACTIVE']);
+
+        $this->actingAs($user)->getJson("/api/v1/authorization/personal/resources/FOLDER/{$personalFolder->id}/shares")
+            ->assertOk()
+            ->assertJsonPath('workspaceResponsible.type', 'USER')
+            ->assertJsonPath('workspaceResponsible.id', $user->id);
+        $this->actingAs($user)->getJson("/api/v1/tenants/{$tenant->id}/authorization/resources/FOLDER/{$tenantFolder->id}/shares")
+            ->assertOk()
+            ->assertJsonPath('workspaceResponsible.type', 'TENANT')
+            ->assertJsonPath('workspaceResponsible.id', $tenant->id);
+        $this->actingAs($user)->getJson("/api/v1/authorization/personal/resources/FOLDER/{$tenantFolder->id}/shares")
+            ->assertNotFound();
+        $this->actingAs($user)->getJson("/api/v1/tenants/{$tenant->id}/authorization/resources/FOLDER/{$personalFolder->id}/shares")
+            ->assertNotFound();
+    }
 }

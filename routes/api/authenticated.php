@@ -58,6 +58,17 @@ Route::prefix('/tenants/{tenantId}/people')->middleware('person.metrics')->where
 
 Route::post('/authorization/resource-checks', [ResourceAuthorizationController::class, 'checkBatch']);
 Route::get('/authorization/personal-workspace/folders', [ResourceAuthorizationController::class, 'personalWorkspaceFolders']);
+Route::get('/drive/catalog', [DriveWorkspaceController::class, 'catalog']);
+Route::get('/drive/shared-with-me', [DriveWorkspaceController::class, 'sharedWithMe']);
+Route::get('/drive/shared-with-me/files/{possessionId}/details', [DriveWorkspaceController::class, 'sharedFileDetails'])->whereNumber('possessionId');
+Route::get('/drive/shared-with-me/files/{possessionId}/download', [DriveWorkspaceController::class, 'sharedDownload'])->whereNumber('possessionId');
+Route::post('/drive/shared-with-me/exports', [DriveWorkspaceController::class, 'sharedRequestExport']);
+Route::get('/drive/shared-with-me/exports/{exportId}', [DriveWorkspaceController::class, 'sharedExportStatus'])->whereUlid('exportId');
+Route::post('/drive/shared-with-me/exports/{exportId}/cancel', [DriveWorkspaceController::class, 'sharedCancelExport'])->whereUlid('exportId');
+Route::get('/drive/shared-with-me/exports/{exportId}/download', [DriveWorkspaceController::class, 'sharedDownloadExport'])->whereUlid('exportId');
+Route::middleware(['api.json-size', 'api.rate-limit', 'api.idempotency'])->post('/drive/transfers', [DriveWorkspaceController::class, 'storeTransfer'])->name('drive.transfers.store');
+Route::middleware(['api.rate-limit'])->get('/drive/transfers/{transferId}', [DriveWorkspaceController::class, 'transferStatus'])->whereUlid('transferId')->name('drive.transfers.show');
+Route::middleware(['api.json-size', 'api.rate-limit'])->post('/drive/transfers/{transferId}/cancel', [DriveWorkspaceController::class, 'cancelTransfer'])->whereUlid('transferId')->name('drive.transfers.cancel');
 Route::prefix('/drive/personal')->group(static function (): void {
     Route::get('/tree', [DriveWorkspaceController::class, 'personalTree']);
     Route::get('/locations/root', [DriveWorkspaceController::class, 'personalRoot']);
@@ -108,6 +119,7 @@ Route::prefix('/tenants/{tenantId}/authorization')->whereNumber('tenantId')->gro
     Route::post('/subjects/{subjectType}/{subjectId}/explain', [ContextualAuthorizationAdministrationController::class, 'tenantExplain'])->where(['subjectType' => 'USER|SERVICE_IDENTITY', 'subjectId' => '[0-9]+']);
     Route::get('/audit-events/contextual', [ContextualAuthorizationAdministrationController::class, 'tenantAuditEvents']);
     Route::get('/resources/{resourceType}/{resourceId}/shares', [ContextualAuthorizationResourceShareController::class, 'tenantIndex'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+']);
+    Route::get('/share-recipients', [ContextualAuthorizationResourceShareController::class, 'tenantRecipients']);
     Route::post('/resources/{resourceType}/{resourceId}/shares', [ContextualAuthorizationResourceShareController::class, 'tenantStore'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+']);
     Route::patch('/resources/{resourceType}/{resourceId}/shares/{shareId}', [ContextualAuthorizationResourceShareController::class, 'tenantUpdate'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+', 'shareId' => '[0-9]+']);
     Route::delete('/resources/{resourceType}/{resourceId}/shares/{shareId}', [ContextualAuthorizationResourceShareController::class, 'tenantDestroy'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+', 'shareId' => '[0-9]+']);
@@ -151,6 +163,7 @@ Route::prefix('/authorization/personal')->group(static function (): void {
     Route::post('/subjects/{subjectType}/{subjectId}/explain', [ContextualAuthorizationAdministrationController::class, 'personalExplain'])->where(['subjectType' => 'USER|SERVICE_IDENTITY', 'subjectId' => '[0-9]+']);
     Route::get('/audit-events', [ContextualAuthorizationAdministrationController::class, 'personalAuditEvents']);
     Route::get('/resources/{resourceType}/{resourceId}/shares', [ContextualAuthorizationResourceShareController::class, 'personalIndex'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+']);
+    Route::get('/share-recipients', [ContextualAuthorizationResourceShareController::class, 'personalRecipients']);
     Route::post('/resources/{resourceType}/{resourceId}/shares', [ContextualAuthorizationResourceShareController::class, 'personalStore'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+']);
     Route::patch('/resources/{resourceType}/{resourceId}/shares/{shareId}', [ContextualAuthorizationResourceShareController::class, 'personalUpdate'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+', 'shareId' => '[0-9]+']);
     Route::delete('/resources/{resourceType}/{resourceId}/shares/{shareId}', [ContextualAuthorizationResourceShareController::class, 'personalDestroy'])->where(['resourceType' => 'FOLDER', 'resourceId' => '[0-9]+', 'shareId' => '[0-9]+']);

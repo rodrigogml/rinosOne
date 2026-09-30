@@ -6,7 +6,7 @@ import AppShell from './AppShell.vue';
 import WorkspaceShell from './WorkspaceShell.vue';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
 import { useWorkspaceStore } from '../workspace/workspaceStore';
-import { personalSettingsDestination } from '../workspace/workspaceCatalog';
+import { globalDriveDestination, personalSettingsDestination } from '../workspace/workspaceCatalog';
 import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 import { scheduleRegisteredRasterIconPreload } from './rasterIconAssets';
 
@@ -32,6 +32,10 @@ function openSettings() {
     workspace.openDestination(personalSettingsDestination, { tenantId: tenantContext.context?.tenant.id ?? null });
     workspace.menuCollapsed = true;
 }
+function openDrive() {
+    workspace.openDestination(globalDriveDestination, { tenantId: tenantContext.context?.tenant.id ?? null });
+    workspace.menuCollapsed = true;
+}
 function openMobileTasks() {
     if (!workspace.surfaces.length || workspace.dialogStack.length) return;
     mobileNavigationOpen.value = false;
@@ -43,7 +47,7 @@ onBeforeUnmount(() => { cancelRasterIconPreload?.(); workspace.discard(); });
 
 <template>
     <div class="authenticated-application">
-        <ApplicationTopBar :display-name="effectiveDisplayName" :avatar-url="avatarUrl" :brand-label="t('access.brand')" :mobile-navigation-label="t('access.shell.openNavigation')" :mobile-tasks-label="t('access.workspace.taskbar.label')" :mobile-tasks-visible="workspace.surfaces.length > 0" :avatar-label="avatarLabel" :menu-label="t('access.shell.menu')" :settings-label="t('access.shell.userSettings')" :sign-out-label="t('access.shell.signOut')" @sign-out="signOut" @open-settings="openSettings" @open-mobile-navigation="mobileNavigationOpen = true" @open-mobile-tasks="openMobileTasks" @open-personal-menu="mobileNavigationOpen = false" />
+        <ApplicationTopBar :display-name="effectiveDisplayName" :avatar-url="avatarUrl" :brand-label="t('access.brand')" :mobile-navigation-label="t('access.shell.openNavigation')" :mobile-tasks-label="t('access.workspace.taskbar.label')" :mobile-tasks-visible="workspace.surfaces.length > 0" :avatar-label="avatarLabel" :menu-label="t('access.shell.menu')" :settings-label="t('access.shell.userSettings')" :sign-out-label="t('access.shell.signOut')" drive-label="Rinos Drive" @sign-out="signOut" @open-drive="openDrive" @open-settings="openSettings" @open-mobile-navigation="mobileNavigationOpen = true" @open-mobile-tasks="openMobileTasks" @open-personal-menu="mobileNavigationOpen = false" />
         <AppShell :label="t('access.workspace.title')">
             <WorkspaceShell v-model:mobile-navigation-open="mobileNavigationOpen" :brand-label="t('access.brand')" :display-name="effectiveDisplayName" @profile-updated="profileUpdated" />
         </AppShell>

@@ -36,6 +36,11 @@ class AuthorizationResourceRegistryTest extends TestCase
                 return ['READ', 'EDIT'];
             }
 
+            public function allowsGroupRelations(): bool
+            {
+                return true;
+            }
+
             public function inheritedResourceIds(ResourceReference $resource): array
             {
                 return [$resource->id];

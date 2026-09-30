@@ -26,7 +26,7 @@ class ExampleTest extends TestCase
         $this->getJson('/api/v1/health')
             ->assertOk()
             ->assertExactJson(['status' => 'ok'])
-            ->assertCookie('XSRF-TOKEN')
+            ->assertCookieMissing('XSRF-TOKEN')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 

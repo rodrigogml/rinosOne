@@ -1,4 +1,4 @@
-export type WorkspaceDestinationScope = 'personal' | 'tenant' | 'domain';
+export type WorkspaceDestinationScope = 'personal' | 'tenant' | 'domain' | 'global';
 export type WorkspaceInstancePolicy = 'single' | 'multiple';
 export type WorkspaceSurfaceStatus = 'open' | 'active' | 'closing' | 'unavailable';
 export type WorkspaceDialogKind = 'information' | 'warning' | 'error' | 'confirmation';

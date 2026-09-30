@@ -71,7 +71,7 @@ Não há nova tabela de compartilhamento. A tabela genérica `auth_resource_rela
 | `resourceId` | `file_filePossession.id`, nunca content, versão, caminho ou chave de backend. |
 | `relationKey` | Somente `READ` nesta fase. |
 | `scope`, `idTenant` | Devem corresponder exatamente ao owner da posse. |
-| `idUser` ou `idGroup` | Exatamente um sujeito; relação direta e revogável. |
+| `idUser` | Destinatário único obrigatório nesta entrega; relação direta e revogável. `idGroup` não é aceito para recursos de arquivo nesta fase. |
 | `active` | Somente relação ativa é projetada em Compartilhados comigo. |
 
 O adapter de arquivo confirma posse `WORKSPACE` ativa, não `SYSTEM_MANAGED`, no owner e scope corretos. Diferentemente da pasta, a relação de arquivo não herda para pai, irmãos ou descendentes e não concede edição.
@@ -85,13 +85,14 @@ Representa uma cópia ou movimento lógico persistente entre workspaces. Não re
 | `id` | BIGINT UNSIGNED | Identidade interna. |
 | `publicId` | identificador opaco | Único; exposto somente ao solicitante autorizado. |
 | `idRequestingUser` | BIGINT UNSIGNED | Principal que iniciou a operação. |
-| `sourceScope`, `sourceTenantId` | enum + BIGINT nulo | Alvo de origem; tenant nulo somente em `PERSONAL`. |
-| `destinationScope`, `destinationTenantId` | enum + BIGINT nulo | Alvo de destino; tenant nulo somente em `PERSONAL`. |
+| `sourceScope`, `sourceUserId`, `sourceTenantId` | enum + BIGINT nulo | Alvo de origem; exatamente um owner compatível com o escopo. Preserva a origem pessoal de uma concessão direta. |
+| `destinationScope`, `destinationUserId`, `destinationTenantId` | enum + BIGINT nulo | Alvo de destino; exatamente um owner compatível com o escopo. |
+| `destinationFolderId` | BIGINT nulo | Pasta de destino autorizada, ou nulo para a raiz; persiste a localização do job independentemente da interface. |
 | `mode` | enum | `COPY` ou `MOVE`. |
 | `selectionManifest` | JSON | Itens de uma única origem; revalidado, nunca autoridade de acesso. |
 | `state` | enum | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED` ou `CANCELLED`. |
 | `totalItems`, `processedItems` | inteiros sem sinal | Progresso seguro por quantidade, sem nomes. |
-| `idempotencyKey` | string limitada | Única por solicitante e operação ativa; impede reexecução acidental. |
+| `idempotencyKey` | string limitada nula | Espelho de auditoria da chave recebida na API; a autoridade de idempotência é `api_idempotency_records`, nunca um índice parcial na transferência. |
 | `correlationId` | string limitada nula | Correlação operacional/auditoria. |
 | `leaseExpiresAt`, `heartbeatAt` | data/hora nula | Lease renovável durante processamento. |
 | `failureCode` | string limitada nula | Código seguro, sem item, caminho ou dado de terceiro. |
@@ -111,7 +112,7 @@ Representa uma cópia ou movimento lógico persistente entre workspaces. Não re
 
 ### Índices e invariantes de transferência
 
-- `publicId` é único; `idRequestingUser, idempotencyKey` impede duplicidade da mesma intenção.
+- `publicId` é único. A criação usa o middleware `api.idempotency`, cuja chave única inclui solicitante, escopo e operação; o campo de auditoria da transferência não recebe índice de unicidade próprio.
 - Índices por `state, leaseExpiresAt` suportam recuperação; por contexto e solicitante suportam status seguro; reservas são indexadas por `workspaceScope, idTenant, rootFolderId, leaseExpiresAt`.
 - Antes de criar a operação, a transação normaliza raízes, adquire locks em ordem estável `(scope, tenant, folder)` e rejeita qualquer interseção com reserva ativa.
 - O destino só recebe posses/pastas ativas no commit lógico; `MOVE` libera a origem na mesma confirmação ou a mantém intacta.
@@ -121,7 +122,7 @@ Representa uma cópia ou movimento lógico persistente entre workspaces. Não re
 
 | Projeção | Origem | Regra |
 | --- | --- | --- |
-| Catálogo de drives | usuário, membership, administradores e relações efetivas | Lista Meu Drive, roots Work autorizadas e Compartilhados comigo; não carrega árvores. |
+| Catálogo de drives | usuário, membership, administradores e relações efetivas | Lista Meu Drive, roots Work de administrador ou relação de pasta navegável e Compartilhados comigo; arquivo diretamente concedido não cria root Work. Não carrega árvores. |
 | Compartilhados comigo | relações diretas ativas de folder/file | Agrupa somente itens diretamente concedidos, com alvo de origem e capabilities read-only para arquivo. |
 | Estado de transferência | `file_workspaceTransfer` | Expõe somente id opaco, modo, estado, contadores, destino seguro e erro categorizado ao solicitante. |
 

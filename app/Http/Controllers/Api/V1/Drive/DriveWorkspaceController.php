@@ -11,22 +11,98 @@ use App\Http\Requests\Drive\DriveItemSelectionRequest;
 use App\Http\Requests\Drive\MoveDriveItemRequest;
 use App\Http\Requests\Drive\ReleaseDriveItemSelectionRequest;
 use App\Http\Requests\Drive\StoreDriveFolderRequest;
+use App\Http\Requests\Drive\StoreDriveTransferRequest;
 use App\Http\Requests\Drive\StoreDriveUploadRequest;
 use App\Http\Requests\Drive\UpdateDriveFolderRequest;
 use App\Models\FileStorage\StoredFilePossession;
+use App\Models\FileStorage\WorkspaceExport;
 use App\Models\FileStorage\WorkspaceFolder;
+use App\Services\FileStorage\Drive\DriveCatalogService;
+use App\Services\FileStorage\Drive\DriveTransferQueryService;
+use App\Services\FileStorage\Drive\DriveTransferRequestService;
 use App\Services\FileStorage\Drive\DriveWorkspaceCommandService;
 use App\Services\FileStorage\Drive\DriveWorkspaceDownloadService;
 use App\Services\FileStorage\Drive\DriveWorkspaceExportService;
 use App\Services\FileStorage\Drive\DriveWorkspaceProjectionService;
 use App\Services\FileStorage\Drive\DriveWorkspaceTargetResolver;
 use App\Services\FileStorage\Drive\DriveWorkspaceUploadService;
+use App\Services\FileStorage\Drive\SharedWithMeProjectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DriveWorkspaceController extends Controller
 {
+    public function catalog(Request $request, DriveCatalogService $catalog): JsonResponse
+    {
+        return response()->json($catalog->catalog($request->user()));
+    }
+
+    public function sharedWithMe(Request $request, SharedWithMeProjectionService $sharedWithMe): JsonResponse
+    {
+        return response()->json($sharedWithMe->project($request->user()));
+    }
+
+    public function sharedFileDetails(string $possessionId, Request $request, SharedWithMeProjectionService $sharedWithMe): JsonResponse
+    {
+        return $this->respond(fn (): array => $sharedWithMe->fileDetails($request->user(), (int) $possessionId));
+    }
+
+    public function sharedDownload(string $possessionId, Request $request, SharedWithMeProjectionService $sharedWithMe, DriveWorkspaceDownloadService $downloads): StreamedResponse|JsonResponse
+    {
+        return $this->downloadResponse(function () use ($possessionId, $request, $sharedWithMe, $downloads): array {
+            // The shared endpoint is deliberately limited to explicit file relations. A
+            // general private-read authorization (for example, the owner's own access)
+            // must not make an arbitrary file appear in this virtual root.
+            $sharedWithMe->fileDetails($request->user(), (int) $possessionId);
+
+            return $downloads->openShared($request->user(), (int) $possessionId);
+        });
+    }
+
+    public function sharedRequestExport(DriveItemSelectionRequest $request, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->requestDirectFiles($request->user(), $request->items())), 202);
+    }
+
+    public function sharedExportStatus(string $exportId, Request $request, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->statusDirect($request->user(), $exportId)));
+    }
+
+    public function sharedCancelExport(string $exportId, Request $request, DriveWorkspaceExportService $exports): JsonResponse
+    {
+        return $this->respond(fn (): array => $this->exportResponse($exports->cancelDirect($request->user(), $exportId)));
+    }
+
+    public function sharedDownloadExport(string $exportId, Request $request, DriveWorkspaceExportService $exports): StreamedResponse|JsonResponse
+    {
+        return $this->exportDownloadResponse(fn (): array => $exports->openDirectDownload($request->user(), $exportId));
+    }
+
+    public function storeTransfer(StoreDriveTransferRequest $request, DriveWorkspaceTargetResolver $targets, DriveTransferRequestService $transfers, DriveTransferQueryService $queries): JsonResponse
+    {
+        return $this->respond(function () use ($request, $targets, $transfers, $queries): array {
+            $sourceInput = $request->sourceTarget();
+            $destinationInput = $request->destinationTarget();
+            $source = $sourceInput['kind'] === 'personal' ? $targets->personal($request->user()) : $targets->work($request->user(), $sourceInput['tenantId']);
+            $destination = $destinationInput['kind'] === 'personal' ? $targets->personal($request->user()) : $targets->work($request->user(), $destinationInput['tenantId']);
+            $transfer = $transfers->request($request->user(), $source, $destination, $request->items(), $request->mode(), $destinationInput['folderId'], $request->header('Idempotency-Key'), $request->header('X-Correlation-Id'));
+
+            return $queries->response($transfer);
+        }, 202);
+    }
+
+    public function transferStatus(string $transferId, Request $request, DriveTransferQueryService $transfers): JsonResponse
+    {
+        return $this->respond(fn (): array => $transfers->response($transfers->status($request->user(), $transferId)));
+    }
+
+    public function cancelTransfer(string $transferId, Request $request, DriveTransferQueryService $transfers): JsonResponse
+    {
+        return $this->respond(fn (): array => $transfers->response($transfers->cancel($request->user(), $transferId)));
+    }
+
     public function personalStoreFolder(StoreDriveFolderRequest $request, DriveWorkspaceTargetResolver $targets, DriveWorkspaceCommandService $commands): JsonResponse
     {
         return $this->respond(fn (): array => $this->folderResponse($commands->createFolder($request->user(), $targets->personal($request->user()), $request->string('displayName')->toString(), $request->integer('parentFolderId') ?: null)), 201);
@@ -268,7 +344,7 @@ class DriveWorkspaceController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function exportResponse(\App\Models\FileStorage\WorkspaceExport $export): array
+    private function exportResponse(WorkspaceExport $export): array
     {
         return ['exportId' => $export->publicId, 'state' => $export->state, 'expiresAt' => $export->expiresAt?->toISOString()];
     }
@@ -295,7 +371,11 @@ class DriveWorkspaceController extends Controller
     {
         try {
             $export = $download();
-            return response()->streamDownload(static function () use ($export): void { fpassthru($export['stream']); fclose($export['stream']); }, $export['displayName'], ['Content-Type' => 'application/zip', 'X-Content-Type-Options' => 'nosniff']);
+
+            return response()->streamDownload(static function () use ($export): void {
+                fpassthru($export['stream']);
+                fclose($export['stream']);
+            }, $export['displayName'], ['Content-Type' => 'application/zip', 'X-Content-Type-Options' => 'nosniff']);
         } catch (DriveWorkspaceTargetException|DriveWorkspaceCommandException) {
             return response()->json(['error' => ['code' => 'DRIVE_EXPORT_UNAVAILABLE', 'message' => 'A exportação solicitada não está disponível.']], 404);
         }

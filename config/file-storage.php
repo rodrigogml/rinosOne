@@ -46,6 +46,19 @@ return [
         'cleanupIntervalMinutes' => (int) env('DRIVE_EXPORT_CLEANUP_INTERVAL_MINUTES', 15),
     ],
 
+    // Logical transfers only create database relations; the underlying deduplicated bytes stay in place.
+    'workspaceTransfer' => [
+        // A worker renews this lease while executing. Expiry releases the affected branches safely.
+        'leaseMinutes' => (int) env('DRIVE_TRANSFER_LEASE_MINUTES', 15),
+        'heartbeatSeconds' => (int) env('DRIVE_TRANSFER_HEARTBEAT_SECONDS', 30),
+        'maximumAttempts' => (int) env('DRIVE_TRANSFER_MAXIMUM_ATTEMPTS', 3),
+        'maximumItems' => (int) env('DRIVE_TRANSFER_MAXIMUM_ITEMS', 100),
+        'maximumTreeDepth' => (int) env('DRIVE_TRANSFER_MAXIMUM_TREE_DEPTH', 32),
+        // Scheduler interval for recovering abandoned jobs and deleting stale reservations.
+        'recoveryIntervalMinutes' => (int) env('DRIVE_TRANSFER_RECOVERY_INTERVAL_MINUTES', 5),
+        'terminalRetentionDays' => (int) env('DRIVE_TRANSFER_TERMINAL_RETENTION_DAYS', 30),
+    ],
+
     'maintenance' => [
         'retentionPurgeIntervalMinutes' => (int) env('FILE_STORAGE_RETENTION_PURGE_INTERVAL_MINUTES', 60),
         'reconciliationIntervalMinutes' => (int) env('FILE_STORAGE_RECONCILIATION_INTERVAL_MINUTES', 60),

@@ -33,15 +33,15 @@ Transferir entre drives não desloca bytes. Uma cópia cria a posse e os víncul
 ### Catálogo e alvos seguros
 
 1. `DriveCatalogService` resolve o principal autenticado e retorna somente raízes disponíveis: Meu Drive, cada tenant com acesso efetivo e Compartilhados comigo.
-2. A raiz Work é incluída somente para administrador ativo ou quando existir relação efetiva a pelo menos uma pasta/arquivo daquele tenant; membership isolada não expõe nome, contagem ou uso do Drive.
-3. Cada referência transporta um alvo completo `{ scope, tenantId?, kind, localId? }`; ids locais nunca são aceitos sem escopo e tenant correspondentes.
+2. A raiz Work é incluída somente para administrador ativo ou quando existir relação efetiva a pelo menos uma pasta navegável daquele tenant; uma concessão direta de arquivo aparece exclusivamente em Compartilhados comigo. Membership isolada não expõe nome, contagem ou uso do Drive.
+3. O contrato web usa o alvo completo `{ kind: 'personal'|'tenant', tenantId?: number, folderId?: number }`; a borda HTTP converte `kind` para o enum interno `scope`. Ids locais nunca são aceitos sem tipo e tenant correspondentes.
 4. As rotas por alvo existentes permanecem como borda de operação. O resolvedor deixa de depender da organização ativa na interface e valida tenant, membership e autorização efetiva por requisição.
 5. A árvore e as coleções são lazy: o catálogo não carrega conteúdo; cada painel busca somente sua raiz, pasta ou lixeira ativa.
 6. Revogação ou perda de membership remove somente a raiz/ramo afetado do cache local; o painel mostra estado seguro e não conserva metadados não autorizados.
 
 ### Compartilhados comigo e autorização direta de arquivo
 
-- Registrar `WorkspaceFileAuthorizationResourceAdapter` para os tipos `personal.file` e `tenant.file`.
+- Registrar `WorkspaceFileAuthorizationResourceAdapter` para os tipos `personal.file` e `tenant.file`, aceitando nesta entrega somente uma relação direta por `idUser`; concessões por grupo de arquivo ficam para uma SDD futura.
 - Relação direta de arquivo aceita somente `READ`; o destinatário pode listar o atalho, consultar metadados seguros, baixar, exportar ou copiar para destino editável. Não pode renomear, mover, lixar, restaurar ou substituir a posse de origem.
 - `SharedWithMeProjectionService` combina relações diretas de pasta e arquivo concedidas ao principal. Ele não transforma ancestrais em breadcrumbs nem enumera irmãos; cada item aponta para o alvo de origem e recebe revalidação em toda operação.
 - Uma concessão direta redundante não duplica um item já visível pelo mesmo caminho concedido. A projeção prefere a entrada de pasta quando o arquivo é descendente de uma pasta diretamente acessível.
@@ -55,12 +55,12 @@ Transferir entre drives não desloca bytes. Uma cópia cria a posse e os víncul
 
 ### Transferência lógica e reservas
 
-1. `DriveTransferService::request()` valida origem, destino, modo e seleção; cria `file_workspaceTransfer` e suas reservas na mesma transação, com idempotency key e correlação.
+1. `DriveTransferService::request()` valida origem, destino, modo, seleção e limites configuráveis de itens/profundidade; usa o middleware existente `api.idempotency` como autoridade de repetição e cria `file_workspaceTransfer` e reservas na mesma transação, com correlação.
 2. A reserva materializa o conjunto de raízes protegidas de origem e destino. Toda mutação de pasta, posse, upload, lixeira, restauro ou limpeza consulta `DriveTransferReservationService` antes de executar e responde `DRIVE_TRANSFER_IN_PROGRESS` se intersectar um ramo reservado.
 3. `ProcessWorkspaceTransfer` executa em fila, atualiza progresso seguro e renova o lease. Fechar painel ou janela não altera o job.
 4. Na confirmação, o job bloqueia registros lógicos relevantes em ordem estável, revalida autorização e cria as posses/pastas de destino. Conteúdo físico é referenciado pela fundação, nunca copiado no backend.
 5. Em modo `MOVE`, depois de a cópia lógica estar íntegra, a origem é liberada pela transição de lifecycle existente. Qualquer falha ou revogação antes do commit descarta o estágio de destino e mantém a origem.
-6. `RecoverExpiredWorkspaceTransfers` renova/reagenda operações recuperáveis ou marca falha e libera reservas após lease vencido. Rotina, lease, heartbeat e máximo de tentativas são configuráveis por ambiente.
+6. `RecoverExpiredWorkspaceTransfers` renova/reagenda operações recuperáveis ou marca falha e libera reservas após lease vencido. Rotina, lease, heartbeat, máximo de tentativas, quantidade de itens e profundidade máxima são configuráveis por ambiente.
 
 ### Lixeira, quota e auditoria
 
@@ -110,7 +110,7 @@ docs/specs/rinos-drive/                          # artefatos desta feature
 | Tipos e parsers web | camelCase | TypeScript, parser e Vitest | `resources/js/drive/` |
 | Rotas e parâmetros | kebab-case; ids numéricos | router e requests | `routes/api/authenticated.php` |
 
-**Camada de mapeamento (DB ↔ DTO)**: serviços do Drive projetam catálogo, localização, item compartilhado e transferência; controllers não expõem modelos, storage keys ou relações internas.
+**Camada de mapeamento (DB ↔ DTO)**: serviços do Drive projetam catálogo, localização, item compartilhado e transferência; a borda HTTP normaliza o alvo externo `kind` para o enum interno `scope`. Controllers não expõem modelos, storage keys ou relações internas.
 
 **Validação de schema**: backend valida entrada; frontend interpreta toda resposta com parser TypeScript antes de alterar estado do painel. Respostas de progresso não contêm itens não autorizados.
 

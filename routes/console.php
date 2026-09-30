@@ -5,7 +5,9 @@ use App\Jobs\FileStorage\PurgeExpiredWorkspaceExports;
 use App\Jobs\FileStorage\PurgeRetainedFileStorageObjects;
 use App\Jobs\FileStorage\PurgeRetainedFileVersions;
 use App\Jobs\FileStorage\ReconcileFileStorageObjects;
+use App\Jobs\FileStorage\RecoverExpiredWorkspaceTransfers;
 use App\Jobs\FileStorage\ReprocessFileStorageCompression;
+use App\Jobs\Tenant\DiscoverTenantSchemaUpdates;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
 use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use App\Services\Maintenance\PersonAuditRetentionMaintenanceService;
@@ -41,6 +43,11 @@ Schedule::call(static fn () => app(IbgeTerritoryMaintenanceService::class)->sync
 Schedule::call(static fn () => app(PersonAuditRetentionMaintenanceService::class)->purgeScheduled())
     ->daily()
     ->name('maintenance.person-audit-retention');
+
+Schedule::job(new DiscoverTenantSchemaUpdates)
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->name('tenant-schema-update-discovery');
 
 $fileStorageRetentionPurgeInterval = config('file-storage.maintenance.retentionPurgeIntervalMinutes');
 
@@ -84,3 +91,12 @@ $fileStorageCompressionReprocessExpression = $fileStorageCompressionReprocessInt
     : "*/{$fileStorageCompressionReprocessInterval} * * * *";
 
 Schedule::job(new ReprocessFileStorageCompression)->cron($fileStorageCompressionReprocessExpression);
+
+$workspaceTransferRecoveryInterval = config('file-storage.workspaceTransfer.recoveryIntervalMinutes');
+if ($workspaceTransferRecoveryInterval < 1 || $workspaceTransferRecoveryInterval > 60) {
+    throw new LogicException('DRIVE_TRANSFER_RECOVERY_INTERVAL_MINUTES must be between 1 and 60.');
+}
+Schedule::job(new RecoverExpiredWorkspaceTransfers)
+    ->cron($workspaceTransferRecoveryInterval === 60 ? '0 * * * *' : "*/{$workspaceTransferRecoveryInterval} * * * *")
+    ->withoutOverlapping(5)
+    ->name('file-storage.workspace-transfer-recovery');

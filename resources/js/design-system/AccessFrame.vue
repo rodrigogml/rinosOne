@@ -9,4 +9,4 @@ import VisualPreferencesPopover from './VisualPreferencesPopover.vue';
 const { t } = useI18n();
 </script>
 
-<template><AppShell centered><div class="access-frame"><BrandMark class="access-frame__brand" :alt="t('access.brand')" /><UiCard><slot /></UiCard><div class="access-frame__utilities"><VisualPreferencesPopover /><LanguageSelector /></div></div></AppShell></template>
+<template><AppShell centered><div class="access-frame"><div class="access-frame__identity"><BrandMark variant="icon" class="access-frame__crest" alt="" aria-hidden="true" /><BrandMark class="access-frame__brand" :alt="t('access.brand')" /></div><UiCard><slot /></UiCard><div class="access-frame__utilities"><VisualPreferencesPopover /><LanguageSelector /></div></div></AppShell></template>

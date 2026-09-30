@@ -20,7 +20,7 @@
 | Surface ID | Existing Route, Command, or Component | Evidence | Current Behavior |
 |------------|---------------------------------------|----------|------------------|
 | SURF-WEB-ADMIN | `tenant.authorization-administration` e `resources/js/authorization/AuthorizationAdministrationSurface.vue` | `resources/js/workspace/workspaceCatalog.ts` e `resources/js/design-system/WorkspaceStage.vue` | Tela de tenant com abas e formulários que recebem IDs técnicos; não há projeção unificada de sujeitos, papéis ou contexto. |
-| SURF-WEB-SHARING | `resources/js/drive/DriveExplorer.vue` e `routes/api/authenticated.php` | Rotas `/drive/personal` e `/tenants/{tenantId}/drive` | Drive navega recursos, mas ainda não fornece painel visual de compartilhamento contextual. |
+| SURF-WEB-SHARING | `resources/js/drive/DriveExplorer.vue`, `resources/js/authorization/ResourceSharingPanel.vue` e `routes/api/authenticated.php` | Ação “Compartilhar” no detalhe de pasta e rotas contextuais de relações | Drive abre um painel reutilizável de compartilhamento que recebe o recurso e o workspace tipado da origem, sem seletor livre de workspace. |
 | SURF-WEB-ACCESS | `resources/js/design-system/WorkspaceShell.vue` | Área de Trabalho autenticada e catálogo de superfícies | Exibe superfícies abertas, sem uma entrada contextual comum para administração pessoal, tenant ou plataforma. |
 
 ## Interaction Inventory

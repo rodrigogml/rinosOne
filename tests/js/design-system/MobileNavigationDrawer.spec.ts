@@ -13,7 +13,7 @@ describe('mobile navigation drawer', () => {
         const wrapper = mountDrawer();
 
         expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Navegação');
-        expect(wrapper.get('.mobile-navigation-drawer__brand').attributes('src')).toBe('/assets/brand/logo-768.png');
+        expect(wrapper.get('.mobile-navigation-drawer__brand').attributes('src')).toBe('/assets/brand/logo-768.png?v=20260930');
         expect(wrapper.find('.mobile-navigation-drawer__title').exists()).toBe(false);
         expect(wrapper.text()).toContain('Nenhuma área adicional está disponível.');
         expect(wrapper.findAll('a')).toHaveLength(0);

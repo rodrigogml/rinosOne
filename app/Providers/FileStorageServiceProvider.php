@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\FileStorage\V1\FileStorageV1;
 use App\Domain\Authorization\AuthorizationScope;
+use App\Infrastructure\FileStorage\Authorization\WorkspaceFileAuthorizationResourceAdapter;
 use App\Infrastructure\FileStorage\Authorization\WorkspaceFolderAuthorizationResourceAdapter;
 use App\Services\Authorization\Resource\AuthorizationResourceRegistry;
 use App\Services\FileStorage\FileStorageV1Service;
@@ -18,6 +19,8 @@ class FileStorageServiceProvider extends ServiceProvider
             $registry = new AuthorizationResourceRegistry;
             $registry->register(new WorkspaceFolderAuthorizationResourceAdapter(AuthorizationScope::Personal));
             $registry->register(new WorkspaceFolderAuthorizationResourceAdapter(AuthorizationScope::Tenant));
+            $registry->register(new WorkspaceFileAuthorizationResourceAdapter(AuthorizationScope::Personal));
+            $registry->register(new WorkspaceFileAuthorizationResourceAdapter(AuthorizationScope::Tenant));
 
             return $registry;
         });

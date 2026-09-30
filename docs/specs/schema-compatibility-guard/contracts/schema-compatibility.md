@@ -38,4 +38,9 @@ A interface usa o código para atualizar seu estado contextual e comunica a indi
 
 ## Exceções operacionais
 
-Verificações de saúde e os mecanismos não HTTP indispensáveis para executar a recuperação permanecem fora deste contrato. Eles não expõem detalhes ao público e são definidos pelo plano operacional da implantação.
+Somente as verificações de saúde abaixo ficam fora da guarda global:
+
+- `GET /up`, a verificação de saúde da aplicação;
+- `GET /api/v1/health`, a verificação JSON de saúde sem sessão, autenticação, acesso a contexto ou regra de negócio.
+
+Não existe endpoint HTTP isento para executar migrations, consultar histórico, disparar recuperação ou acessar dados funcionais. Os mecanismos indispensáveis à recuperação são processos operacionais não HTTP e permanecem fora deste contrato público.

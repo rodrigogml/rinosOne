@@ -25,6 +25,28 @@ class DriveWorkspaceDownloadService
     public function open(User $principal, DriveWorkspaceTarget $target, int $possessionId): array
     {
         $possession = $this->possession($target, $possessionId);
+
+        return $this->openPossession($principal, $possession);
+    }
+
+    /** Opens an active workspace file after direct-file or inherited authorization is revalidated. */
+    public function openShared(User $principal, int $possessionId): array
+    {
+        $possession = StoredFilePossession::query()
+            ->whereKey($possessionId)
+            ->where('storageArea', 'WORKSPACE')
+            ->where('state', 'ACTIVE')
+            ->first();
+        if ($possession === null) {
+            throw new DriveWorkspaceProjectionException('DRIVE_LOCATION_NOT_FOUND');
+        }
+
+        return $this->openPossession($principal, $possession);
+    }
+
+    /** @return array{stream: resource, displayName: string, detectedMimeType: string} */
+    private function openPossession(User $principal, StoredFilePossession $possession): array
+    {
         $ownerType = $possession->idUser === null ? FileStorageOwnerType::Tenant : FileStorageOwnerType::User;
         $ownerId = $possession->idUser ?? $possession->idTenant;
         if ($ownerId === null) {

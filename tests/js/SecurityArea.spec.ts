@@ -41,7 +41,7 @@ describe('authenticated workspace area', () => {
 
         expect(wrapper.get('main').attributes('aria-label')).toBe('Área de trabalho');
         expect(wrapper.get('.workspace-stage--empty').text()).toBe('');
-        expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png');
+        expect(wrapper.get('.application-top-bar__desktop-brand').attributes('src')).toBe('/assets/brand/logo-768.png?v=20260930');
         expect(wrapper.get('button[aria-label="Menu pessoal de Person"]').text()).toContain('Pe');
         expect(wrapper.find('#security-title').exists()).toBe(false);
         expect(wrapper.find('.security-card').exists()).toBe(false);

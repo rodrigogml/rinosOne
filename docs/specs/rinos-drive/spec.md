@@ -177,6 +177,7 @@ Como usuário com acesso aos locais de origem e destino, quero comparar dois ram
 - Transferências entre drives criam uma operação persistente com bloqueio exclusivo dos ramos de origem e destino. Renomear, mover, enviar à lixeira, restaurar, limpar, enviar conteúdo ou criar descendente que intersecte esses ramos é recusado enquanto a reserva estiver válida; leituras e downloads autorizados permanecem possíveis.
 - A operação de transferência revalida autorização de origem e destino imediatamente antes da confirmação lógica. Revogação durante a execução encerra a operação sem remover a origem, criar vínculo ativo parcial no destino ou revelar informação adicional.
 - Reservas de transferência possuem lease renovável. Uma manutenção configurável recupera operações interrompidas de modo idempotente ou as marca como falhas e libera suas reservas, sem exigir intervenção manual e sem deixar bloqueio permanente.
+- A seleção de transferência respeita limites configuráveis de quantidade de itens e profundidade de árvore; uma solicitação acima do limite é recusada antes de criar reserva ou job.
 
 ## Requisitos
 
@@ -213,11 +214,12 @@ Como usuário com acesso aos locais de origem e destino, quero comparar dois ram
 - **FR-DRIVE-029**: O Rinos Drive DEVE permitir abrir um segundo painel de navegação na mesma janela, com localização, seleção, carregamento, erro e capabilities independentes por painel.
 - **FR-DRIVE-030**: Ao arrastar itens entre painéis, o sistema DEVE sempre solicitar confirmação com Cancelar, Mover e Copiar; Mover é a opção inicial para o mesmo drive e Copiar para drives distintos.
 - **FR-DRIVE-031**: Uma transferência entre drives DEVE ser uma operação lógica persistente, em segundo plano e independente da janela, sem deslocar bytes físicos. A cópia cria vínculos autorizados no destino com reutilização deduplicada quando aplicável; Mover remove a origem somente após a cópia lógica íntegra, sem transferir implicitamente quota, retenção, propriedade ou permissões da origem.
-- **FR-DRIVE-032**: A raiz virtual Compartilhados comigo DEVE listar somente itens compartilhados diretamente com o usuário e cada item DEVE continuar submetido à autorização, ao drive de origem e à revogação em tempo de operação.
-- **FR-DRIVE-033**: O sistema DEVE permitir que arquivos sejam recursos de compartilhamento direto, independentes de suas pastas, com leitura exclusiva nesta fase. O destinatário pode baixar, exportar ou copiar para destino autorizado, mas não pode renomear, mover, enviar à lixeira ou substituir o original; a relação aplica revogação, auditoria e ausência de exposição de irmãos ou ancestrais.
+- **FR-DRIVE-032**: A raiz virtual Compartilhados comigo DEVE listar somente itens compartilhados diretamente com o usuário e cada item DEVE continuar submetido à autorização, ao drive de origem e à revogação em tempo de operação. Uma concessão direta de arquivo NÃO DEVE criar nem tornar visível uma raiz Work da organização de origem.
+- **FR-DRIVE-033**: O sistema DEVE permitir que arquivos sejam recursos de compartilhamento direto a um usuário, independentes de suas pastas, com leitura exclusiva nesta fase. O destinatário pode baixar, exportar ou copiar para destino autorizado, mas não pode renomear, mover, enviar à lixeira ou substituir o original; a relação aplica revogação, auditoria e ausência de exposição de irmãos ou ancestrais. Relações de grupo para arquivos ficam fora deste escopo.
 - **FR-DRIVE-034**: Antes de iniciar transferência entre drives, o sistema DEVE reservar de modo exclusivo os ramos de origem e destino e recusar operações mutáveis que intersectem a reserva até terminar, falhar ou ser cancelada, sem bloquear leituras e downloads autorizados.
 - **FR-DRIVE-035**: O sistema DEVE validar a autorização de origem e destino no início e imediatamente antes da confirmação de uma transferência; se qualquer autorização for revogada, a transferência DEVE falhar de forma íntegra, sem remover a origem ou manter vínculo ativo parcial no destino.
 - **FR-DRIVE-036-INFRA-SCHED**: O sistema DEVE manter reserva de transferência com lease renovável, recuperação idempotente e limpeza automática configurável para operações interrompidas; uma falha irrecuperável DEVE liberar as reservas sem aplicar resultado parcial.
+- **FR-DRIVE-037**: O sistema DEVE impor limites configuráveis por instância para quantidade total de itens e profundidade máxima de árvore em uma transferência, validando-os antes da reserva e sem iniciar processamento parcial.
 
 ### Entidades Principais
 

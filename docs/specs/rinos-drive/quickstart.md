@@ -32,6 +32,12 @@
 6. Interrompa o worker antes da confirmação e aguarde o lease configurado.
 7. **Esperado**: a manutenção recupera idempotentemente ou falha a operação e libera as reservas; nenhum ramo permanece bloqueado.
 
+## Limites de seleção de transferência
+
+1. **Dado** um ambiente com limites configurados de itens e profundidade, prepare uma seleção que exceda cada limite individualmente.
+2. **Quando** o usuário confirmar Copiar ou Mover, a criação da transferência é recusada antes de persistir operação, reserva ou job.
+3. **Esperado**: a resposta traz erro categorizado seguro, a origem e o destino não são modificados e uma nova seleção dentro dos limites continua disponível.
+
 ## Rinos Drive Pessoal: navegação e upload
 
 1. Autentique um usuário e abra Rinos Drive Pessoal.
@@ -76,5 +82,6 @@ Os cenários são exercitados de forma automatizada pelos testes de feature, int
 | Pessoal, nomes, upload e atualização | `DriveWorkspaceUploadApiTest`, `DriveWorkspaceCommandApiTest` e `DriveExplorer.spec.ts` |
 | Work administrativo, relação parcial e revogação | `DriveWorkspaceProjectionApiTest` e `DriveWorkspaceDownloadApiTest` |
 | Exportação, ZIP, expiração, limite, cancelamento e limpeza | `WorkspaceExportPersistenceTest` e `WorkspaceExportScheduleConfigurationTest` |
+| Transferência, reserva, recuperação e contrato privado | `DriveTransferRequestServiceTest`, `WorkspaceTransferExecutionServiceTest`, `ProcessWorkspaceTransferTest`, `WorkspaceTransferRecoveryServiceTest` e `DriveTransferApiTest` |
 | Contrato e apresentação responsiva | `driveWorkspaceApi.spec.ts` e `DriveExplorer.spec.ts` |
 | Composição autenticada em desktop/telefone e revogação visual | `application.spec.ts` — cenário `rechecks a Drive folder location and preserves the workspace after revocation on desktop and telephone` |
