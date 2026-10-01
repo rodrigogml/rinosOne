@@ -6,4 +6,4 @@ const button = ref<HTMLButtonElement | null>(null);
 defineExpose({ focus: () => button.value?.focus() });
 </script>
 
-<template><button ref="button" class="ui-icon-button" :type="type" :disabled="disabled" :aria-label="label"><span class="ui-icon-button__icon" aria-hidden="true"><slot /></span></button></template>
+<template><button ref="button" class="ui-icon-button" :type="type" :disabled="disabled" :aria-label="label" :title="label"><span class="ui-icon-button__icon" aria-hidden="true"><slot /></span></button></template>

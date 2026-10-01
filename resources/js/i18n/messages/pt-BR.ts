@@ -480,6 +480,8 @@ Object.assign(ptBR.access as unknown as Record<string, unknown>, {
         readOnly: "Somente leitura",
         metadataAvailable: "Metadados seguros disponíveis: {count}.",
         itemCollection: "Itens de {name}",
+        statusSummary: '{total} Itens ({files} Arquivos + {folders} Pastas)',
+        statusSelectionSummary: ', {total} Itens Selecionados ({files} Arquivos + {folders} Pastas) - Tamanho Selecionado {size}',
     },
 });
 Object.assign(
@@ -503,8 +505,16 @@ Object.assign(
     },
 );
 Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { openSecondPanel: 'Abrir segundo painel', closeSecondPanel: 'Fechar segundo painel' });
+Object.assign(ptBR.access as unknown as Record<string, unknown>, { advancedFilter: { title: 'Filtro avançado', description: 'Monte as condições que serão aplicadas à lista de Pessoas.', open: 'Filtros', filter: 'Filtro', group: 'Grupo', combinator: 'Combinar por', and: 'E', or: 'OU', not: 'NÃO', matchMode: 'Registros relacionados', anyRecord: 'Qualquer registro', sameRecord: 'Mesmo registro', relation: 'Coleção', sameRecordIn: 'Mesmo registro em {relation}', sameRecordHint: 'Todas as condições deste grupo devem ser atendidas pelo mesmo registro de {relation}.', field: 'Campo', operator: 'Operador', value: 'Valor', addCondition: 'Adicionar condição', addGroup: 'Adicionar grupo', removeCondition: 'Remover condição', removeGroup: 'Remover grupo', apply: 'Aplicar filtro', cancel: 'Cancelar', clearSearch: 'Limpar busca simples', clearFilter: 'Limpar filtro avançado', activeMode: 'Filtro avançado ativo. A busca simples permanece desativada até este filtro ser limpo.', simpleSearchReplacedFilter: 'A busca simples foi iniciada e o filtro avançado anterior foi descartado.', filterReplacedSearch: 'O filtro avançado foi aplicado e a busca simples anterior foi limpa.', schemaLoadFailed: 'Não foi possível carregar os campos disponíveis para o filtro avançado.', operators: { EQUALS: 'é', NOT_EQUALS: 'não é', CONTAINS: 'contém', NOT_CONTAINS: 'não contém', STARTS_WITH: 'começa com', ENDS_WITH: 'termina com', IS_EMPTY: 'está vazio', IS_NOT_EMPTY: 'não está vazio', IN: 'está em', NOT_IN: 'não está em' } } });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { resizePanels: 'Redimensionar painéis', resizeTree: 'Redimensionar árvore de pastas' });
+Object.assign((ptBR.access as unknown as { advancedFilter: Record<string, string> }).advancedFilter, { incompatibleField: 'incompatível com este grupo', incompatibleScope: 'Há condições incompatíveis com o contexto selecionado. Ajuste os campos destacados antes de aplicar.', simpleSearchActive: 'Busca simples ativa. O filtro avançado permanece desativado até esta busca ser limpa.' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { actions: 'Ações do Drive' });
 Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferTitle: 'Transferir itens', transferDescription: 'Confirme como deseja transferir {count} item(ns).', transferSource: 'Origem', transferDestination: 'Destino', transferMode: 'Ação', copy: 'Copiar' });
 Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferFailed: 'Não foi possível iniciar a transferência agora.' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferInvalid: 'Escolha um destino diferente que não esteja dentro da pasta selecionada.' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferProgress: 'Transferência {state}: {processed} de {total}.', cancelTransfer: 'Cancelar transferência' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferCompleted: 'Transferência concluída. As coleções abertas foram atualizadas.', transferTerminal: 'Transferência encerrada: {state}.' });
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, { transferUnavailable: 'O acompanhamento desta transferência não está mais disponível. Atualize o Drive para conferir as coleções.' });
 Object.assign(
     (ptBR.access as unknown as { drive: Record<string, string> }).drive,
     {
@@ -534,6 +544,7 @@ Object.assign(
     (ptBR.access as unknown as { drive: Record<string, string> }).drive,
     {
         clearSelection: "Limpar seleção",
+        moreActions: "Mais ações",
         download: "Baixar",
         exportSelection: "Exportar seleção",
         cancelExport: "Cancelar exportação",
@@ -545,6 +556,7 @@ Object.assign(
     (ptBR.access as unknown as { drive: Record<string, string> }).drive,
     {
         cancelUpload: "Cancelar upload",
+        dismissUploadMessage: "Limpar mensagem de upload",
         uploadState: "{progress}% · {state}",
         uploadQueued: "na fila",
         uploadUploading: "enviando",
@@ -564,6 +576,7 @@ Object.assign(
 Object.assign(ptBR.access as unknown as Record<string, unknown>, {
     people: {
         title: "Pessoas",
+        subtitle: "Pessoas físicas e jurídicas",
         organization: "Organização: {name}",
         create: "Nova Pessoa",
         search: "Buscar Pessoas",
@@ -592,7 +605,7 @@ Object.assign(ptBR.access as unknown as Record<string, unknown>, {
 Object.assign(
     (ptBR.access as unknown as { people: Record<string, string> }).people,
     {
-        edit: "Editar Pessoa",
+        edit: "Editar",
         back: "Voltar para Pessoas",
         save: "Salvar",
         saving: "Salvando…",
@@ -666,6 +679,23 @@ Object.assign(
         results: "{count} Pessoa encontrada. | {count} Pessoas encontradas.",
     },
 );
+Object.assign(ptBR.access as unknown as Record<string, unknown>, {
+    permissionManagement: {
+        title: 'Usuários, permissões e acessos',
+        description: 'Gerencie os acessos exclusivamente dentro do contexto indicado nesta janela.',
+        tabList: 'Gerenciamento de permissões',
+        scopeLocked: 'O escopo é definido pela entrada da janela e não pode ser alterado aqui.',
+        scope: { personal: 'Espaço pessoal', personalName: 'Seu espaço pessoal', tenant: 'Organização', selectedTenant: 'Organização selecionada', domain: 'Domínio', domainName: 'Rinos One' },
+        tabs: { roles: 'Papéis', groups: 'Grupos', users: 'Usuários' },
+        roles: { title: 'Papéis', description: 'Os papéis deste escopo serão administrados aqui.' },
+        groups: { title: 'Grupos', description: 'Os grupos deste escopo serão administrados aqui.' },
+        users: { title: 'Usuários', description: 'Os acessos de usuários neste escopo serão administrados aqui.' },
+        empty: 'Esta área está pronta para receber as próximas definições.',
+    },
+});
+Object.assign((ptBR.access as unknown as { people: Record<string, string> }).people, {
+    insert: 'Inserir', view: 'Visualizar', searchHint: 'Buscar...', columns: 'Colunas', columnsNeedOneVisible: 'Mantenha ao menos uma coluna visível na tabela.', restoreColumns: 'Restaurar padrão', selectAll: 'Selecionar todos os resultados', keepSelection: 'Manter seleção entre buscas', keepSelectionTooltip: 'Manter seleção entre buscas — preserva os itens selecionados ao realizar uma nova busca.', showSelected: 'Exibir selecionados', showSelectedTooltip: 'Exibir selecionados — limita a tabela aos itens atualmente selecionados.', includeHidden: 'Incluir selecionados ocultos', includeHiddenTooltip: 'Incluir selecionados ocultos — também mostra os selecionados que não correspondem à busca atual.', clearSelection: 'Limpar seleção', selectedCount: '{count} item selecionado | {count} itens selecionados', hiddenSelected: '{count} selecionado oculto pela busca | {count} selecionados ocultos pela busca', hiddenSelectedNote: 'Selecionados preservados, mas fora dos critérios de busca atuais.', actionNeedsSelection: 'Ação precisa de seleção', closeMessage: 'Entendi', noSelection: 'Não há itens selecionados para limpar.', noSelectionForAction: 'Para {action}, selecione somente um registro.', multipleSelectionForAction: 'Há mais de um registro selecionado. Para {action}, selecione somente um registro.', selectionLimit: 'A busca encontrou {count} registros. Refine a busca para no máximo 10.000 registros antes de selecionar todos.', selectionFailed: 'A seleção não foi atualizada. Nenhum registro foi selecionado; tente novamente.', listLoadFailed: 'Não foi possível carregar esta faixa da lista. Os itens já exibidos foram preservados; tente atualizar.', detailsLoadFailed: 'Não foi possível carregar os detalhes desta Pessoa. Tente novamente.',
+});
 Object.assign(
     (ptBR.access as unknown as { people: Record<string, string> }).people,
     {

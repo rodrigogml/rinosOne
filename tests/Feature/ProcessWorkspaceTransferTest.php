@@ -32,4 +32,22 @@ class ProcessWorkspaceTransferTest extends TestCase
         $this->assertSame('COMPLETED', $transfer->refresh()->state->value);
         $this->assertSame(1, $transfer->attemptCount);
     }
+
+    public function test_a_restarted_worker_ignores_a_transfer_already_completed_by_the_previous_worker(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        $source = WorkspaceFolder::query()->create(['idUser' => $user->id, 'displayName' => 'Source', 'state' => 'ACTIVE']);
+        $destination = WorkspaceFolder::query()->create(['idUser' => $user->id, 'displayName' => 'Destination', 'state' => 'ACTIVE']);
+        $target = DriveWorkspaceTarget::personal($user->id);
+        $transfer = app(DriveTransferRequestService::class)->request($user, $target, $target, [['type' => 'folder', 'id' => $source->id]], WorkspaceTransferMode::Copy, $destination->id);
+
+        $firstWorker = new ProcessWorkspaceTransfer($transfer->publicId);
+        $firstWorker->handle(app(WorkspaceTransferExecutionService::class));
+        (new ProcessWorkspaceTransfer($transfer->publicId))->handle(app(WorkspaceTransferExecutionService::class));
+
+        $this->assertSame('COMPLETED', $transfer->refresh()->state->value);
+        $this->assertSame(1, $transfer->attemptCount);
+        $this->assertSame(1, WorkspaceFolder::query()->where('idParentFolder', $destination->id)->count());
+    }
 }

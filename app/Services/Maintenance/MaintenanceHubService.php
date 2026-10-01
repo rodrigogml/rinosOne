@@ -20,6 +20,7 @@ final class MaintenanceHubService
     public function __construct(
         private readonly AuthorizationService $authorization,
         private readonly FinancialInstitutionMaintenanceService $financialInstitutionMaintenance,
+        private readonly EconomicIndicatorMaintenanceService $economicIndicatorMaintenance,
         private readonly IbgeTerritoryMaintenanceService $ibgeTerritoryMaintenance,
         private readonly PersonAuditRetentionMaintenanceService $personAuditRetention,
     ) {}
@@ -31,6 +32,7 @@ final class MaintenanceHubService
     {
         return array_values(array_filter([
             $this->financialInstitutionCatalog($principal),
+            $this->economicIndicators($principal),
             $this->ibgeTerritoryCatalog($principal),
             $this->personAuditRetentionCatalog($principal),
         ]));
@@ -101,6 +103,42 @@ final class MaintenanceHubService
         );
     }
 
+    public function economicIndicators(User $principal, int $historyLimit = 20, int $auditLimit = 20): ?MaintenanceRoutineDetail
+    {
+        if (! $this->canReadEconomicIndicators($principal)) {
+            return null;
+        }
+
+        $executionHistory = MaintenanceExecutionHistory::query()
+            ->where('routineKey', EconomicIndicatorMaintenanceService::ROUTINE_KEY)
+            ->orderByDesc('startedAt')
+            ->limit($this->validatedLimit($historyLimit))
+            ->get();
+        $administrativeAudits = MaintenanceAdministrativeAudit::query()
+            ->where('routineKey', EconomicIndicatorMaintenanceService::ROUTINE_KEY)
+            ->orderByDesc('occurredAt')
+            ->limit($this->validatedLimit($auditLimit))
+            ->get();
+        $lastExecution = $executionHistory->first();
+
+        return new MaintenanceRoutineDetail(
+            routineKey: EconomicIndicatorMaintenanceService::ROUTINE_KEY,
+            title: 'Indicadores econômicos',
+            description: 'Atualiza séries econômicas globais e cotações PTAX oficiais do Banco Central do Brasil.',
+            state: $lastExecution === null ? 'NOT_EXECUTED' : ($lastExecution->completedAt === null ? 'RUNNING' : $lastExecution->state),
+            scheduleDescription: 'Diária',
+            supportsManualSynchronization: true,
+            lastExecution: $lastExecution === null ? null : $this->executionView($lastExecution),
+            executionHistory: $executionHistory->map(fn (MaintenanceExecutionHistory $execution): MaintenanceExecutionView => $this->executionView($execution))->all(),
+            administrativeAudits: $administrativeAudits->map(fn (MaintenanceAdministrativeAudit $audit): MaintenanceAdministrativeAuditView => new MaintenanceAdministrativeAuditView(
+                performedByUserId: $audit->idPerformedByUser,
+                action: $audit->action,
+                outcome: $audit->outcome,
+                occurredAt: $audit->occurredAt,
+            ))->all(),
+        );
+    }
+
     public function personAuditRetentionCatalog(User $principal, int $historyLimit = 20): ?MaintenanceRoutineDetail
     {
         if (! $this->authorization->check($principal, PersonAuditRetentionMaintenanceService::READ_PERMISSION_KEY, AuthorizationScope::Platform)->allowed) {
@@ -151,6 +189,29 @@ final class MaintenanceHubService
         return $this->financialInstitutionMaintenance->synchronizeManually($performedByUser);
     }
 
+    public function requestEconomicIndicatorSynchronization(User $performedByUser): EconomicIndicatorMaintenanceResult
+    {
+        if (! $this->authorization->check(
+            $performedByUser,
+            EconomicIndicatorMaintenanceService::SYNCHRONIZE_PERMISSION_KEY,
+            AuthorizationScope::Platform,
+        )->allowed) {
+            $now = CarbonImmutable::now('America/Sao_Paulo');
+            MaintenanceAdministrativeAudit::query()->create([
+                'idPerformedByUser' => $performedByUser->id,
+                'routineKey' => EconomicIndicatorMaintenanceService::ROUTINE_KEY,
+                'action' => 'SYNCHRONIZE',
+                'outcome' => 'REFUSED_NOT_AUTHORIZED',
+                'occurredAt' => $now,
+                'expiresAt' => $now->addDays(config('maintenance.administrativeAuditRetentionDays')),
+            ]);
+
+            return new EconomicIndicatorMaintenanceResult(false, null, 'NOT_AUTHORIZED');
+        }
+
+        return $this->economicIndicatorMaintenance->synchronizeManually($performedByUser);
+    }
+
     private function canReadFinancialInstitutionCatalog(User $principal): bool
     {
         return $this->authorization->check(
@@ -165,6 +226,15 @@ final class MaintenanceHubService
         return $this->authorization->check(
             $principal,
             IbgeTerritoryMaintenanceService::READ_PERMISSION_KEY,
+            AuthorizationScope::Platform,
+        )->allowed;
+    }
+
+    private function canReadEconomicIndicators(User $principal): bool
+    {
+        return $this->authorization->check(
+            $principal,
+            EconomicIndicatorMaintenanceService::READ_PERMISSION_KEY,
             AuthorizationScope::Platform,
         )->allowed;
     }
@@ -187,13 +257,14 @@ final class MaintenanceHubService
 
     /**
      * @param  array<string, mixed>|null  $details
-     * @return array<string, int|string|null>
+     * @return array<string, mixed>
      */
     private function safeDetails(?array $details): array
     {
         $safeKeys = [
             'createdCount',
             'updatedCount',
+            'revisedCount',
             'createdCountryCount',
             'updatedCountryCount',
             'createdStateCount',
@@ -203,10 +274,38 @@ final class MaintenanceHubService
             'failureCode',
         ];
 
-        return array_filter(
+        $safeDetails = array_filter(
             array_intersect_key($details ?? [], array_flip($safeKeys)),
             static fn (mixed $value): bool => is_int($value) || is_string($value) || $value === null,
         );
+        $series = $details['series'] ?? null;
+        if (! is_array($series)) {
+            return $safeDetails;
+        }
+
+        $safeSeries = [];
+        foreach ($series as $code => $result) {
+            if (! is_string($code) || ! is_array($result)) {
+                continue;
+            }
+            $safeResult = array_filter(
+                array_intersect_key($result, array_flip([
+                    'sourceKey',
+                    'from',
+                    'through',
+                    'createdCount',
+                    'revisedCount',
+                    'recalculatedCount',
+                    'failureCode',
+                ])),
+                static fn (mixed $value): bool => is_int($value) || is_string($value),
+            );
+            if ($safeResult !== []) {
+                $safeSeries[$code] = $safeResult;
+            }
+        }
+
+        return $safeSeries === [] ? $safeDetails : $safeDetails + ['series' => $safeSeries];
     }
 
     private function validatedLimit(int $limit): int

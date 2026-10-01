@@ -1,14 +1,14 @@
 # Pesquisa técnica — Rinos Drive
 
-## Decisão 1 — Um navegador, dois alvos de workspace
+## Decisão 1 — Um navegador global e alvos tipados de workspace
 
-**Decisão**: o módulo terá uma única superfície de navegador que recebe um alvo tipado: pessoal ou organizacional. O alvo pessoal é resolvido pelo usuário autenticado; o organizacional deriva do tenant ativo da instância da janela.
+**Decisão**: o módulo oferece uma única superfície global que recebe um catálogo de alvos tipados, pessoal ou organizacional, efetivamente acessíveis ao usuário. O alvo pessoal é resolvido pela sessão; o organizacional é autorizado pelo tenant e pela relação de recurso, sem depender da organização ativa em outra parte da interface.
 
 **Racional**: a estrutura de pastas, posses e retenção é a mesma nos dois workspaces. Duplicar a interface criaria divergência sem benefício e permitir que o cliente informe um proprietário arbitrário enfraqueceria o isolamento.
 
 **Alternativas consideradas**:
 
-- Duas telas independentes: rejeitada por duplicação de comportamento e contratos.
+- Duas telas independentes ou uma janela por organização ativa: rejeitadas por duplicação de comportamento, por acoplamento indevido ao contexto ativo e por impedir a comparação natural entre drives.
 - Um identificador de workspace livre no cliente: rejeitada por permitir tentativas de enumeração e acesso indevido.
 
 ## Decisão 2 — Acesso organizacional por relação de pasta

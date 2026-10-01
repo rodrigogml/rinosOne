@@ -6,7 +6,7 @@
 
 ## Completude e Escopo
 
-- [x] CHK001 - As apresentações Rinos Drive Pessoal e Rinos Drive Work têm atores, limites e cobertura explícitos? [Completude, Spec §Cobertura de Interfaces; FR-DRIVE-001 a 004] {auto}
+- [x] CHK001 - A ferramenta Rinos Drive única, seus alvos pessoal e Work e as respectivas permissões têm atores, limites e cobertura explícitos? [Completude, Spec §Cobertura de Interfaces; FR-DRIVE-001 a 004] {auto}
 - [x] CHK002 - Navegação, árvore, coleções, organização, upload, download, lixeira, visualizações e exportação possuem requisitos funcionais próprios? [Completude, Spec §Cenários; FR-DRIVE-005 a 017] {auto}
 - [x] CHK003 - Os comportamentos adiados — compartilhamento, preview, thumbnails, edição, álbuns, busca global, links públicos e quotas bloqueantes — estão excluídos explicitamente? [Escopo, Spec §Cobertura de Interfaces; FR-DRIVE-026 a 028] {auto}
 - [x] CHK004 - A fundação existente de arquivo, versão, lixeira, quota e backend é reutilizada sem duplicação de entidades funcionais? [Consistência, Plan §Resumo; Data Model §Reutilização da fundação] {auto}

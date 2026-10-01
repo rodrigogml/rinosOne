@@ -64,7 +64,7 @@ Os multiplicadores alteram valores derivados, incluindo tamanhos de fonte, line-
 
 O elemento raiz recebe atributos de tema e preferência de densidade. Cada família cromática define em tokens primitivos as variantes claro e escuro para canvas, superfície, texto, texto secundário, ação, hover e foco; aliases semânticos consomem somente a família ativa. Rubi Industrial resolve a ausência de atributo de família com `L8` no tema claro e `D8` no escuro. As demais famílias ficam endereçáveis por `data-palette` para uso futuro no perfil, sem campo local, API ou seletor nesta fase. Grafite e prata sustentam o tema escuro, cujo canvas recebe somente uma trama neutra de fibra de carbono, sem gradientes da cor de destaque.
 
-Cada cor semântica terá variante apropriada para fundo, conteúdo, contorno e foco em ambos os temas. A validação deverá confirmar contraste de 4,5:1 para texto normal, 3:1 para texto grande e contornos de foco perceptíveis sobre a superfície adjacente.
+Cada cor semântica terá variante apropriada para conteúdo, contorno e foco em ambos os temas. O canvas da aplicação é deliberadamente neutro e independente da família cromática: branco absoluto no tema claro e preto absoluto no tema escuro. A validação deverá confirmar contraste de 4,5:1 para texto normal, 3:1 para texto grande e contornos de foco perceptíveis sobre a superfície adjacente.
 
 ### Movimento e responsividade
 

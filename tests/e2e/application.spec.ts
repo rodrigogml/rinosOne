@@ -1329,6 +1329,55 @@ test("opens the authorized maintenance hub, confirms its action and reflows on a
     await captureState(page, testInfo, "maintenance-hub-phone-history");
 });
 
+test("resumes and cancels a pending cross-drive transfer after reopening Rinos Drive", async ({ page }) => {
+    const capabilities = { read: true, edit: true, trash: true };
+    const documentItem = { id: 8, kind: "file", displayName: "Contrato.pdf", parentFolderId: null, logicalSizeBytes: 2048, detectedMimeType: "application/pdf", modifiedAt: null, capabilities };
+    const personalProjection = { location: { kind: "root", id: null, displayName: "Meu Drive", parentFolderId: null }, breadcrumbs: [], folders: [], files: [documentItem], capabilities, usage: { workspaceBytes: 2048, systemManagedBytes: 0, trashBytes: 0, totalBytes: 2048 } };
+    const tenantProjection = { ...personalProjection, location: { kind: "root", id: null, displayName: "Oficina Rubi", parentFolderId: null }, files: [] };
+    const transfer = { transferId: "01JTRANSFER", state: "PENDING", mode: "COPY", totalItems: 1, processedItems: 0, destinationTarget: { kind: "tenant", tenantId: 42 }, failureCode: null };
+
+    await mockAuthenticatedSession(page);
+    await page.route("**/api/v1/drive/catalog", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ drives: [{ target: { kind: "personal", tenantId: null }, displayName: "Meu Drive", category: "PERSONAL", usage: personalProjection.usage }, { target: { kind: "tenant", tenantId: 42 }, displayName: "Oficina Rubi", category: "TENANT", usage: tenantProjection.usage }], sharedWithMe: { kind: "shared-with-me", displayName: "Compartilhados comigo" } }) }));
+    await page.route("**/api/v1/drive/personal/tree", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ folders: [] }) }));
+    await page.route("**/api/v1/drive/personal/locations/root", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(personalProjection) }));
+    await page.route("**/api/v1/tenants/42/drive/tree", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ folders: [] }) }));
+    await page.route("**/api/v1/tenants/42/drive/locations/root", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(tenantProjection) }));
+    await page.route("**/api/v1/drive/transfers/01JTRANSFER", async (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(transfer) }));
+    await page.route("**/api/v1/drive/transfers/01JTRANSFER/cancel", async (route) => {
+        expect(route.request().method()).toBe("POST");
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...transfer, state: "CANCELLED" }) });
+    });
+    await page.route("**/api/v1/drive/transfers", async (route) => {
+        expect(route.request().method()).toBe("POST");
+        expect(route.request().postDataJSON()).toMatchObject({ mode: "COPY", items: [{ type: "file", id: 8 }], destinationTarget: { kind: "tenant", tenantId: 42, folderId: null } });
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify(transfer) });
+    });
+    await mockProductionDocument(page);
+    await page.goto("/");
+
+    await page.getByRole("button", { name: "Rinos Drive" }).click();
+    await expect(page.locator(".drive-explorer__drive-header").filter({ hasText: "Meu Drive" })).toBeVisible();
+    await page.getByRole("button", { name: "Abrir segundo painel" }).click();
+    await page.locator(".drive-navigation-pane__drive-header").filter({ hasText: "Oficina Rubi" }).click();
+    const contractFile = page.locator(".drive-explorer__layout .drive-explorer__item").filter({ hasText: "Contrato.pdf" });
+    await contractFile.click();
+    await contractFile.dragTo(page.locator(".drive-navigation-pane"));
+    await page.getByRole("dialog", { name: "Transferir itens" }).getByRole("button", { name: "Copiar" }).click();
+    await expect(page.getByText("Transferência PENDING: 0 de 1.")).toBeVisible();
+
+    await page.locator(".workspace-stage__close").click();
+    await page.getByRole("button", { name: "Rinos Drive" }).click();
+    await expect(page.getByText("Transferência PENDING: 0 de 1.")).toBeVisible();
+    await page.getByRole("button", { name: "Cancelar transferência" }).click();
+    await expect(page.getByText("Transferência encerrada: CANCELLED.")).toBeVisible();
+
+    await page.setViewportSize({ width: 768, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 375, height: 667 });
+    await expect(page.locator(".drive-navigation-pane")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("rechecks a Drive folder location and preserves the workspace after revocation on desktop and telephone", async ({
     page,
 }, testInfo) => {
@@ -1870,6 +1919,43 @@ test("requests and independently approves temporary access without exposing the 
     await page.getByRole("button", { name: "Revogar" }).click();
     await expect(page.getByText("Solicitação revogada.")).toBeVisible();
     await expect(page.getByText("REVOKED")).toBeVisible();
+});
+
+test("opens the new permission management surface with a fixed scope for personal, tenant and domain menus", async ({ page }, testInfo) => {
+    const tenant = { id: 73, displayName: "Organização de permissões", state: "ACTIVE", selectable: true, canManageAvailability: false, canReadAuthorization: true };
+    await mockAuthenticatedSession(page);
+    await page.route("**/api/v1/tenants", async (route) => {
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify({ tenants: [tenant] }) });
+    });
+    await page.route("**/api/v1/tenants/73/contexts", async (route) => {
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify({ context: { tenant: { id: tenant.id, displayName: tenant.displayName }, membership: { id: 1 }, capabilities: { canManageAvailability: false, canReadAuthorization: true }, availableModules: [] } }) });
+    });
+    await page.route("**/api/v1/platform/authorization/context", async (route) => {
+        await route.fulfill({ contentType: "application/json", body: JSON.stringify({ context: { capabilities: { canReadAccess: true } } }) });
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Biblioteca" }).click();
+    await page.getByRole("button", { name: "Usuários, permissões e acessos", exact: true }).click();
+    await expect(page.locator(".permission-management[data-scope=personal]")).toBeVisible();
+    await captureState(page, testInfo, "permission-management-personal");
+
+    await page.getByRole("button", { name: "Selecionar organização" }).click();
+    await page.getByRole("button", { name: tenant.displayName, exact: true }).click();
+    await page.getByRole("button", { name: "Segurança" }).click();
+    await page.getByRole("button", { name: "Usuários, permissões e acessos", exact: true }).click();
+    await expect(page.locator(".permission-management[data-scope=tenant]")).toBeVisible();
+    await page.getByRole("tab", { name: "Grupos" }).click();
+    await expect(page.getByRole("tabpanel")).toContainText("Os grupos deste escopo serão administrados aqui.");
+    await captureState(page, testInfo, "permission-management-tenant");
+
+    await page.getByRole("button", { name: "Administração" }).click();
+    await page.getByRole("button", { name: "Usuários, permissões e acessos", exact: true }).click();
+    await expect(page.locator(".permission-management[data-scope=domain]")).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 667 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await captureState(page, testInfo, "permission-management-domain-phone");
 });
 
 test("honours reduced motion and ships the web installation manifest", async ({

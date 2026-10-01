@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends string">
 import { computed } from 'vue';
 
-export interface Choice<Value extends string> { value: Value; label: string; }
+export interface Choice<Value extends string> { value: Value; label: string; icon?: string; }
 
 const props = defineProps<{ id: string; label: string; modelValue: T; options: Choice<T>[] }>();
 const emit = defineEmits<{ 'update:modelValue': [value: T] }>();
@@ -19,4 +19,4 @@ function move(event: KeyboardEvent) {
 }
 </script>
 
-<template><fieldset class="segmented-choice" :aria-labelledby="`${id}-label`" @keydown="move"><legend :id="`${id}-label`" class="segmented-choice__label">{{ label }}</legend><div class="segmented-choice__options" role="radiogroup" :aria-label="label"><button v-for="option in options" :id="`${id}-${option.value}`" :key="option.value" type="button" role="radio" class="segmented-choice__option" :class="{ 'segmented-choice__option--selected': modelValue === option.value }" :aria-checked="modelValue === option.value" :tabindex="modelValue === option.value ? 0 : -1" @click="select(option.value)">{{ option.label }}</button></div></fieldset></template>
+<template><fieldset class="segmented-choice" :aria-labelledby="`${id}-label`" @keydown="move"><legend :id="`${id}-label`" class="segmented-choice__label">{{ label }}</legend><div class="segmented-choice__options" :class="{ 'segmented-choice__options--icons': options.every((option) => option.icon), 'segmented-choice__options--pair': options.length === 2 && options.every((option) => option.icon) }" role="radiogroup" :aria-label="label"><button v-for="option in options" :id="`${id}-${option.value}`" :key="option.value" type="button" role="radio" class="segmented-choice__option" :class="{ 'segmented-choice__option--icon': option.icon, 'segmented-choice__option--selected': modelValue === option.value }" :aria-label="option.icon ? option.label : undefined" :aria-checked="modelValue === option.value" :tabindex="modelValue === option.value ? 0 : -1" @click="select(option.value)"><img v-if="option.icon" :src="option.icon" alt="" aria-hidden="true"><template v-else>{{ option.label }}</template></button></div></fieldset></template>

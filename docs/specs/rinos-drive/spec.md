@@ -2,7 +2,7 @@
 
 **Feature**: `rinos-drive`  
 **Criada em**: 2026-09-27  
-**Status**: Draft  
+**Status**: Em validação de homologação
 **Referências**: [Fundação de armazenamento de arquivos](../file-storage-foundation/spec.md), [Fundação de autorização](../authorization-foundation/spec.md) e [Shell de workspace](../workspace-shell/spec.md)
 
 ## Direção de Produto
@@ -124,7 +124,7 @@ Como usuário, quero escolher a forma de visualizar o conteúdo e abrir detalhes
 
 **Cenários de aceitação**:
 
-1. **Dado** conteúdo acessível, **quando** o usuário seleciona grade, lista, detalhes ou tabela, **então** a visualização informa nome, tipo, tamanho, datas e localização lógica conforme disponível.
+1. **Dado** conteúdo acessível, **quando** o usuário seleciona grade, lista ou detalhes, **então** a visualização informa nome, tipo, tamanho, datas e localização lógica conforme disponível.
 2. **Dado** um item selecionado, **quando** o usuário abre o painel de detalhes, **então** consulta somente metadados permitidos sem iniciar download nem prévia do conteúdo.
 3. **Dado** uma tela estreita, **quando** o usuário navega, abre árvore ou painel de detalhes, **então** o conteúdo principal permanece utilizável e os painéis auxiliares não eliminam o acesso às ações essenciais.
 
@@ -192,13 +192,13 @@ Como usuário com acesso aos locais de origem e destino, quero comparar dois ram
 - **FR-DRIVE-007**: O sistema DEVE permitir upload múltiplo para a pasta atual quando houver edição, mantendo progresso e resultado individual de cada arquivo aceito ou recusado.
 - **FR-DRIVE-008**: O sistema DEVE validar cada arquivo enviado segundo limites de tamanho, quantidade, tipo e total de lote configuráveis pela instância, sem confiar exclusivamente nas informações declaradas pelo navegador.
 - **FR-DRIVE-009**: Diante de nome ocupado, inclusive por operação concorrente na mesma localização, o sistema DEVE preservar ambos os itens e atribuir ao novo item um nome seguro e distinguível, reservado atomicamente antes de sua ativação, sem substituição implícita nem criação de versão por acidente.
-- **FR-DRIVE-010**: O sistema DEVE permitir download privado de um item legível e DEVE compactar automaticamente uma seleção múltipla em exportação temporária privada.
+- **FR-DRIVE-010**: O sistema DEVE permitir download privado de um arquivo legível e DEVE compactar automaticamente uma pasta única ou uma seleção múltipla em exportação temporária privada.
 - **FR-DRIVE-011**: O sistema DEVE preservar a hierarquia selecionada e resolver colisões de nomes na exportação múltipla, sem incluir item não autorizado.
 - **FR-DRIVE-012**: O sistema DEVE manter exportações temporárias fora da árvore do workspace, fora da quota do usuário e indisponíveis após expiração, cancelamento ou perda de autorização.
 - **FR-DRIVE-013**: O sistema DEVE usar prazo padrão de 60 minutos para exportação temporária e DEVE permitir configurá-lo por ambiente, junto de limites de quantidade, tamanho, espaço temporário e limpeza automática.
 - **FR-DRIVE-014-INFRA-SCHED**: O sistema DEVE remover exportações temporárias expiradas automaticamente em rotina configurável; essa limpeza deve operar de modo seguro perante requisições repetidas ou execução concorrente.
 - **FR-DRIVE-015**: O sistema DEVE mover arquivos e pastas removidos para a lixeira e permitir restauro ou limpeza definitiva somente enquanto as regras de retenção aplicáveis permitirem.
-- **FR-DRIVE-016**: O sistema DEVE disponibilizar grade, lista, detalhes e tabela para o mesmo conteúdo autorizado, além de painel lateral de informações sem iniciar prévia ou download não solicitado.
+- **FR-DRIVE-016**: O sistema DEVE disponibilizar grade, lista e detalhes para o mesmo conteúdo autorizado, além de painel lateral de informações sem iniciar prévia ou download não solicitado. Os controles de visualização DEVEM formar um grupo segmentado de ícones raster registrados.
 - **FR-DRIVE-017**: O Rinos Drive DEVE ser utilizável por teclado, toque e leitor de tela, oferecendo foco, atalhos que não interfiram em campos de texto e equivalentes acessíveis para todas as ações visíveis.
 - **FR-DRIVE-018**: A permissão `personal.folder.read` DEVE permitir visualizar, navegar, consultar metadados seguros e baixar conteúdo no ramo pessoal concedido, incluindo descendentes.
 - **FR-DRIVE-019**: A permissão `personal.folder.edit` DEVE incluir as capacidades de leitura e permitir organizar pastas e arquivos, enviar conteúdo, mover, enviar à lixeira, restaurar e limpar itens no ramo pessoal concedido, incluindo descendentes.

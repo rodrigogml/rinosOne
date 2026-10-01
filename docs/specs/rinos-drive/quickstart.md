@@ -38,19 +38,19 @@
 2. **Quando** o usuário confirmar Copiar ou Mover, a criação da transferência é recusada antes de persistir operação, reserva ou job.
 3. **Esperado**: a resposta traz erro categorizado seguro, a origem e o destino não são modificados e uma nova seleção dentro dos limites continua disponível.
 
-## Rinos Drive Pessoal: navegação e upload
+## Meu Drive: navegação e upload
 
-1. Autentique um usuário e abra Rinos Drive Pessoal.
+1. Autentique um usuário e abra a ferramenta global Rinos Drive; selecione Meu Drive no catálogo.
 2. Crie `Documentos`, entre nela e envie dois arquivos com o mesmo nome.
 3. Repita dois envios simultâneos para a mesma pasta, também com o mesmo nome.
 4. **Esperado**: todos os itens aparecem com nomes finais distinguíveis e únicos; nenhum substitui outro.
 5. Alterne grade, lista, detalhes e tabela.
 6. **Esperado**: a coleção é a mesma em todas as apresentações e o painel lateral mostra apenas metadados seguros.
 
-## Rinos Drive Work: administrador e membro delimitado
+## Drive Work: administrador e membro delimitado
 
 1. Crie uma organização com administrador A e membro B.
-2. No Drive Work, A cria `Financeiro/Contratos` e `Produto`.
+2. No Rinos Drive, A seleciona o Drive Work e cria `Financeiro/Contratos` e `Produto`.
 3. Conceda a B somente leitura em `Financeiro`.
 4. Abra a organização como B.
 5. **Esperado**: B navega `Financeiro/Contratos`, pode baixar conteúdo legível e não vê `Produto` nem ações de alteração.

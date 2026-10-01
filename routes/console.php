@@ -8,6 +8,7 @@ use App\Jobs\FileStorage\ReconcileFileStorageObjects;
 use App\Jobs\FileStorage\RecoverExpiredWorkspaceTransfers;
 use App\Jobs\FileStorage\ReprocessFileStorageCompression;
 use App\Jobs\Tenant\DiscoverTenantSchemaUpdates;
+use App\Services\Maintenance\EconomicIndicatorMaintenanceService;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
 use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use App\Services\Maintenance\PersonAuditRetentionMaintenanceService;
@@ -35,6 +36,10 @@ Schedule::command('authorization:expire-service-identities')->everyMinute();
 Schedule::call(static fn () => app(FinancialInstitutionMaintenanceService::class)->synchronizeScheduled())
     ->daily()
     ->name('maintenance.financial-institution-catalog');
+
+Schedule::call(static fn () => app(EconomicIndicatorMaintenanceService::class)->synchronizeScheduled())
+    ->daily()
+    ->name('maintenance.economic-indicators');
 
 Schedule::call(static fn () => app(IbgeTerritoryMaintenanceService::class)->synchronizeWhenDue())
     ->hourly()

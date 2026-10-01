@@ -37,7 +37,9 @@ class DriveWorkspaceExportService
      */
     public function request(User $principal, DriveWorkspaceTarget $target, array $items): WorkspaceExport
     {
-        if (count($items) < 2 || count($items) > (int) config('file-storage.workspaceExport.maximumItems', 100)) {
+        if (count($items) < 1
+            || count($items) > (int) config('file-storage.workspaceExport.maximumItems', 100)
+            || (count($items) === 1 && ($items[0]['type'] ?? null) !== 'folder')) {
             throw new DriveWorkspaceCommandException('DRIVE_EXPORT_LIMIT_EXCEEDED');
         }
 

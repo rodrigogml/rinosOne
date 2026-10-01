@@ -13,7 +13,7 @@
 
 ## Estado atual e mudança desejada
 
-O componente atual `resources/js/drive/DriveExplorer.vue` recebe uma superfície pessoal ou Work e monta uma janela por alvo. A árvore, coleção, upload, exportação e lixeira já são privados e tipados por `DriveWorkspaceTarget`.
+O componente `resources/js/drive/DriveExplorer.vue` abre uma única superfície global e obtém o catálogo autorizado antes de carregar uma árvore. Cada painel conserva alvo, localização, seleção, carregamento e capabilities próprios por `DriveWorkspaceTarget`; árvore, coleção, upload, exportação e lixeira permanecem privados e tipados.
 
 A mudança converte esse componente em casca global de instância única. O catálogo torna os alvos selecionáveis dentro da árvore; cada painel mantém estado independente e usa os contratos do Drive por alvo. Os destinos de menu Pessoal e Work são removidos e um único botão de ferramenta Drive é exibido ao lado dos avatares da topbar.
 
@@ -37,8 +37,8 @@ A mudança converte esse componente em casca global de instância única. O cat�
 **Purpose**: oferecer uma ferramenta única para todos os workspaces efetivamente acessíveis sem depender da organização ativa.
 **Actors and Permissions**: qualquer usuário autenticado vê Meu Drive; Work aparece somente com acesso efetivo; Compartilhados comigo contém apenas concessões diretas.
 **Entry and Navigation**: botão com ícone Drive na topbar, ao lado dos avatares. Abre uma única instância Rinos Drive; entradas duplicadas de menu pessoal e tenant são removidas. Fechar retorna o foco ao botão da topbar.
-**Content and Data**: título Rinos Drive, toolbar global com Atualizar e Alternar painel, árvore de catálogo e primeiro painel de navegação. Cada raiz mostra ícone, rótulo e categoria; não exibe contagem, caminho ou consumo de drive não autorizado.
-**Actions and Behavior**: Atualizar recarrega o catálogo e apenas o painel afetado; clicar em uma raiz carrega a localização correspondente lazy; alteração de tenant ativo em outro módulo não reinicia o Drive.
+**Content and Data**: a barra de operações da coleção reúne Atualizar, Alternar painel, Nova pasta, Upload, Download e as ações sobre a seleção; não há barra de comandos separada. A janela não repete título, categoria ou identificação decorativa do workspace dentro do conteúdo. Cada raiz é um cabeçalho de acordeão com ícone e rótulo; clicar nela ativa/expande ou recolhe seu conteúdo. Pastas permanecem indentadas sob sua raiz, com expansão explícita, ícones de pasta aberta/fechada e linhas discretas de hierarquia. A lixeira é filha de cada drive e usa ícone vazio ou cheio conforme seu consumo.
+**Actions and Behavior**: Atualizar recarrega o catálogo e apenas o painel afetado; clicar em uma raiz carrega a localização correspondente lazy, sempre descartando a localização, seleção, detalhes e dados transientes do drive anterior antes de consultar a raiz do novo alvo; alteração de tenant ativo em outro módulo não reinicia o Drive. O cabeçalho da coleção contém somente breadcrumbs, sem repetir a localização ao lado. Em desktop, o divisor entre árvore e coleção pode ser arrastado ou acionado por teclado em uma faixa efetiva até 25% da largura do painel correspondente. O botão de barra de navegação oculta/exibe a árvore sem fechar a janela.
 **Validation and Feedback**: raiz removida por revogação recebe aviso seguro, sai da árvore e o painel volta ao catálogo; falha de catálogo mantém dados seguros já visíveis marcados como desatualizados e permite tentar novamente.
 **Responsive/Adaptive Behavior**: desktop mostra árvore fixa à esquerda e painel principal; tablet reduz metadados; telefone abre a árvore em drawer modal e preserva a coleção como conteúdo principal.
 **Accessibility**: janela tem heading único; catálogo é `tree` navegável por setas, Enter e Space; raiz ativa usa `aria-current`; drawer contém foco e devolve foco ao gatilho.
@@ -71,10 +71,10 @@ A mudança converte esse componente em casca global de instância única. O cat�
 **Purpose**: navegar e operar uma localização autorizada mantendo lixeira, quota e capabilities do drive selecionado.
 **Actors and Permissions**: leitura permite navegar, detalhes, download e exportação; edição controla pasta, upload, lixeira e ações mutáveis.
 **Entry and Navigation**: clique em raiz, pasta, lixeira, breadcrumb ou item de Compartilhados comigo. Voltar do navegador não altera a topbar; fecha apenas drawer/modal ativo antes da janela.
-**Content and Data**: breadcrumb lógico, toolbar, modos grade/lista/detalhes/tabela, coleção, detalhes e uso do drive de origem. Lixeira é sempre filha da raiz real e nunca da raiz virtual.
-**Actions and Behavior**: preserva os comandos existentes de criar, upload, baixar, exportar, mover intra-drive, lixar, restaurar e limpar. Arquivo compartilhado diretamente oferece somente leitura, exportação e cópia para destino editável.
+**Content and Data**: breadcrumb lógico destacado, toolbar de ícones sem contorno, modos grade/lista/detalhes, coleção, detalhes e uso do drive de origem. O controle de segundo painel fica à esquerda; os comandos da coleção ficam agrupados à direita. A coleção ocupa toda a altura restante do painel e possui rolagem interna; a barra de status permanece fina e ancorada ao rodapé. Ela informa `X Itens (W Arquivos + Y Pastas)` e, havendo seleção, acrescenta quantidades selecionadas e tamanho lógico agregado — incluindo conteúdo descendente das pastas autorizadas. Progresso e mensagens descartáveis são anexados à mesma barra. Lixeira é sempre filha da raiz real e nunca da raiz virtual. O painel paralelo replica árvore por drives, breadcrumb, coleção, modos de exibição e status próprios, mas não replica a raiz virtual Compartilhados comigo.
+**Actions and Behavior**: preserva os comandos existentes de criar, upload, baixar, exportar, mover intra-drive, lixar, restaurar e limpar. Um arquivo é baixado diretamente; uma pasta única ou múltiplos itens legíveis geram exportação ZIP temporária privada. Arquivo compartilhado diretamente oferece somente leitura, exportação e cópia para destino editável.
 **Validation and Feedback**: capabilities vêm do servidor; comandos revalidam antes de executar. Nome inválido, lote inválido, conflito, reserva ativa ou revogação usam alerta seguro e preservam dados locais não enviados.
-**Responsive/Adaptive Behavior**: desktop mantém árvore/coleção e detalhes em regiões internas; telefone usa drawers para árvore e detalhes, toolbar compacta e coleção com rolagem interna.
+**Responsive/Adaptive Behavior**: desktop mantém árvore/coleção e detalhes em regiões internas; telefone usa drawers para árvore e detalhes, toolbar compacta e coleção com rolagem interna. Em largura restrita, ações secundárias passam para o menu de três pontos, sem deslocar a seleção, atualização ou navegação da barra.
 **Accessibility**: foco chega ao heading da localização após navegação; itens possuem seleção por teclado, leitores de tela recebem contagem/estado e atalhos não atuam em campos de texto.
 **Localization**: datas, tamanhos, plurais, ação e estado usam locale ativo; expansão de texto não pode ocultar controles.
 **Components and Design System**: reutiliza `DriveExplorer`, `DriveDetailsPanel`, `DriveOperationDialog`, botões, alertas, tokens e ícones; extrai `DriveNavigationPane` para estado isolado por painel.
@@ -105,11 +105,11 @@ A mudança converte esse componente em casca global de instância única. O cat�
 **Purpose**: comparar duas localizações e iniciar cópia ou movimento consciente por drag-and-drop.
 **Actors and Permissions**: requer leitura da origem e edição do destino; arquivo diretamente compartilhado só pode ser origem de cópia.
 **Entry and Navigation**: botão Alternar painel cria ou fecha o segundo painel. Drop em pasta/root editável de outro painel abre diálogo modal local à janela. Esc cancela diálogo, não a operação já confirmada.
-**Content and Data**: dois painéis com identificador de drive/localização; diálogo apresenta origem e destino seguros, modo Copiar/Mover, quantidade em faixa e aviso de processamento em segundo plano entre drives.
+**Content and Data**: dois painéis com identificador de drive/localização, separados no desktop por divisor arrastável que permite redistribuir a largura sem alterar o estado de cada painel; cada painel tem árvore própria, expansível e redimensionável até 25% de sua largura. O diálogo apresenta origem e destino seguros, modo Copiar/Mover, quantidade em faixa e aviso de processamento em segundo plano entre drives.
 **Actions and Behavior**: todo drop pede confirmação. Mesmo drive pré-seleciona Mover; drives diferentes pré-selecionam Copiar. Confirmar envia operação única; Cancelar não muda seleção. Ações mutáveis em ramo reservado recebem estado de operação em andamento.
 **Validation and Feedback**: impede drop na própria pasta/descendente, seleção de múltiplas origens, destino sem edição e arquivo read-only em modo Mover. Erro não revela transferência concorrente nem item protegido.
 **Responsive/Adaptive Behavior**: desktop/tablet largo mostra colunas lado a lado. Em telefone o segundo painel abre como modal quase integral e o usuário escolhe origem/destino com ação explícita; não há arrasto horizontal nem dois painéis comprimidos.
-**Accessibility**: drag possui alternativa por teclado “Copiar/Mover para painel oposto”; diálogo tem radio group, foco inicial no modo pré-selecionado, descrição de consequência e retorno de foco ao item de origem.
+**Accessibility**: o divisor possui papel `separator`, nome acessível e responde a setas, Home e End; o diálogo tem radio group, foco inicial no modo pré-selecionado, descrição de consequência e retorno de foco ao item de origem.
 **Localization**: verbos, modo sugerido, descrição de origem/destino e mensagens de reserva usam i18n; nomes de dados são interpolados com escape normal.
 **Components and Design System**: adiciona `DriveNavigationPane`, `DriveTransferDialog` e affordances drag/drop com tokens de foco, seleção e estado; reutiliza modal local empilhável.
 **Integration and Contracts**: `POST /api/v1/drive/transfers`, status/cancelamento de transferência e comandos intra-drive existentes.
@@ -203,7 +203,7 @@ A mudança converte esse componente em casca global de instância única. O cat�
 
 | Form factor | Catálogo e painel | Comparação | Detalhes e progresso |
 | --- | --- | --- | --- |
-| Desktop largo | Árvore e até dois painéis lado a lado, cada qual com rolagem interna. | Drag-and-drop direto com alternativa por teclado. | Detalhes à direita; faixa compacta de progresso. |
+| Desktop largo | Árvore e até dois painéis lado a lado, cada qual com rolagem interna e divisor redimensionável. | Drag-and-drop direto com alternativa por teclado. | Detalhes à direita; faixa compacta de progresso. |
 | Tablet | Painéis podem dividir a largura mínima; metadados secundários refluem. | Mesmo diálogo; se largura insuficiente, segundo painel vira drawer. | Detalhes em drawer lateral. |
 | Telefone | Uma coleção principal; árvore abre em drawer modal. | Segundo painel em modal quase integral e escolha explícita de destino. | Detalhes e operações em modal; safe areas e teclado virtual preservados. |
 

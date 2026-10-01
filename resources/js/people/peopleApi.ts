@@ -1,9 +1,14 @@
 import axios from 'axios';
+import type { AdvancedFilterGroup, AdvancedFilterSchema } from '../design-system/advancedFilter';
 
 export type PersonType = 'PF' | 'PJ';
 export type PersonStatus = 'ACTIVE' | 'INACTIVE';
 export interface PersonSummary { id: number; personType: PersonType; displayName: string; document: string | null; contactCount: number; status: PersonStatus; }
 export interface PeoplePage { people: PersonSummary[]; pagination: { page: number; perPage: number; total: number; lastPage: number }; }
+export type PersonSortColumn = 'displayName' | 'personType' | 'document' | 'status';
+export type PersonSort = { column: PersonSortColumn; direction: 'asc' | 'desc' };
+export interface PersonListQuery { search?: string; advancedFilter?: AdvancedFilterGroup; personType?: PersonType; status?: PersonStatus; sortBy?: PersonSortColumn; sortDirection?: 'asc' | 'desc'; sorts?: PersonSort[]; offset?: number; limit?: number; includeIds?: number[]; selectedIds?: number[]; selectedOnly?: boolean; }
+export interface LazyPeopleResult { people: (PersonSummary & { outsideSearch: boolean })[]; range: { offset: number; limit: number; total: number }; matchedTotal: number; hiddenSelectedTotal: number; }
 export interface PersonContactWrite { contactType: 'EMAIL' | 'PHONE' | 'MOBILE' | 'WHATSAPP' | 'WEBSITE' | 'OTHER'; value: string; description?: string | null; }
 export interface PersonPixKeyWrite { keyType: 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'RANDOM'; value: string; status?: PersonStatus; }
 export interface PersonRelationshipWrite { idTargetPerson: number; relationshipType: 'CHILD_OF' | 'PARENT_OF' | 'GRANDCHILD_OF' | 'GRANDPARENT_OF' | 'SPOUSE_OF' | 'PARTNER_OF' | 'EMPLOYEE_OF' | 'EMPLOYER_OF' | 'CONTRACTOR_OF' | 'CONTRACTING_PARTY_OF' | 'OTHER'; description?: string | null; }
@@ -14,6 +19,9 @@ export interface PersonWrite { personType: PersonType; name: string; alias?: str
 
 function idempotencyKey(): string { return globalThis.crypto?.randomUUID?.() ?? `00000000-0000-4000-8000-${Date.now().toString().padStart(12, '0').slice(-12)}`; }
 export async function loadPeople(tenantId: number, query: Record<string, unknown>): Promise<PeoplePage> { return (await axios.get(`/api/v1/tenants/${tenantId}/people`, { params: query })).data as PeoplePage; }
+export async function queryPeople(tenantId: number, query: PersonListQuery): Promise<LazyPeopleResult> { return (await axios.post(`/api/v1/tenants/${tenantId}/people/query`, query)).data as LazyPeopleResult; }
+export async function resolvePeopleSelection(tenantId: number, query: Pick<PersonListQuery, 'search' | 'advancedFilter' | 'personType' | 'status'>): Promise<{ ids: number[]; total: number; exceedsLimit: boolean }> { return (await axios.post(`/api/v1/tenants/${tenantId}/people/selection-ids`, query)).data as { ids: number[]; total: number; exceedsLimit: boolean }; }
+export async function loadPeopleFilterSchema(tenantId: number): Promise<AdvancedFilterSchema> { return (await axios.get(`/api/v1/tenants/${tenantId}/people/filter-schema`)).data.filterSchema as AdvancedFilterSchema; }
 export async function loadPerson(tenantId: number, personId: number): Promise<PersonDetail> { return (await axios.get(`/api/v1/tenants/${tenantId}/people/${personId}`)).data.person as PersonDetail; }
 export async function createPerson(tenantId: number, payload: PersonWrite): Promise<PersonDetail> { return (await axios.post(`/api/v1/tenants/${tenantId}/people`, payload, { headers: { 'Idempotency-Key': idempotencyKey() } })).data.person as PersonDetail; }
 export async function updatePerson(tenantId: number, personId: number, version: number, payload: PersonWrite): Promise<PersonDetail> { return (await axios.put(`/api/v1/tenants/${tenantId}/people/${personId}`, { ...payload, version }, { headers: { 'Idempotency-Key': idempotencyKey() } })).data.person as PersonDetail; }

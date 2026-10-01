@@ -56,7 +56,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
         const policy = destination.instancePolicy ?? 'single';
         const existing = policy === 'single'
-            ? surfaces.value.find((surface) => surface.destinationId === destination.id && surface.tenantId === context.tenantId)
+            ? surfaces.value.find((surface) => surface.destinationId === destination.id
+                && (destination.scope !== 'tenant' || surface.tenantId === context.tenantId))
             : undefined;
 
         if (existing) {
@@ -73,6 +74,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             scope: destination.scope,
             tenantId: destination.scope === 'tenant' ? context.tenantId : null,
             titleKey: definition.titleKey,
+            subtitleKey: definition.subtitleKey,
             label: definition.label,
             icon: definition.icon,
             dirty: definition.dirty ?? false,

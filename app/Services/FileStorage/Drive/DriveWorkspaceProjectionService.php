@@ -25,8 +25,10 @@ class DriveWorkspaceProjectionService
     /** @return array{folders: list<array<string, mixed>>} */
     public function tree(User $principal, DriveWorkspaceTarget $target): array
     {
+        $folderSizes = $this->folderLogicalSizes($principal, $target, 'ACTIVE');
+
         return ['folders' => $this->foldersFor($principal, $target, 'ACTIVE')
-            ->map(fn (WorkspaceFolder $folder): array => $this->folderItem($principal, $target, $folder))
+            ->map(fn (WorkspaceFolder $folder): array => $this->folderItem($principal, $target, $folder, $folderSizes))
             ->values()
             ->all()];
     }
@@ -58,9 +60,10 @@ class DriveWorkspaceProjectionService
     /** @return array<string, mixed> */
     public function trash(User $principal, DriveWorkspaceTarget $target): array
     {
+        $folderSizes = $this->folderLogicalSizes($principal, $target, 'TRASHED');
         $folders = $this->folderQuery($target)->where('state', 'TRASHED')->orderBy('idParentFolder')->orderBy('displayName')->get()
             ->filter(fn (WorkspaceFolder $folder): bool => $this->canReadTrashedFolder($principal, $target, $folder))
-            ->map(fn (WorkspaceFolder $folder): array => [...$this->trashedFolderItem($principal, $target, $folder), 'purgeAfter' => $folder->purgeAfter?->toISOString()])
+            ->map(fn (WorkspaceFolder $folder): array => [...$this->trashedFolderItem($principal, $target, $folder, $folderSizes), 'purgeAfter' => $folder->purgeAfter?->toISOString()])
             ->values()
             ->all();
         $files = $this->possessionsFor($target, 'TRASHED')
@@ -94,7 +97,7 @@ class DriveWorkspaceProjectionService
             }
 
             return [
-                'item' => $this->folderItem($principal, $target, $folder),
+                'item' => $this->folderItem($principal, $target, $folder, $this->folderLogicalSizes($principal, $target, 'ACTIVE')),
                 'location' => $this->locationReference($folder),
                 'capabilities' => $this->capabilities($principal, $target, $folder),
                 'metadata' => [],
@@ -122,13 +125,14 @@ class DriveWorkspaceProjectionService
     /** @return array<string, mixed> */
     private function location(User $principal, DriveWorkspaceTarget $target, ?WorkspaceFolder $location): array
     {
+        $folderSizes = $this->folderLogicalSizes($principal, $target, 'ACTIVE');
         $folders = $this->folderQuery($target)
             ->where('state', 'ACTIVE')
             ->where('idParentFolder', $location?->id)
             ->orderBy('displayName')
             ->get()
             ->filter(fn (WorkspaceFolder $folder): bool => $this->capabilities($principal, $target, $folder)['read'])
-            ->map(fn (WorkspaceFolder $folder): array => $this->folderItem($principal, $target, $folder))
+            ->map(fn (WorkspaceFolder $folder): array => $this->folderItem($principal, $target, $folder, $folderSizes))
             ->values()
             ->all();
         $files = $this->possessionsFor($target, 'ACTIVE')
@@ -157,6 +161,36 @@ class DriveWorkspaceProjectionService
         return $this->folderQuery($target)->where('state', $state)->orderBy('idParentFolder')->orderBy('displayName')->get()
             ->filter(fn (WorkspaceFolder $folder): bool => $this->capabilities($principal, $target, $folder)['read'])
             ->values();
+    }
+
+    /**
+     * Calculates the logical size of every readable folder from the readable
+     * file possessions below it. A folder never exposes bytes from an
+     * inaccessible branch.
+     *
+     * @return array<int, int>
+     */
+    private function folderLogicalSizes(User $principal, DriveWorkspaceTarget $target, string $state): array
+    {
+        $folders = $this->foldersFor($principal, $target, $state);
+        $foldersById = $folders->keyBy('id');
+        $sizes = array_fill_keys($foldersById->keys()->all(), 0);
+
+        foreach ($this->possessionsFor($target, $state)->get() as $possession) {
+            if (! $this->canReadPossession($principal, $target, $possession)) {
+                continue;
+            }
+
+            $folderId = $possession->idWorkspaceFolder;
+            $visited = [];
+            while ($folderId !== null && isset($foldersById[$folderId]) && ! isset($visited[$folderId])) {
+                $sizes[$folderId] += $possession->logicalSizeBytes;
+                $visited[$folderId] = true;
+                $folderId = $foldersById[$folderId]->idParentFolder;
+            }
+        }
+
+        return $sizes;
     }
 
     /** @return Builder<WorkspaceFolder> */
@@ -281,14 +315,14 @@ class DriveWorkspaceProjectionService
     }
 
     /** @return array<string, mixed> */
-    private function folderItem(User $principal, DriveWorkspaceTarget $target, WorkspaceFolder $folder): array
+    private function folderItem(User $principal, DriveWorkspaceTarget $target, WorkspaceFolder $folder, array $folderSizes = []): array
     {
         return [
             'id' => $folder->id,
             'kind' => 'folder',
             'displayName' => $folder->displayName,
             'parentFolderId' => $folder->idParentFolder,
-            'logicalSizeBytes' => null,
+            'logicalSizeBytes' => $folderSizes[$folder->id] ?? 0,
             'detectedMimeType' => null,
             'modifiedAt' => $folder->updatedAt?->toISOString(),
             'capabilities' => $this->capabilities($principal, $target, $folder),
@@ -296,14 +330,14 @@ class DriveWorkspaceProjectionService
     }
 
     /** @return array<string, mixed> */
-    private function trashedFolderItem(User $principal, DriveWorkspaceTarget $target, WorkspaceFolder $folder): array
+    private function trashedFolderItem(User $principal, DriveWorkspaceTarget $target, WorkspaceFolder $folder, array $folderSizes = []): array
     {
         return [
             'id' => $folder->id,
             'kind' => 'folder',
             'displayName' => $folder->displayName,
             'parentFolderId' => $folder->idParentFolder,
-            'logicalSizeBytes' => null,
+            'logicalSizeBytes' => $folderSizes[$folder->id] ?? 0,
             'detectedMimeType' => null,
             'modifiedAt' => $folder->updatedAt?->toISOString(),
             'capabilities' => ['read' => $this->canReadTrashedFolder($principal, $target, $folder), 'edit' => false, 'trash' => false],

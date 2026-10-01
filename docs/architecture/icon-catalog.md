@@ -35,6 +35,10 @@ Esse registro é a única manutenção necessária para um novo ícone PNG. Menu
 | --- | --- | --- |
 | `logout` | Encerrar a sessão autenticada | Ação Sair no menu pessoal |
 | `theme` | Abrir preferências visuais locais | Botão de aparência no menu pessoal |
+| `lamp-on` / `lamp-off` | Tema claro / tema escuro | Escolha de luminosidade nas preferências visuais |
+| `themeTextSmall` / `themeTextNormal` / `themeTextBig` | Escala de texto compacta / padrão / confortável | Escolha de tamanho de texto nas preferências visuais |
+| `padding-s` / `padding-m` / `padding-l` | Espaçamento compacto / padrão / confortável | Escolha de espaçamento nas preferências visuais |
+| `object-size-s` / `object-size-m` / `object-size-g` | Elementos compactos / padrão / confortáveis | Escolha de tamanho de componentes nas preferências visuais |
 | `rinoUser-tweek` | Configurações da conta do usuário | Ação Configurações do usuário no menu pessoal |
 | `taskbar2` | Alternar janelas abertas | Botão de alternância de janelas na topbar responsiva |
 | `maintenance` | Central de Manutenções da plataforma | Menu, cabeçalho da janela e taskbar da Central de Manutenções |
@@ -71,7 +75,7 @@ As ações abaixo são reservadas para uma próxima inclusão visual. Até que p
 
 | Chave | Representa | Contextos permitidos |
 | --- | --- | --- |
-| `drive` | Workspace de arquivos privado | Rinos Drive Pessoal, Rinos Drive Work e seus destinos de navegação |
+| `drive` | Ferramenta de arquivos privada | Rinos Drive global, catálogo de drives pessoais e Work e seus destinos de navegação |
 | `overview` | Visão consolidada de áreas ou indicadores | Categoria Visão geral, dashboard de alto nível |
 | `documents` | Conjunto de documentos organizado | Categoria Documentos, repositório documental |
 | `attachments` | Arquivo vinculado a um registro | Anexos, arquivos e evidências relacionadas |

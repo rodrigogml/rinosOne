@@ -1,6 +1,6 @@
 # Operação — Fundação de armazenamento de arquivos
 
-Este documento orienta a implantação e a operação da fundação privada de arquivos. Ela não cria drive, URLs públicas, compartilhamento externo ou interface de administração de volumes.
+Este documento orienta a implantação e a operação da fundação privada de arquivos que sustenta o Rinos Drive. Não cria URLs públicas, compartilhamento externo ou interface de administração de volumes.
 
 ## Configuração por ambiente
 

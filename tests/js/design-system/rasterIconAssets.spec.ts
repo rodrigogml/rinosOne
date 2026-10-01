@@ -14,4 +14,14 @@ describe('raster icon assets', () => {
         expect(isRegisteredRasterIcon('contacts')).toBe(false);
         expect(rasterIconSource('contacts', 'md')).toBeNull();
     });
+
+    it('registers the security icons used by permission management', () => {
+        expect(rasterIconSource('secPermissions', 'lg')).toBe('/assets/icons/secPermissions_48.png');
+        expect(rasterIconSource('secRoles', 'sm')).toBe('/assets/icons/secRoles_24.png');
+        expect(rasterIconSource('secGroups', 'sm')).toBe('/assets/icons/secGroups_24.png');
+    });
+
+    it('registers the dedicated shared-with-me Drive icon', () => {
+        expect(rasterIconSource('fileSharedWithMe', 'md')).toBe('/assets/icons/fileSharedWithMe_32.png');
+    });
 });

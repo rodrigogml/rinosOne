@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useI18n } from 'vue-i18n';
 import UiAlert from '../design-system/UiAlert.vue';
 import UiButton from '../design-system/UiButton.vue';
+import IconButton from '../design-system/IconButton.vue';
 import { rasterIconSource } from '../design-system/rasterIconAssets';
 import DriveDetailsPanel from './DriveDetailsPanel.vue';
 import ResourceSharingPanel from '../authorization/ResourceSharingPanel.vue';
@@ -34,16 +35,21 @@ import {
     type DriveLocationProjection,
     type DriveWorkspaceTarget,
     type DriveTransferMode,
+    type DriveTransfer,
     requestDriveTransfer,
+    loadDriveTransfer,
+    cancelDriveTransfer,
     type SharedWithMeProjection,
+    type SharedDriveItem,
     trashDriveItems,
 } from './driveWorkspaceApi';
 
 const props = defineProps<{ surface: WorkspaceSurface }>();
 const { t, locale } = useI18n();
 
-type ViewMode = 'grid' | 'list' | 'details' | 'table';
-interface TreeFolder extends DriveItem { depth: number; }
+type ViewMode = 'grid' | 'list' | 'details';
+interface TreeFolder extends DriveItem { depth: number; hasChildren: boolean; }
+type VisibleDriveItem = DriveItem & { originTarget?: DriveWorkspaceTarget };
 
 const isGlobalSurface = computed(() => props.surface.destinationId === 'global.drive');
 const target = ref<DriveWorkspaceTarget | null>(isGlobalSurface.value
@@ -69,11 +75,24 @@ const error = ref('');
 const stale = ref(false);
 const offline = ref(!navigator.onLine);
 const treeDrawerOpen = ref(false);
+const primaryTreeVisible = ref(true);
+const expandedDriveKeys = ref(new Set<string>());
+const expandedTreeFolderIds = ref(new Set<number>());
+const primaryLayoutElement = ref<HTMLElement | null>(null);
+const primaryTreeWidth = ref<number | null>(null);
 const secondaryPaneOpen = ref(false);
 const secondaryDestination = ref<{ target: DriveWorkspaceTarget; projection: DriveLocationProjection } | null>(null);
+const secondaryPane = ref<{ refresh: () => Promise<void> } | null>(null);
+const panesElement = ref<HTMLElement | null>(null);
+const primaryPaneWidth = ref<number | null>(null);
 const transferDialogOpen = ref(false);
 const transferring = ref(false);
 const transferError = ref('');
+const activeTransfer = ref<DriveTransfer | null>(null);
+const transferPolling = ref(false);
+const transferNotice = ref('');
+let transferPollTimer: number | null = null;
+let transferPollDelay = 1000;
 const viewMode = ref<ViewMode>('grid');
 const detailsOpen = ref(false);
 const detailsLoading = ref(false);
@@ -81,6 +100,7 @@ const detailsError = ref('');
 const details = ref<DriveDetailsProjection | null>(null);
 const sharingFolder = ref<DriveItem | null>(null);
 const locationHeading = ref<HTMLElement | null>(null);
+const treeTrigger = ref<HTMLButtonElement | null>(null);
 const createFolderOpen = ref(false);
 const createFolderName = ref('');
 const createFolderError = ref('');
@@ -103,9 +123,10 @@ let nextUploadId = 1;
 const uploading = computed(() => uploadQueue.value.some((entry) => entry.state === 'queued' || entry.state === 'uploading'));
 const VIEW_MODE_STORAGE_KEY = 'rinos-one.drive.view-mode.v1';
 const SECONDARY_PANE_STORAGE_KEY = 'rinos-one.drive.secondary-pane.v1';
+const TRANSFER_STORAGE_KEY = 'rinos-one.drive.active-transfer.v1';
 
 const hasData = computed(() => projection.value !== null);
-const items = computed(() => sharedRootOpen.value
+const items = computed<VisibleDriveItem[]>(() => sharedRootOpen.value
     ? [...(sharedWithMe.value?.folders ?? []), ...(sharedWithMe.value?.files ?? [])].map((item) => ({ ...item, parentFolderId: null, modifiedAt: null, logicalSizeBytes: item.logicalSizeBytes ?? null, detectedMimeType: item.detectedMimeType ?? null }))
     : projection.value ? [...projection.value.folders, ...projection.value.files] : []);
 const treeFolders = computed<TreeFolder[]>(() => {
@@ -119,16 +140,18 @@ const treeFolders = computed<TreeFolder[]>(() => {
     const ordered: TreeFolder[] = [];
     const visit = (parentId: number | null, depth: number) => {
         for (const folder of byParent.get(parentId) ?? []) {
-            ordered.push({ ...folder, depth });
-            visit(folder.id, depth + 1);
+            const hasChildren = (byParent.get(folder.id)?.length ?? 0) > 0;
+            ordered.push({ ...folder, depth, hasChildren });
+            if (hasChildren && expandedTreeFolderIds.value.has(folder.id)) visit(folder.id, depth + 1);
         }
     };
     visit(null, 0);
     // Uma árvore parcial pode começar em uma pasta concedida cujo ancestral não
     // é visível. Ela ainda precisa continuar alcançável para o membro.
     for (const folder of tree.value.filter((item) => item.parentFolderId !== null && !knownIds.has(item.parentFolderId))) {
-        ordered.push({ ...folder, depth: 0 });
-        visit(folder.id, 1);
+        const hasChildren = (byParent.get(folder.id)?.length ?? 0) > 0;
+        ordered.push({ ...folder, depth: 0, hasChildren });
+        if (hasChildren && expandedTreeFolderIds.value.has(folder.id)) visit(folder.id, 1);
     }
     return ordered;
 });
@@ -136,12 +159,28 @@ const collectionLabel = computed(() => projection.value?.location.displayName ??
 const selectedCount = computed(() => selectedIds.value.length);
 const selectedItem = computed(() => selectedIds.value.length === 1 ? items.value.find((item) => item.id === selectedIds.value[0]) ?? null : null);
 const selectedItems = computed(() => items.value.filter((item) => selectedIds.value.includes(item.id)));
+const itemCounts = computed(() => ({
+    total: items.value.length,
+    files: items.value.filter((item) => item.kind === 'file').length,
+    folders: items.value.filter((item) => item.kind === 'folder').length,
+}));
+const selectedItemCounts = computed(() => ({
+    total: selectedItems.value.length,
+    files: selectedItems.value.filter((item) => item.kind === 'file').length,
+    folders: selectedItems.value.filter((item) => item.kind === 'folder').length,
+}));
+const selectedLogicalSizeBytes = computed(() => selectedItems.value.reduce((total, item) => total + (item.logicalSizeBytes ?? 0), 0));
+const statusSummary = computed(() => t('access.drive.statusSummary', itemCounts.value));
+const selectionSummary = computed(() => selectedCount.value
+    ? t('access.drive.statusSelectionSummary', { ...selectedItemCounts.value, size: formatBytes(selectedLogicalSizeBytes.value) })
+    : '');
 const canCreateFolder = computed(() => !sharedRootOpen.value && projection.value?.location.kind !== 'trash' && projection.value?.capabilities.edit === true);
 const canTrashSelection = computed(() => !sharedRootOpen.value && projection.value?.location.kind !== 'trash' && selectedItems.value.length > 0 && selectedItems.value.every((item) => item.capabilities.trash));
 const canMoveSelection = computed(() => !sharedRootOpen.value && selectedItem.value !== null && selectedItem.value.capabilities.edit && projection.value?.location.kind !== 'trash');
 const canUpload = computed(() => canCreateFolder.value && !offline.value);
-const canDownloadSelection = computed(() => target.value !== null && selectedItem.value?.kind === 'file' && selectedItem.value.capabilities.read);
+const canDownloadSelection = computed(() => target.value !== null && selectedItem.value?.capabilities.read === true);
 const canTransferSelection = computed(() => !sharedRootOpen.value && target.value !== null && secondaryDestination.value?.projection.capabilities.edit === true && selectedItems.value.length > 0 && projection.value?.location.kind !== 'trash');
+const transferNoticeTone = computed(() => activeTransfer.value?.state === 'COMPLETED' ? 'success' : 'warning');
 const exporting = ref(false);
 const exportDialogOpen = ref(false);
 const exportMessage = ref('');
@@ -161,6 +200,30 @@ function formatBytes(bytes: number | null): string {
 function formatDate(value: string | null): string { return value ? new Intl.DateTimeFormat(locale.value, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—'; }
 function itemTypeLabel(item: DriveItem): string { return item.kind === 'folder' ? t('access.drive.folder') : item.detectedMimeType?.split('/').at(-1)?.toUpperCase() ?? t('access.drive.file'); }
 function itemIconSource(item: DriveItem): string { return rasterIconSource(item.kind === 'folder' ? 'folderClose' : 'file', 'md') ?? ''; }
+function folderTreeIcon(folder: TreeFolder): string { return rasterIconSource(folder.hasChildren && expandedTreeFolderIds.value.has(folder.id) ? 'folderOpen' : 'folderClose', 'sm') ?? ''; }
+function trashIconSource(): string { return rasterIconSource((projection.value?.usage.trashBytes ?? 0) > 0 ? 'trashFull' : 'trashEmpty', 'sm') ?? ''; }
+function driveKey(nextTarget: DriveWorkspaceTarget): string { return nextTarget.kind === 'tenant' ? `tenant:${nextTarget.tenantId}` : 'personal'; }
+function isActiveDrive(nextTarget: DriveWorkspaceTarget): boolean { return !sharedRootOpen.value && target.value !== null && sameTarget(nextTarget, target.value); }
+function isDriveExpanded(nextTarget: DriveWorkspaceTarget): boolean { return expandedDriveKeys.value.has(driveKey(nextTarget)); }
+function toggleDriveTree(nextTarget: DriveWorkspaceTarget): void {
+    const key = driveKey(nextTarget);
+    const next = new Set(expandedDriveKeys.value);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    expandedDriveKeys.value = next;
+}
+function toggleCatalogDrive(nextTarget: DriveWorkspaceTarget): void {
+    if (isActiveDrive(nextTarget)) {
+        toggleDriveTree(nextTarget);
+        return;
+    }
+    void openCatalogDrive(nextTarget);
+}
+function toggleTreeFolder(folder: TreeFolder): void {
+    if (!folder.hasChildren) return;
+    const next = new Set(expandedTreeFolderIds.value);
+    if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id);
+    expandedTreeFolderIds.value = next;
+}
 function isCurrent(location: DriveLocation): boolean { return projection.value?.location.kind === location.kind && projection.value.location.id === location.id; }
 function selectItem(item: DriveItem, event?: MouseEvent | KeyboardEvent): void {
     if (!item.capabilities.read) return;
@@ -265,7 +328,7 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
     uploadQueue.value.push(...Array.from(files).map((file) => ({ id: nextUploadId++, name: file.name, file, state: 'queued' as const, progress: 0, controller: null })));
     for (const entry of uploadQueue.value.filter((candidate) => candidate.state === 'queued')) {
         entry.state = 'uploading'; entry.controller = new AbortController();
-        try { await uploadDriveFile(target.value, entry.file, projection.value.location.kind === 'folder' ? projection.value.location.id : null, entry.controller.signal, (progress) => { entry.progress = progress; }); entry.progress = 100; entry.state = 'complete'; }
+        try { await uploadDriveFile(target.value, entry.file, projection.value.location.kind === 'folder' ? projection.value.location.id : null, entry.controller.signal, (progress) => { entry.progress = progress; }); entry.progress = 100; entry.state = 'complete'; window.setTimeout(() => dismissUpload(entry.id), 4_000); }
         catch { entry.state = entry.controller.signal.aborted ? 'cancelled' : 'failed'; }
         finally { entry.controller = null; }
     }
@@ -273,9 +336,23 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
 }
 function receiveUploadSelection(event: Event): void { const input = event.target as HTMLInputElement; if (input.files) void uploadFiles(input.files); input.value = ''; }
 function cancelUpload(entry: UploadEntry): void { entry.controller?.abort(); if (entry.state === 'queued') entry.state = 'cancelled'; }
-function downloadSelectedFile(): void {
-    if (!target.value || !selectedItem.value || selectedItem.value.kind !== 'file') return;
-    window.location.assign(driveDownloadUrl(target.value, selectedItem.value.id));
+function dismissUpload(entryId: number): void { uploadQueue.value = uploadQueue.value.filter((entry) => entry.id !== entryId); }
+async function downloadSelectedItem(): Promise<void> {
+    if (!target.value || !selectedItem.value || !selectedItem.value.capabilities.read || offline.value) return;
+    if (selectedItem.value.kind === 'file') {
+        window.location.assign(driveDownloadUrl(target.value, selectedItem.value.id));
+        return;
+    }
+    exporting.value = true;
+    exportMessage.value = '';
+    try {
+        const exportJob = await requestDriveExport(target.value, [selectedItem.value]);
+        activeExportId.value = exportJob.exportId;
+        activeExportState.value = exportJob.state;
+        exportMessage.value = t('access.drive.exportState', { state: exportJob.state.toLowerCase() });
+        scheduleExportPoll();
+    } catch { exportMessage.value = t('access.drive.exportFailed'); }
+    finally { exporting.value = false; }
 }
 function openExportDialog(): void { exportMessage.value = ''; exportDialogOpen.value = true; }
 async function requestExport(): Promise<void> {
@@ -336,6 +413,18 @@ async function openLocation(location: DriveLocation): Promise<void> {
 async function openCatalogDrive(nextTarget: DriveWorkspaceTarget): Promise<void> {
     if (offline.value) return;
     sharedRootOpen.value = false;
+    expandedDriveKeys.value = new Set(expandedDriveKeys.value).add(driveKey(nextTarget));
+    if (target.value === null || !sameTarget(target.value, nextTarget)) {
+        // A localização só é válida dentro do workspace que a originou. Nunca
+        // reutilize um id de pasta pessoal como destino de uma organização.
+        expandedTreeFolderIds.value = new Set();
+        tree.value = [];
+        projection.value = null;
+        stale.value = false;
+        error.value = '';
+        clearSelection();
+        clearDetails();
+    }
     target.value = nextTarget;
     await refresh();
 }
@@ -379,38 +468,233 @@ async function refresh(): Promise<void> {
         if (detailsOpen.value) clearDetails();
         stale.value = false;
     } catch (reason) {
-        stale.value = hasData.value;
-        error.value = axios.isAxiosError(reason) && reason.response?.status === 403
-            ? t('access.drive.workspaceDenied')
-            : t('access.drive.loadFailed');
+        const denied = axios.isAxiosError(reason) && reason.response?.status === 403;
+        stale.value = denied ? false : hasData.value;
+        if (denied) {
+            const revokedTarget = target.value;
+            catalog.value = catalog.value === null ? null : { ...catalog.value, drives: catalog.value.drives.filter((entry) => !sameTarget(entry.target, revokedTarget!)) };
+            tree.value = [];
+            projection.value = null;
+            clearSelection();
+            clearDetails();
+            target.value = null;
+        }
+        error.value = denied ? t('access.drive.workspaceDenied') : t('access.drive.loadFailed');
     } finally { loading.value = false; }
 }
-function openItem(item: DriveItem): void {
+function removeRevokedSharedItem(item: SharedDriveItem): void {
+    if (sharedWithMe.value === null) return;
+    const same = (candidate: SharedDriveItem): boolean => candidate.id === item.id && candidate.kind === item.kind && sameTarget(candidate.originTarget, item.originTarget);
+    sharedWithMe.value = { folders: sharedWithMe.value.folders.filter((candidate) => !same(candidate)), files: sharedWithMe.value.files.filter((candidate) => !same(candidate)) };
+}
+async function openSharedItem(item: VisibleDriveItem & { originTarget: DriveWorkspaceTarget }): Promise<void> {
+    target.value = item.originTarget;
+    sharedRootOpen.value = false;
+    loading.value = true;
+    error.value = '';
+    try {
+        if (item.kind === 'folder') {
+            const [nextTree, nextProjection] = await Promise.all([
+                loadDriveTree(item.originTarget),
+                loadDriveLocation(item.originTarget, { kind: 'folder', id: item.id, displayName: item.displayName, parentFolderId: null }),
+            ]);
+            tree.value = nextTree;
+            projection.value = nextProjection;
+            clearSelection();
+            clearDetails();
+            await nextTick();
+            locationHeading.value?.focus();
+        } else {
+            detailsOpen.value = true;
+            detailsLoading.value = true;
+            details.value = await loadDriveDetails(item.originTarget, item);
+            projection.value = { location: details.value.location, breadcrumbs: [], folders: [], files: [], capabilities: details.value.capabilities, usage: { workspaceBytes: 0, systemManagedBytes: 0, trashBytes: 0, totalBytes: 0 } };
+            tree.value = [];
+        }
+    } catch {
+        removeRevokedSharedItem(item);
+        target.value = null;
+        sharedRootOpen.value = true;
+        error.value = t('access.drive.locationDenied');
+    } finally {
+        detailsLoading.value = false;
+        loading.value = false;
+    }
+}
+function openItem(item: VisibleDriveItem): void {
+    if (sharedRootOpen.value && item.originTarget) { void openSharedItem(item as VisibleDriveItem & { originTarget: DriveWorkspaceTarget }); return; }
     if (item.kind === 'folder') void openLocation({ kind: 'folder', id: item.id, displayName: item.displayName, parentFolderId: item.parentFolderId });
     else selectItem(item);
 }
+function moveTreeFocus(event: KeyboardEvent): void {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const tree = (event.currentTarget as HTMLElement).closest<HTMLElement>('[role="tree"]');
+    if (tree === null) return;
+    const entries = Array.from(tree.querySelectorAll<HTMLButtonElement>('[role="treeitem"]:not([disabled])'));
+    const current = entries.indexOf(event.currentTarget as HTMLButtonElement);
+    if (current < 0) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? entries.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + entries.length) % entries.length;
+    entries[next]?.focus();
+}
+function closeTreeDrawer(): void {
+    treeDrawerOpen.value = false;
+    void nextTick(() => treeTrigger.value?.focus());
+}
 function restoreViewMode(): void {
     const value = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    if (value === 'grid' || value === 'list' || value === 'details' || value === 'table') viewMode.value = value;
+    if (value === 'grid' || value === 'list' || value === 'details') viewMode.value = value;
 }
 function toggleSecondaryPane(): void {
     secondaryPaneOpen.value = !secondaryPaneOpen.value;
-    if (!secondaryPaneOpen.value) secondaryDestination.value = null;
+    if (!secondaryPaneOpen.value) {
+        secondaryDestination.value = null;
+        primaryPaneWidth.value = null;
+    }
+}
+
+function clampPrimaryPaneWidth(value: number): number {
+    const containerWidth = panesElement.value?.getBoundingClientRect().width ?? 0;
+    const dividerWidth = 8;
+    const minimumPaneWidth = 288;
+    const availableWidth = containerWidth - dividerWidth;
+
+    if (availableWidth <= minimumPaneWidth * 2) return Math.max(0, availableWidth / 2);
+
+    return Math.min(Math.max(value, minimumPaneWidth), availableWidth - minimumPaneWidth);
+}
+
+function resizePanelsAt(clientX: number): void {
+    const bounds = panesElement.value?.getBoundingClientRect();
+    if (!bounds) return;
+
+    primaryPaneWidth.value = clampPrimaryPaneWidth(clientX - bounds.left);
+}
+
+function onPanelResize(event: PointerEvent): void {
+    resizePanelsAt(event.clientX);
+}
+
+function stopPanelResize(): void {
+    window.removeEventListener('pointermove', onPanelResize);
+    window.removeEventListener('pointerup', stopPanelResize);
+}
+
+function startPanelResize(event: PointerEvent): void {
+    if (window.matchMedia('(max-width: 900px)').matches) return;
+
+    event.preventDefault();
+    resizePanelsAt(event.clientX);
+    window.addEventListener('pointermove', onPanelResize);
+    window.addEventListener('pointerup', stopPanelResize, { once: true });
+}
+
+function resizePanelsBy(offset: number): void {
+    const bounds = panesElement.value?.getBoundingClientRect();
+    if (!bounds) return;
+
+    primaryPaneWidth.value = clampPrimaryPaneWidth((primaryPaneWidth.value ?? ((bounds.width - 8) / 2)) + offset);
+}
+function clampPrimaryTreeWidth(value: number): number {
+    const layoutWidth = primaryLayoutElement.value?.getBoundingClientRect().width ?? 0;
+    const minimumWidth = 120;
+    const maximumWidth = Math.max(minimumWidth, Math.floor(layoutWidth * .25));
+    return Math.min(Math.max(value, minimumWidth), maximumWidth);
+}
+function resizePrimaryTreeAt(clientX: number): void {
+    const bounds = primaryLayoutElement.value?.getBoundingClientRect();
+    if (bounds) primaryTreeWidth.value = clampPrimaryTreeWidth(clientX - bounds.left);
+}
+function onPrimaryTreeResize(event: PointerEvent): void { resizePrimaryTreeAt(event.clientX); }
+function stopPrimaryTreeResize(): void {
+    window.removeEventListener('pointermove', onPrimaryTreeResize);
+    window.removeEventListener('pointerup', stopPrimaryTreeResize);
+}
+function startPrimaryTreeResize(event: PointerEvent): void {
+    if (window.matchMedia('(max-width: 900px)').matches) return;
+    event.preventDefault();
+    resizePrimaryTreeAt(event.clientX);
+    window.addEventListener('pointermove', onPrimaryTreeResize);
+    window.addEventListener('pointerup', stopPrimaryTreeResize, { once: true });
+}
+function resizePrimaryTreeBy(offset: number): void {
+    const layoutWidth = primaryLayoutElement.value?.getBoundingClientRect().width ?? 0;
+    primaryTreeWidth.value = clampPrimaryTreeWidth((primaryTreeWidth.value ?? Math.min(240, Math.floor(layoutWidth * .25))) + offset);
 }
 function openTransferDialog(): void { if (canTransferSelection.value) { transferError.value = ''; transferDialogOpen.value = true; } }
 function setSecondaryDestination(nextTarget: DriveWorkspaceTarget, nextProjection: DriveLocationProjection): void { secondaryDestination.value = { target: nextTarget, projection: nextProjection }; }
 function sameTarget(left: DriveWorkspaceTarget, right: DriveWorkspaceTarget): boolean { return left.kind === right.kind && (left.kind !== 'tenant' || right.kind !== 'tenant' || left.tenantId === right.tenantId); }
+function destinationIntersectsSelectedFolder(): boolean {
+    if (!target.value || !secondaryDestination.value || !sameTarget(target.value, secondaryDestination.value.target)) return false;
+    const destinationId = secondaryDestination.value.projection.location.kind === 'folder' ? secondaryDestination.value.projection.location.id : null;
+    if (destinationId === null) return false;
+    const parents = new Map(tree.value.map((folder) => [folder.id, folder.parentFolderId]));
+    return selectedItems.value.filter((item) => item.kind === 'folder').some((item) => {
+        let candidate: number | null = destinationId;
+        while (candidate !== null) { if (candidate === item.id) return true; candidate = parents.get(candidate) ?? null; }
+        return false;
+    });
+}
+function receiveTransferDrop(): void {
+    if (!canTransferSelection.value || destinationIntersectsSelectedFolder()) { error.value = t('access.drive.transferInvalid'); return; }
+    openTransferDialog();
+}
 async function confirmTransfer(mode: DriveTransferMode): Promise<void> {
     if (!target.value || !secondaryDestination.value || !projection.value) return;
     transferring.value = true;
     transferError.value = '';
     try {
-        await requestDriveTransfer({ sourceTarget: { ...target.value, folderId: projection.value.location.kind === 'folder' ? projection.value.location.id : null }, destinationTarget: { ...secondaryDestination.value.target, folderId: secondaryDestination.value.projection.location.kind === 'folder' ? secondaryDestination.value.projection.location.id : null }, items: selectedItems.value.map((item) => ({ id: item.id, kind: item.kind })), mode });
+        activeTransfer.value = await requestDriveTransfer({ sourceTarget: { ...target.value, folderId: projection.value.location.kind === 'folder' ? projection.value.location.id : null }, destinationTarget: { ...secondaryDestination.value.target, folderId: secondaryDestination.value.projection.location.kind === 'folder' ? secondaryDestination.value.projection.location.id : null }, items: selectedItems.value.map((item) => ({ id: item.id, kind: item.kind })), mode });
+        persistActiveTransfer();
+        scheduleTransferPoll();
         transferDialogOpen.value = false;
         clearSelection();
     } catch { transferError.value = t('access.drive.transferFailed'); }
     finally { transferring.value = false; }
 }
+function isTerminalTransfer(transfer: DriveTransfer): boolean { return ['COMPLETED', 'FAILED', 'CANCELLED'].includes(transfer.state); }
+function persistActiveTransfer(): void {
+    try { activeTransfer.value === null || isTerminalTransfer(activeTransfer.value) ? window.localStorage.removeItem(TRANSFER_STORAGE_KEY) : window.localStorage.setItem(TRANSFER_STORAGE_KEY, activeTransfer.value.transferId); } catch { /* Persistência local é apenas uma conveniência. */ }
+}
+function clearTransferPoll(): void { if (transferPollTimer !== null) clearTimeout(transferPollTimer); transferPollTimer = null; }
+function scheduleTransferPoll(): void {
+    clearTransferPoll();
+    if (activeTransfer.value === null || isTerminalTransfer(activeTransfer.value)) { persistActiveTransfer(); return; }
+    transferPollTimer = window.setTimeout(() => { void pollTransfer(); }, transferPollDelay);
+    transferPollDelay = Math.min(10_000, transferPollDelay * 2);
+}
+async function pollTransfer(): Promise<void> {
+    if (activeTransfer.value === null || transferPolling.value) return;
+    transferPolling.value = true;
+    try {
+        activeTransfer.value = await loadDriveTransfer(activeTransfer.value.transferId);
+        transferPollDelay = 1000;
+        persistActiveTransfer();
+        if (activeTransfer.value !== null && isTerminalTransfer(activeTransfer.value)) {
+            transferNotice.value = activeTransfer.value.state === 'COMPLETED' ? t('access.drive.transferCompleted') : t('access.drive.transferTerminal', { state: activeTransfer.value.state });
+            void refresh();
+            void secondaryPane.value?.refresh();
+        }
+    }
+    catch {
+        activeTransfer.value = null;
+        persistActiveTransfer();
+        transferNotice.value = t('access.drive.transferUnavailable');
+    }
+    finally { transferPolling.value = false; scheduleTransferPoll(); }
+}
+async function cancelActiveTransfer(): Promise<void> {
+    if (activeTransfer.value?.state !== 'PENDING') return;
+    transferPolling.value = true;
+    try {
+        activeTransfer.value = await cancelDriveTransfer(activeTransfer.value.transferId);
+        persistActiveTransfer();
+        if (activeTransfer.value !== null && isTerminalTransfer(activeTransfer.value)) transferNotice.value = t('access.drive.transferTerminal', { state: activeTransfer.value.state });
+    }
+    catch { transferError.value = t('access.drive.transferFailed'); }
+    finally { transferPolling.value = false; scheduleTransferPoll(); }
+}
+function dismissTransferStatus(): void { activeTransfer.value = null; transferNotice.value = ''; }
 
 onMounted(() => {
     restoreViewMode();
@@ -419,6 +703,8 @@ onMounted(() => {
     window.addEventListener('offline', offlineNow);
     if (isGlobalSurface.value) void loadCatalog();
     else void refresh();
+    const transferId = window.localStorage.getItem(TRANSFER_STORAGE_KEY);
+    if (transferId) { activeTransfer.value = { transferId, state: 'PENDING', mode: 'COPY', totalItems: 0, processedItems: 0, destinationTarget: { kind: 'personal' }, failureCode: null }; void pollTransfer(); }
 });
 watch(viewMode, (value) => {
     try { window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, value); } catch { /* Preferência local é opcional. */ }
@@ -437,6 +723,9 @@ watch(target, () => {
 });
 onBeforeUnmount(() => {
     if (exportPollTimer !== null) clearTimeout(exportPollTimer);
+    clearTransferPoll();
+    stopPanelResize();
+    stopPrimaryTreeResize();
     window.removeEventListener('online', online);
     window.removeEventListener('offline', offlineNow);
 });
@@ -444,45 +733,75 @@ onBeforeUnmount(() => {
 
 <template>
     <main class="drive-explorer" :aria-label="workspaceName">
-        <header class="drive-explorer__toolbar">
-            <div class="drive-explorer__identity"><span class="drive-explorer__mark" aria-hidden="true">◈</span><div><p>{{ t(isWork ? 'access.drive.workWorkspace' : 'access.drive.personalWorkspace') }}</p><h3>{{ workspaceName }}</h3></div></div>
-            <div class="drive-explorer__actions"><UiButton variant="secondary" :disabled="offline" :loading="loading" @click="refresh">{{ t('access.drive.refresh') }}</UiButton><UiButton v-if="isGlobalSurface" variant="secondary" :aria-pressed="secondaryPaneOpen" @click="toggleSecondaryPane">{{ t(secondaryPaneOpen ? 'access.drive.closeSecondPanel' : 'access.drive.openSecondPanel') }}</UiButton><UiButton :disabled="!canCreateFolder || offline" @click="openCreateFolder">{{ t('access.drive.newFolder') }}</UiButton><UiButton :disabled="!canUpload" @click="chooseUploads">{{ t('access.drive.upload') }}</UiButton><input ref="uploadInput" type="file" multiple hidden @change="receiveUploadSelection"></div>
-        </header>
-        <div v-if="secondaryPaneOpen" class="drive-explorer__transfer-action"><button type="button" :disabled="!canTransferSelection || offline" @click="openTransferDialog">{{ t('access.drive.transferTitle') }}</button></div>
+        <input ref="uploadInput" type="file" multiple hidden @change="receiveUploadSelection">
         <div class="drive-explorer__feedback" aria-live="polite"><UiAlert v-if="offline" tone="warning">{{ t('access.drive.offline') }}</UiAlert><UiAlert v-if="stale" tone="warning">{{ t('access.drive.stale') }}</UiAlert><UiAlert v-if="error" tone="error">{{ error }}</UiAlert></div>
-        <div class="drive-explorer__panes" :class="{ 'drive-explorer__panes--split': secondaryPaneOpen }">
-        <div class="drive-explorer__layout" :class="{ 'drive-explorer__layout--drawer-open': treeDrawerOpen }">
-            <aside class="drive-explorer__tree" :class="{ 'drive-explorer__tree--open': treeDrawerOpen }" aria-label="Árvore de pastas">
-                <div class="drive-explorer__tree-heading"><strong>{{ t('access.drive.tree') }}</strong><button type="button" class="drive-explorer__drawer-close" :aria-label="t('access.drive.closeTree')" @click="treeDrawerOpen = false">×</button></div>
-                <nav class="drive-explorer__tree-list" aria-label="Pastas do workspace">
-                    <button v-for="drive in catalog?.drives ?? []" :key="drive.target.kind === 'tenant' ? `tenant-${drive.target.tenantId}` : 'personal'" type="button" :class="{ 'drive-explorer__tree-item--active': !sharedRootOpen && drive.target.kind === target?.kind && (drive.target.kind !== 'tenant' || target?.kind !== 'tenant' || drive.target.tenantId === target.tenantId) }" class="drive-explorer__tree-item" @click="openCatalogDrive(drive.target)"><span aria-hidden="true">▰</span><span>{{ drive.displayName }}</span></button>
-                    <button v-if="catalog" type="button" :class="{ 'drive-explorer__tree-item--active': sharedRootOpen }" class="drive-explorer__tree-item" @click="openSharedWithMe"><span aria-hidden="true">◇</span><span>{{ catalog.sharedWithMe.displayName }}</span></button>
-                    <template v-if="!sharedRootOpen">
-                        <button v-for="folder in treeFolders" :key="folder.id" type="button" :style="{ '--drive-depth': folder.depth }" :class="{ 'drive-explorer__tree-item--active': isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) }" class="drive-explorer__tree-item drive-explorer__tree-item--nested" @click="openLocation({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId })"><span aria-hidden="true">▰</span><span>{{ folder.displayName }}</span></button>
+        <UiAlert v-if="transferNotice" :tone="transferNoticeTone" role="status">{{ transferNotice }} <button type="button" class="drive-explorer__notice-dismiss" @click="dismissTransferStatus">×</button></UiAlert>
+        <section v-if="activeTransfer" class="drive-explorer__transfer-progress" role="status"><span>{{ t('access.drive.transferProgress', { processed: activeTransfer.processedItems, total: activeTransfer.totalItems, state: activeTransfer.state }) }}</span><progress :value="activeTransfer.processedItems" :max="Math.max(activeTransfer.totalItems, 1)">{{ activeTransfer.processedItems }}/{{ activeTransfer.totalItems }}</progress><button v-if="activeTransfer.state === 'PENDING'" type="button" :disabled="transferPolling" @click="cancelActiveTransfer">{{ t('access.drive.cancelTransfer') }}</button></section>
+        <div ref="panesElement" class="drive-explorer__panes" :class="{ 'drive-explorer__panes--split': secondaryPaneOpen }" :style="primaryPaneWidth === null ? undefined : { '--drive-primary-pane-width': `${primaryPaneWidth}px` }">
+        <div ref="primaryLayoutElement" class="drive-explorer__layout" :class="{ 'drive-explorer__layout--drawer-open': treeDrawerOpen, 'drive-explorer__layout--tree-hidden': !primaryTreeVisible }" :style="primaryTreeWidth === null ? undefined : { '--drive-primary-tree-width': `${primaryTreeWidth}px` }">
+            <aside class="drive-explorer__tree" :class="{ 'drive-explorer__tree--open': treeDrawerOpen }" :aria-label="t('access.drive.tree')">
+                <div class="drive-explorer__tree-heading"><strong>{{ t('access.drive.tree') }}</strong><button type="button" class="drive-explorer__drawer-close" :aria-label="t('access.drive.closeTree')" @click="closeTreeDrawer">×</button></div>
+                <nav class="drive-explorer__tree-list" role="tree" :aria-label="t('access.drive.tree')">
+                    <section v-for="drive in catalog?.drives ?? []" :key="driveKey(drive.target)" class="drive-explorer__drive-section" :class="{ 'drive-explorer__drive-section--active': isActiveDrive(drive.target) }">
+                        <button type="button" role="treeitem" :aria-current="isActiveDrive(drive.target) ? 'page' : undefined" :aria-expanded="isActiveDrive(drive.target) ? isDriveExpanded(drive.target) : undefined" class="drive-explorer__drive-header" @keydown="moveTreeFocus" @click="toggleCatalogDrive(drive.target)"><img :src="rasterIconSource('drive', 'sm') ?? ''" alt="" aria-hidden="true"><span>{{ drive.displayName }}</span></button>
+                        <div v-if="isActiveDrive(drive.target) && isDriveExpanded(drive.target)" class="drive-explorer__drive-content">
+                            <div v-for="folder in treeFolders" :key="folder.id" class="drive-explorer__tree-row drive-explorer__tree-row--nested" :style="{ '--drive-depth': folder.depth }">
+                                <button v-if="folder.hasChildren" type="button" class="drive-explorer__tree-toggle" :aria-label="expandedTreeFolderIds.has(folder.id) ? 'Recolher' : 'Expandir'" :aria-expanded="expandedTreeFolderIds.has(folder.id)" @click="toggleTreeFolder(folder)"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></button>
+                                <span v-else class="drive-explorer__tree-toggle drive-explorer__tree-toggle--empty"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></span>
+                                <button type="button" role="treeitem" :aria-current="isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openLocation({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId })"><span>{{ folder.displayName }}</span></button>
+                            </div>
+                            <button type="button" role="treeitem" :aria-current="projection?.location.kind === 'trash' ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': projection?.location.kind === 'trash' }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
+                        </div>
+                    </section>
+                    <button v-if="catalog" type="button" role="treeitem" :aria-current="sharedRootOpen ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': sharedRootOpen }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openSharedWithMe"><img :src="rasterIconSource('fileSharedWithMe', 'sm') ?? ''" alt="" aria-hidden="true"><span>{{ catalog.sharedWithMe.displayName }}</span></button>
+                    <template v-if="!isGlobalSurface && !sharedRootOpen">
+                        <div v-for="folder in treeFolders" :key="folder.id" class="drive-explorer__tree-row drive-explorer__tree-row--nested" :style="{ '--drive-depth': folder.depth }">
+                            <button v-if="folder.hasChildren" type="button" class="drive-explorer__tree-toggle" :aria-label="expandedTreeFolderIds.has(folder.id) ? 'Recolher' : 'Expandir'" :aria-expanded="expandedTreeFolderIds.has(folder.id)" @click="toggleTreeFolder(folder)"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></button>
+                            <span v-else class="drive-explorer__tree-toggle drive-explorer__tree-toggle--empty"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></span>
+                            <button type="button" role="treeitem" :aria-current="isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openLocation({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId })"><span>{{ folder.displayName }}</span></button>
+                        </div>
                     </template>
-                    <button type="button" :class="{ 'drive-explorer__tree-item--active': projection?.location.kind === 'trash' }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><span aria-hidden="true">♲</span><span>{{ t('access.drive.trash') }}</span></button>
+                    <button v-if="!isGlobalSurface" type="button" role="treeitem" :aria-current="projection?.location.kind === 'trash' ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': projection?.location.kind === 'trash' }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
                 </nav>
                 <p v-if="projection" class="drive-explorer__usage">{{ t('access.drive.used', { size: formatBytes(projection.usage.totalBytes) }) }}</p>
             </aside>
+            <div v-if="primaryTreeVisible" class="drive-explorer__tree-divider" :aria-label="t('access.drive.resizeTree')" tabindex="0" @pointerdown="startPrimaryTreeResize" @keydown.arrow-left.prevent="resizePrimaryTreeBy(-24)" @keydown.arrow-right.prevent="resizePrimaryTreeBy(24)" @keydown.home.prevent="resizePrimaryTreeBy(-Number.MAX_SAFE_INTEGER)" @keydown.end.prevent="resizePrimaryTreeBy(Number.MAX_SAFE_INTEGER)" />
             <section class="drive-explorer__collection" :aria-busy="loading || undefined" @dragover.prevent @drop.stop.prevent="uploadFiles($event.dataTransfer?.files ?? [])">
                 <div class="drive-explorer__collection-header">
-                    <button type="button" class="drive-explorer__tree-trigger" :aria-label="t('access.drive.openTree')" @click="treeDrawerOpen = true">☰</button>
+                <button ref="treeTrigger" type="button" class="drive-explorer__tree-trigger" :aria-label="t('access.drive.openTree')" @click="treeDrawerOpen = true">☰</button>
                     <nav class="drive-explorer__breadcrumbs" :aria-label="t('access.drive.path')"><button type="button" @click="openLocation(rootLocation)">{{ rootLocation.displayName }}</button><template v-for="crumb in projection?.breadcrumbs ?? []" :key="`${crumb.kind}-${crumb.id}`"><span aria-hidden="true">/</span><button type="button" :aria-current="isCurrent(crumb) ? 'page' : undefined" @click="openLocation(crumb)">{{ crumb.displayName }}</button></template></nav>
-                    <span ref="locationHeading" class="drive-explorer__collection-name" tabindex="-1">{{ collectionLabel }}</span>
+                    <span ref="locationHeading" class="sr-only" tabindex="-1">{{ collectionLabel }}</span>
                 </div>
-                <div class="drive-explorer__collection-tools"><div class="drive-explorer__view-modes" role="group" :aria-label="t('access.drive.viewMode')"><button v-for="mode in [{ id: 'grid', label: t('access.drive.grid'), glyph: '▦' }, { id: 'list', label: t('access.drive.list'), glyph: '☷' }, { id: 'details', label: t('access.drive.detailsView'), glyph: '☷' }, { id: 'table', label: t('access.drive.table'), glyph: '▤' }]" :key="mode.id" type="button" :class="{ 'drive-explorer__view-mode--active': viewMode === mode.id }" class="drive-explorer__view-mode" :aria-pressed="viewMode === mode.id" :title="mode.label" @click="viewMode = mode.id as ViewMode">{{ mode.glyph }}<span>{{ mode.label }}</span></button></div><div class="drive-explorer__selection-actions"><p v-if="selectedCount" class="drive-explorer__selection" aria-live="polite">{{ t('access.drive.selected', { count: selectedCount }, selectedCount) }}</p><button v-if="selectedCount" type="button" class="drive-explorer__details-trigger" @click="clearSelection">{{ t('access.drive.clearSelection') }}</button><button type="button" class="drive-explorer__details-trigger" :disabled="!canDownloadSelection || offline" @click="downloadSelectedFile">{{ t('access.drive.download') }}</button><template v-if="projection?.location.kind === 'trash'"><button type="button" class="drive-explorer__details-trigger" :disabled="!selectedCount || offline || restoringItems" @click="restoreSelectedItems">{{ t('access.drive.restore') }}</button><button type="button" class="drive-explorer__details-trigger" :disabled="!selectedCount || offline" @click="openReleaseConfirmation">{{ t('access.drive.release') }}</button></template><template v-else><button type="button" class="drive-explorer__details-trigger" :disabled="!canMoveSelection || offline" @click="openMoveDialog">{{ t('access.drive.move') }}</button><button type="button" class="drive-explorer__details-trigger" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation">{{ t('access.drive.moveToTrash') }}</button></template><button type="button" class="drive-explorer__details-trigger" :disabled="selectedItem === null || offline" @click="openDetails">{{ t('access.drive.details') }}</button></div></div>
+                <div class="drive-explorer__collection-tools">
+                    <div v-if="isGlobalSurface" class="drive-explorer__window-action"><IconButton :label="t(secondaryPaneOpen ? 'access.drive.closeSecondPanel' : 'access.drive.openSecondPanel')" :aria-pressed="secondaryPaneOpen" @click="toggleSecondaryPane"><img :src="rasterIconSource('fileSidePanel', 'sm') ?? ''" alt=""></IconButton></div>
+                    <div class="drive-explorer__operation-actions" role="toolbar" :aria-label="t('access.drive.actions')">
+                        <IconButton v-if="selectedCount" class="drive-explorer__clear-selection" :label="t('access.drive.clearSelection')" @click="clearSelection"><img :src="rasterIconSource('fileCleanSelection', 'md') ?? ''" alt=""></IconButton>
+                        <IconButton :label="t(primaryTreeVisible ? 'access.drive.closeTree' : 'access.drive.openTree')" :aria-pressed="primaryTreeVisible" @click="primaryTreeVisible = !primaryTreeVisible"><img :src="rasterIconSource('navBar', 'sm') ?? ''" alt=""></IconButton>
+                        <IconButton :label="t('access.drive.refresh')" :disabled="offline || loading" @click="refresh"><img :src="rasterIconSource('fileRefresh', 'sm') ?? ''" alt=""></IconButton>
+                        <IconButton :label="t('access.drive.newFolder')" :disabled="!canCreateFolder || offline" @click="openCreateFolder"><img :src="rasterIconSource('fileNewFolder', 'sm') ?? ''" alt=""></IconButton>
+                        <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.upload')" :disabled="!canUpload" @click="chooseUploads"><img :src="rasterIconSource('driveUpload', 'sm') ?? ''" alt=""></IconButton>
+                        <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.download')" :disabled="!canDownloadSelection || offline || exporting" @click="downloadSelectedItem"><img :src="rasterIconSource('driveDownload', 'sm') ?? ''" alt=""></IconButton>
+                        <template v-if="projection?.location.kind === 'trash'"><button type="button" class="drive-explorer__details-trigger drive-explorer__action--overflowable" :disabled="!selectedCount || offline || restoringItems" @click="restoreSelectedItems">{{ t('access.drive.restore') }}</button><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'sm') ?? ''" alt=""></IconButton></template>
+                        <template v-else><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'sm') ?? ''" alt=""></IconButton><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('dataDelete', 'sm') ?? ''" alt=""></IconButton></template>
+                        <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.details')" :disabled="selectedItem === null || offline" @click="openDetails"><img :src="rasterIconSource('fileDetailPanel', 'sm') ?? ''" alt=""></IconButton>
+                        <details class="drive-explorer__action-overflow"><summary :aria-label="t('access.drive.moreActions')" :title="t('access.drive.moreActions')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg></summary><div class="drive-explorer__action-overflow-menu"><IconButton :label="t('access.drive.upload')" :disabled="!canUpload" @click="chooseUploads"><img :src="rasterIconSource('driveUpload', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.download')" :disabled="!canDownloadSelection || offline || exporting" @click="downloadSelectedItem"><img :src="rasterIconSource('driveDownload', 'md') ?? ''" alt=""></IconButton><template v-if="projection?.location.kind === 'trash'"><IconButton :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'md') ?? ''" alt=""></IconButton></template><template v-else><IconButton :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('dataDelete', 'md') ?? ''" alt=""></IconButton></template><IconButton :label="t('access.drive.details')" :disabled="selectedItem === null || offline" @click="openDetails"><img :src="rasterIconSource('fileDetailPanel', 'md') ?? ''" alt=""></IconButton></div></details>
+                    </div>
+                    <div class="drive-explorer__collection-tools-end"><div class="drive-explorer__view-modes" role="group" :aria-label="t('access.drive.viewMode')"><button v-for="mode in [{ id: 'grid', label: t('access.drive.grid'), icon: 'fileGrade' }, { id: 'list', label: t('access.drive.list'), icon: 'fileList' }, { id: 'details', label: t('access.drive.detailsView'), icon: 'fileDetails' }]" :key="mode.id" type="button" :class="{ 'drive-explorer__view-mode--active': viewMode === mode.id }" class="drive-explorer__view-mode" :aria-label="mode.label" :aria-pressed="viewMode === mode.id" :title="mode.label" @click="viewMode = mode.id as ViewMode"><img :src="rasterIconSource(mode.icon, 'md') ?? ''" alt="" aria-hidden="true"></button></div></div>
+                </div>
                 <div v-if="selectedCount >= 2 || activeExportId" class="drive-explorer__export-action"><UiButton v-if="selectedCount >= 2" :disabled="offline || exporting" :loading="exporting" @click="openExportDialog">{{ t('access.drive.exportSelection') }}</UiButton><UiButton v-if="activeExportState === 'PENDING'" variant="secondary" :disabled="exporting" @click="cancelExport">{{ t('access.drive.cancelExport') }}</UiButton><UiButton v-if="activeExportState === 'READY'" @click="downloadExport">{{ t('access.drive.download') }}</UiButton><span v-if="exportMessage" aria-live="polite">{{ exportMessage }}</span></div>
                 <p v-if="loading && !hasData" class="drive-explorer__loading" aria-live="polite">{{ t('access.drive.loading') }}</p>
                 <p v-else-if="!loading && !items.length" class="drive-explorer__empty">{{ t(projection?.location.kind === 'trash' ? 'access.drive.emptyTrash' : 'access.drive.emptyFolder') }}</p>
                 <div v-else class="drive-explorer__items" :class="`drive-explorer__items--${viewMode}`" role="list" :aria-label="t('access.drive.itemCollection', { name: collectionLabel })">
-                    <button v-for="item in items" :key="`${item.kind}-${item.id}`" type="button" class="drive-explorer__item" :class="{ 'drive-explorer__item--selected': selectedIds.includes(item.id) }" role="listitem" :aria-pressed="selectedIds.includes(item.id)" @click="selectItem(item, $event)" @dblclick="openItem(item)" @keydown.enter.prevent="openItem(item)" @keydown.space.prevent="selectItem(item, $event)"><img class="drive-explorer__item-icon" :class="{ 'drive-explorer__item-icon--folder': item.kind === 'folder' }" :src="itemIconSource(item)" alt="" aria-hidden="true"><span class="drive-explorer__item-name">{{ item.displayName }}</span><span class="drive-explorer__item-type">{{ itemTypeLabel(item) }}</span><span class="drive-explorer__item-size">{{ formatBytes(item.logicalSizeBytes) }}</span><span class="drive-explorer__item-date">{{ formatDate(item.modifiedAt) }}</span></button>
+                    <button v-for="item in items" :key="`${item.kind}-${item.id}`" type="button" class="drive-explorer__item" :class="{ 'drive-explorer__item--selected': selectedIds.includes(item.id) }" :draggable="selectedIds.includes(item.id)" role="listitem" :aria-pressed="selectedIds.includes(item.id)" @click="selectItem(item, $event)" @dragstart="selectItem(item, $event)" @dblclick="openItem(item)" @keydown.enter.prevent="openItem(item)" @keydown.space.prevent="selectItem(item, $event)"><img class="drive-explorer__item-icon" :class="{ 'drive-explorer__item-icon--folder': item.kind === 'folder' }" :src="itemIconSource(item)" alt="" aria-hidden="true"><span class="drive-explorer__item-name">{{ item.displayName }}</span><span class="drive-explorer__item-type">{{ itemTypeLabel(item) }}</span><span class="drive-explorer__item-size">{{ formatBytes(item.logicalSizeBytes) }}</span><span class="drive-explorer__item-date">{{ formatDate(item.modifiedAt) }}</span></button>
                 </div>
                 <DriveDetailsPanel :open="detailsOpen" :details="details" :loading="detailsLoading" :error="detailsError" @close="clearDetails" @retry="openDetails" @share="openSharing" />
                 <ResourceSharingPanel v-if="sharingFolder && target" :target="target" :folder="sharingFolder" @close="sharingFolder = null" />
-                <aside v-if="uploadQueue.length" class="drive-explorer__uploads" aria-live="polite"><div v-for="entry in uploadQueue" :key="entry.id"><span>{{ entry.name }}</span><span>{{ t('access.drive.uploadState', { progress: entry.progress, state: uploadStateLabel(entry.state) }) }}</span><button v-if="entry.state === 'queued' || entry.state === 'uploading'" type="button" @click="cancelUpload(entry)">{{ t('access.drive.cancelUpload') }}</button></div></aside>
+                <footer class="drive-explorer__status-bar" aria-live="polite"><span>{{ statusSummary }}{{ selectionSummary }}</span><span v-for="entry in uploadQueue" :key="entry.id" class="drive-explorer__status-upload"><span>{{ entry.name }} · {{ t('access.drive.uploadState', { progress: entry.progress, state: uploadStateLabel(entry.state) }) }}</span><button type="button" :aria-label="entry.state === 'queued' || entry.state === 'uploading' ? t('access.drive.cancelUpload') : t('access.drive.dismissUploadMessage')" @click="entry.state === 'queued' || entry.state === 'uploading' ? cancelUpload(entry) : dismissUpload(entry.id)">×</button></span><span v-if="exportMessage">{{ exportMessage }}</span></footer>
             </section>
         </div>
-        <DriveNavigationPane v-if="secondaryPaneOpen && catalog" class="drive-explorer__secondary-pane" :catalog="catalog.drives" @location-change="setSecondaryDestination" />
+        <div v-if="secondaryPaneOpen" class="drive-explorer__mobile-backdrop" aria-hidden="true" @click="toggleSecondaryPane" />
+        <div v-if="secondaryPaneOpen" class="drive-explorer__pane-divider" role="separator" aria-orientation="vertical" :aria-label="t('access.drive.resizePanels')" tabindex="0" @pointerdown="startPanelResize" @keydown.arrow-left.prevent="resizePanelsBy(-32)" @keydown.arrow-right.prevent="resizePanelsBy(32)" @keydown.home.prevent="resizePanelsBy(-Number.MAX_SAFE_INTEGER)" @keydown.end.prevent="resizePanelsBy(Number.MAX_SAFE_INTEGER)" />
+        <DriveNavigationPane v-if="secondaryPaneOpen && catalog" ref="secondaryPane" class="drive-explorer__secondary-pane" :catalog="catalog.drives" @location-change="setSecondaryDestination" @transfer-drop="receiveTransferDrop" @close="toggleSecondaryPane" />
         </div>
         <DriveTransferDialog v-if="target && secondaryDestination" v-model="transferDialogOpen" :source-label="collectionLabel" :destination-label="secondaryDestination.projection.location.displayName" :item-count="selectedItems.length" :same-drive="sameTarget(target, secondaryDestination.target)" :loading="transferring" :error="transferError" @confirm="confirmTransfer" />
         <DriveOperationDialog v-model="createFolderOpen" :title="t('access.drive.newFolder')" :confirm-label="t('access.drive.newFolder')" :cancel-label="t('access.drive.cancel')" :loading="creatingFolder" :error="createFolderError" @submit="createFolder"><label>{{ t('access.drive.folderName') }}<input v-model="createFolderName" maxlength="160" autocomplete="off" /></label></DriveOperationDialog>
@@ -494,15 +813,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.drive-explorer { position: relative; display: grid; min-height: 100%; gap: var(--space-4); color: var(--color-text-secondary); }
-.drive-explorer__toolbar, .drive-explorer__identity, .drive-explorer__actions, .drive-explorer__collection-header, .drive-explorer__collection-tools, .drive-explorer__view-modes { display: flex; align-items: center; gap: var(--space-3); }
-.drive-explorer__toolbar { justify-content: space-between; flex-wrap: wrap; }
-.drive-explorer__panes { display: grid; min-width: 0; min-height: 0; }.drive-explorer__panes--split { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }.drive-explorer__secondary-pane { min-height: 24rem; }
-.drive-explorer__identity { min-width: 0; }.drive-explorer__identity p, .drive-explorer__identity h3, .drive-explorer__usage, .drive-explorer__selection, .drive-explorer__empty, .drive-explorer__loading { margin: 0; }
-.drive-explorer__identity p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }.drive-explorer__identity h3 { color: var(--color-text-primary); font-family: var(--font-family-display); font-size: var(--font-size-xl); }.drive-explorer__mark { display: grid; width: calc(2.5rem * var(--component-scale)); height: calc(2.5rem * var(--component-scale)); flex: none; place-items: center; border-radius: var(--radius-md); background: var(--color-action-primary); color: var(--color-action-on-primary); font-size: var(--font-size-xl); }
-.drive-explorer__actions { flex-wrap: wrap; }.drive-explorer__feedback { display: grid; gap: var(--space-2); }.drive-explorer__layout { display: grid; min-height: min(34rem, 100%); grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }.drive-explorer__tree { display: grid; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; border-right: var(--component-border-width) solid var(--color-border-subtle); background: var(--color-surface-muted); }.drive-explorer__tree-heading { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-sm); letter-spacing: var(--letter-spacing-wide); }.drive-explorer__tree-list { display: grid; align-content: start; gap: var(--space-1); overflow: auto; padding: 0 var(--space-2) var(--space-3); }.drive-explorer__tree-item { display: flex; min-width: 0; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; text-align: left; cursor: pointer; }.drive-explorer__tree-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__tree-item--nested { padding-left: calc(var(--space-2) + var(--drive-depth) * var(--space-3)); }.drive-explorer__tree-item:hover, .drive-explorer__tree-item--active { background: var(--color-surface-raised); color: var(--color-text-primary); }.drive-explorer__tree-item--active { box-shadow: inset .15rem 0 0 var(--color-action-primary); }.drive-explorer__tree-item--trash { margin-top: var(--space-2); }.drive-explorer__usage { padding: var(--space-3); border-top: var(--component-border-width) solid var(--color-border-subtle); font-size: var(--font-size-sm); }.drive-explorer__collection { display: grid; min-width: 0; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); }.drive-explorer__collection-header { min-width: 0; padding: var(--space-3) var(--space-4); border-bottom: var(--component-border-width) solid var(--color-border-subtle); }.drive-explorer__breadcrumbs { display: flex; min-width: 0; gap: var(--space-2); overflow: auto; }.drive-explorer__breadcrumbs button { flex: none; padding: 0; border: 0; background: transparent; color: var(--color-action-primary); font: inherit; cursor: pointer; }.drive-explorer__breadcrumbs span { color: var(--color-text-secondary); }.drive-explorer__collection-name { margin-left: auto; overflow: hidden; color: var(--color-text-primary); font-weight: var(--font-weight-semibold); text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__collection-tools { justify-content: space-between; padding: var(--space-3) var(--space-4); }.drive-explorer__view-mode, .drive-explorer__tree-trigger, .drive-explorer__drawer-close { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--control-height-sm); padding: 0 var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; cursor: pointer; }.drive-explorer__view-mode--active { border-color: var(--color-action-primary); color: var(--color-action-primary); }.drive-explorer__tree-trigger, .drive-explorer__drawer-close { display: none; }.drive-explorer__items { min-height: 0; overflow: auto; padding: var(--space-4); }.drive-explorer__items--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); align-content: start; gap: var(--space-3); }.drive-explorer__item { display: grid; min-width: 0; gap: var(--space-2); padding: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; text-align: left; cursor: pointer; }.drive-explorer__item:hover, .drive-explorer__item--selected { border-color: var(--color-action-primary); background: var(--color-surface-muted); }.drive-explorer__item-icon { display: grid; width: calc(2.25rem * var(--component-scale)); height: calc(2.25rem * var(--component-scale)); place-items: center; border-radius: var(--radius-sm); background: var(--color-surface-muted); color: var(--color-text-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }.drive-explorer__item-icon--folder { color: var(--color-action-primary); font-size: var(--font-size-xl); }.drive-explorer__item-name { overflow: hidden; color: var(--color-text-primary); font-weight: var(--font-weight-semibold); text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__item-type, .drive-explorer__item-size, .drive-explorer__item-date { color: var(--color-text-secondary); font-size: var(--font-size-xs); }.drive-explorer__items--list, .drive-explorer__items--table { display: grid; align-content: start; gap: var(--space-1); }.drive-explorer__items--list .drive-explorer__item, .drive-explorer__items--table .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: var(--space-2) var(--space-3); }.drive-explorer__items--list .drive-explorer__item-type, .drive-explorer__items--list .drive-explorer__item-date { display: none; }.drive-explorer__items--table .drive-explorer__item { grid-template-columns: auto minmax(10rem, 1fr) minmax(5rem, .5fr) minmax(4rem, .3fr) minmax(8rem, .6fr); }.drive-explorer__empty, .drive-explorer__loading { display: grid; place-items: center; min-height: 12rem; padding: var(--space-4); text-align: center; }.drive-explorer__selection { color: var(--color-action-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
-@media (max-width: 900px) { .drive-explorer__panes--split { grid-template-columns: minmax(0, 1fr); } }
+.drive-explorer { position: relative; display: flex; min-height: 0; height: 100%; flex-direction: column; gap: var(--space-4); color: var(--color-text-secondary); }
+.drive-explorer__toolbar, .drive-explorer__actions, .drive-explorer__collection-header, .drive-explorer__collection-tools, .drive-explorer__view-modes { display: flex; align-items: center; gap: var(--space-3); }
+.drive-explorer__toolbar { flex-wrap: wrap; }
+.drive-explorer__notice-dismiss { float: right; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.drive-explorer__transfer-progress { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-muted); color: var(--color-text-primary); font-size: var(--font-size-sm); }.drive-explorer__transfer-progress progress { min-width: 8rem; accent-color: var(--color-action-primary); }.drive-explorer__transfer-progress button { margin-left: auto; border: 0; background: transparent; color: var(--color-action-primary); font: inherit; cursor: pointer; }
+.drive-explorer__panes { display: grid; min-width: 0; min-height: 0; height: 0; flex: 1 1 0; }.drive-explorer__panes--split { grid-template-columns: minmax(18rem, var(--drive-primary-pane-width, 1fr)) var(--space-2) minmax(18rem, 1fr); }.drive-explorer__secondary-pane { min-width: 0; min-height: 0; height: 100%; }.drive-explorer__pane-divider { position: relative; z-index: 1; display: grid; min-height: 100%; place-items: center; cursor: col-resize; touch-action: none; }.drive-explorer__pane-divider::before { width: var(--component-border-width); height: calc(100% - var(--space-4)); border-radius: var(--radius-pill); background: var(--color-border-subtle); content: ''; transition: background-color var(--duration-feedback) var(--easing-standard), width var(--duration-feedback) var(--easing-standard); }.drive-explorer__pane-divider:hover::before, .drive-explorer__pane-divider:focus-visible::before { width: calc(var(--component-border-width) * 2); background: var(--color-action-primary); }
+.drive-explorer__mobile-backdrop { display: none; }
+.drive-explorer__usage, .drive-explorer__selection, .drive-explorer__empty, .drive-explorer__loading { margin: 0; }
+.drive-explorer__actions { flex-wrap: wrap; }.drive-explorer__feedback { display: grid; gap: var(--space-2); }.drive-explorer__layout { display: grid; min-height: 0; height: 100%; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }.drive-explorer__tree { display: grid; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; border-right: var(--component-border-width) solid var(--color-border-subtle); background: var(--color-surface-muted); }.drive-explorer__tree-heading { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-sm); letter-spacing: var(--letter-spacing-wide); }.drive-explorer__tree-list { display: grid; align-content: start; gap: var(--space-1); overflow: auto; padding: 0 var(--space-2) var(--space-3); }.drive-explorer__tree-item { display: flex; min-width: 0; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; text-align: left; cursor: pointer; }.drive-explorer__tree-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__tree-item--nested { padding-left: calc(var(--space-2) + var(--drive-depth) * var(--space-3)); }.drive-explorer__tree-item:hover, .drive-explorer__tree-item--active { background: var(--color-surface-raised); color: var(--color-text-primary); }.drive-explorer__tree-item--active { box-shadow: inset .15rem 0 0 var(--color-action-primary); }.drive-explorer__tree-item--trash { margin-top: var(--space-2); }.drive-explorer__usage { padding: var(--space-3); border-top: var(--component-border-width) solid var(--color-border-subtle); font-size: var(--font-size-sm); }.drive-explorer__collection { display: grid; min-width: 0; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); }.drive-explorer__collection-header { min-width: 0; padding: var(--space-3) var(--space-4); border-bottom: var(--component-border-width) solid var(--color-border-subtle); }.drive-explorer__breadcrumbs { display: flex; min-width: 0; gap: var(--space-2); overflow: auto; }.drive-explorer__breadcrumbs button { flex: none; padding: 0; border: 0; background: transparent; color: var(--color-action-primary); font: inherit; cursor: pointer; }.drive-explorer__breadcrumbs span { color: var(--color-text-secondary); }.drive-explorer__collection-name { margin-left: auto; overflow: hidden; color: var(--color-text-primary); font-weight: var(--font-weight-semibold); text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__collection-tools { justify-content: space-between; padding: var(--space-3) var(--space-4); }.drive-explorer__view-mode, .drive-explorer__tree-trigger, .drive-explorer__drawer-close { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--control-height-sm); padding: 0 var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; cursor: pointer; }.drive-explorer__view-mode--active { border-color: var(--color-action-primary); color: var(--color-action-primary); }.drive-explorer__tree-trigger, .drive-explorer__drawer-close { display: none; }.drive-explorer__items { min-height: 0; overflow: auto; padding: var(--space-4); }.drive-explorer__items--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); align-content: start; gap: var(--space-3); }.drive-explorer__item { display: grid; min-width: 0; gap: var(--space-2); padding: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; text-align: left; cursor: pointer; }.drive-explorer__item:hover, .drive-explorer__item--selected { border-color: var(--color-action-primary); background: var(--color-surface-muted); }.drive-explorer__item-icon { display: grid; width: calc(2.25rem * var(--component-scale)); height: calc(2.25rem * var(--component-scale)); place-items: center; border-radius: var(--radius-sm); background: var(--color-surface-muted); color: var(--color-text-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }.drive-explorer__item-icon--folder { color: var(--color-action-primary); font-size: var(--font-size-xl); }.drive-explorer__item-name { overflow: hidden; color: var(--color-text-primary); font-weight: var(--font-weight-semibold); text-overflow: ellipsis; white-space: nowrap; }.drive-explorer__item-type, .drive-explorer__item-size, .drive-explorer__item-date { color: var(--color-text-secondary); font-size: var(--font-size-xs); }.drive-explorer__items--list, .drive-explorer__items--table { display: grid; align-content: start; gap: var(--space-1); }.drive-explorer__items--list .drive-explorer__item, .drive-explorer__items--table .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: var(--space-2) var(--space-3); }.drive-explorer__items--list .drive-explorer__item-type, .drive-explorer__items--list .drive-explorer__item-date { display: none; }.drive-explorer__items--table .drive-explorer__item { grid-template-columns: auto minmax(10rem, 1fr) minmax(5rem, .5fr) minmax(4rem, .3fr) minmax(8rem, .6fr); }.drive-explorer__empty, .drive-explorer__loading { display: grid; place-items: center; min-height: 12rem; padding: var(--space-4); text-align: center; }.drive-explorer__selection { color: var(--color-action-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+@media (max-width: 900px) { .drive-explorer__panes--split { grid-template-columns: minmax(0, 1fr); }.drive-explorer__pane-divider { display: none; } }
 @media (max-width: 700px) { .drive-explorer__layout { display: block; min-height: 26rem; overflow: visible; border: 0; }.drive-explorer__tree { position: fixed; z-index: 30; inset: 2.5vh 2.5vw; display: none; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); box-shadow: var(--component-workspace-window-shadow); }.drive-explorer__tree--open { display: grid; }.drive-explorer__tree-heading { padding: var(--space-4); }.drive-explorer__tree-trigger, .drive-explorer__drawer-close { display: inline-flex; }.drive-explorer__collection { min-height: 26rem; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }.drive-explorer__collection-name { display: none; }.drive-explorer__view-mode span { display: none; }.drive-explorer__items { padding: var(--space-3); }.drive-explorer__items--grid { grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: var(--space-2); }.drive-explorer__items--table .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; }.drive-explorer__items--table .drive-explorer__item-type, .drive-explorer__items--table .drive-explorer__item-date { display: none; }.drive-explorer__actions { width: 100%; }.drive-explorer__actions .ui-button { flex: 1 1 auto; } }
+@media (max-width: 700px) { .drive-explorer__panes--split { display: block; }.drive-explorer__mobile-backdrop { position: fixed; z-index: 60; inset: 0; display: block; background: rgb(0 0 0 / .55); }.drive-explorer__secondary-pane { position: fixed; z-index: 70; } }
 .drive-explorer__items--details { display: grid; align-content: start; gap: var(--space-1); }
 .drive-explorer__items--details .drive-explorer__item { grid-template-columns: auto minmax(10rem, 1fr) minmax(5rem, .5fr) minmax(4rem, .3fr) minmax(8rem, .6fr); align-items: center; padding: var(--space-2) var(--space-3); }
 @media (max-width: 700px) { .drive-explorer__items--details .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; }.drive-explorer__items--details .drive-explorer__item-type, .drive-explorer__items--details .drive-explorer__item-date { display: none; } }
@@ -512,4 +834,54 @@ onBeforeUnmount(() => {
 .drive-explorer__details-trigger { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-height-sm); padding: 0 var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; cursor: pointer; }
 .drive-explorer__details-trigger:not(:disabled):hover { border-color: var(--color-action-primary); color: var(--color-action-primary); }
 .drive-explorer__details-trigger:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Navegação de desktop: a árvore mantém-se dentro do painel e tem largura ajustável. */
+.drive-explorer__layout { grid-template-columns: minmax(7.5rem, var(--drive-primary-tree-width, 18%)) var(--space-2) minmax(0, 1fr); }
+.drive-explorer__layout--tree-hidden { grid-template-columns: minmax(0, 1fr); }
+.drive-explorer__layout--tree-hidden .drive-explorer__tree { display: none; }
+.drive-explorer__tree { border-right: 0; }
+.drive-explorer__tree-divider { position: relative; z-index: 1; display: grid; min-height: 100%; place-items: center; cursor: col-resize; touch-action: none; }
+.drive-explorer__tree-divider::before { width: var(--component-border-width); height: calc(100% - var(--space-4)); border-radius: var(--radius-pill); background: var(--color-border-subtle); content: ''; transition: background-color var(--duration-feedback) var(--easing-standard), width var(--duration-feedback) var(--easing-standard); }
+.drive-explorer__tree-divider:hover::before, .drive-explorer__tree-divider:focus-visible::before { width: calc(var(--component-border-width) * 2); background: var(--color-action-primary); }
+.drive-explorer__tree-row { display: flex; min-width: 0; align-items: center; }
+.drive-explorer__tree-row--nested { position: relative; margin-left: calc(var(--space-2) + var(--drive-depth) * var(--space-3)); border-left: var(--component-border-width) solid color-mix(in srgb, var(--color-border-subtle) 70%, transparent); padding-left: var(--space-1); }
+.drive-explorer__tree-toggle { display: inline-grid; width: var(--control-height-sm); height: var(--control-height-sm); flex: 0 0 var(--control-height-sm); place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.drive-explorer__tree-toggle:hover { background: var(--color-surface-raised); color: var(--color-text-primary); }
+.drive-explorer__tree-toggle--empty { cursor: default; }
+.drive-explorer__tree-toggle--empty:hover { background: transparent; }
+.drive-explorer__tree-toggle img { width: var(--icon-size-sm); height: var(--icon-size-sm); object-fit: contain; }
+.drive-explorer__tree-row .drive-explorer__tree-item { flex: 1 1 auto; }
+.drive-explorer__tree-item > img { width: var(--icon-size-sm); height: var(--icon-size-sm); flex: 0 0 auto; object-fit: contain; }
+.drive-explorer__drive-section { display: grid; gap: var(--space-1); }
+.drive-explorer__drive-header { display: flex; min-width: 0; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-surface-raised) 72%, transparent); color: var(--color-text-primary); font: inherit; font-weight: var(--font-weight-semibold); text-align: left; cursor: pointer; }
+.drive-explorer__drive-header:hover, .drive-explorer__drive-section--active .drive-explorer__drive-header { background: var(--color-surface-raised); box-shadow: inset .15rem 0 0 var(--color-action-primary); }
+.drive-explorer__drive-header img { width: var(--icon-size-sm); height: var(--icon-size-sm); flex: 0 0 auto; object-fit: contain; }.drive-explorer__drive-header span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drive-explorer__drive-content { display: grid; gap: var(--space-1); }
+.drive-explorer__view-modes { gap: var(--space-1); overflow: visible; background: transparent; }
+.drive-explorer__view-mode { position: relative; width: var(--control-height-md); min-width: var(--control-height-md); height: var(--control-height-md); padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; }
+.drive-explorer__view-mode:hover { background: var(--color-surface-muted); color: var(--color-action-primary); }
+.drive-explorer__view-mode--active { color: var(--color-action-primary); }
+.drive-explorer__view-mode--active::after { position: absolute; bottom: var(--space-1); left: 50%; width: calc(var(--icon-size-md) * .42); height: calc(var(--component-border-width) * 2); border-radius: var(--radius-pill); background: currentcolor; content: ''; transform: translateX(-50%); }
+.drive-explorer__view-mode img { width: var(--icon-size-md); height: var(--icon-size-md); object-fit: contain; }
+.drive-explorer__collection-tools { flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.drive-explorer__operation-actions, .drive-explorer__collection-tools-end { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.drive-explorer__operation-actions { margin-left: auto; }
+.drive-explorer__collection-tools-end { margin-left: var(--space-2); }
+.drive-explorer__operation-actions .ui-icon-button img, .drive-explorer__window-action .ui-icon-button img { width: var(--icon-size-md); height: var(--icon-size-md); object-fit: contain; }
+.drive-explorer__window-action .ui-icon-button, .drive-explorer__operation-actions .ui-icon-button { border-color: transparent; background: transparent; }
+.drive-explorer__window-action .ui-icon-button:not(:disabled):hover, .drive-explorer__operation-actions .ui-icon-button:not(:disabled):hover { background: var(--color-surface-muted); color: var(--color-action-primary); }
+.drive-explorer__breadcrumbs { font-weight: var(--font-weight-semibold); }
+.drive-explorer__breadcrumbs button { color: var(--color-text-primary); }
+.drive-explorer__breadcrumbs button[aria-current='page'] { color: var(--color-action-primary); }
+.drive-explorer__status-bar { display: flex; min-height: var(--control-height-sm); align-items: center; gap: var(--space-3); overflow: auto; padding: var(--space-2) var(--space-4); border-top: var(--component-border-width) solid var(--color-border-subtle); color: var(--color-text-secondary); font-size: var(--font-size-sm); white-space: nowrap; }
+.drive-explorer__status-bar > :first-child { color: var(--color-text-primary); }
+.drive-explorer__status-upload { display: inline-flex; align-items: center; gap: var(--space-2); }
+.drive-explorer__status-upload button { display: inline-grid; width: var(--control-height-sm); height: var(--control-height-sm); place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: currentcolor; cursor: pointer; }.drive-explorer__status-upload button:hover { background: var(--color-surface-muted); }
+.drive-explorer__collection { height: 100%; grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+.drive-explorer__collection { container-type: inline-size; }
+.drive-explorer__action-overflow { position: relative; display: none; }.drive-explorer__action-overflow summary { display: grid; width: var(--control-height-md); height: var(--control-height-md); place-items: center; list-style: none; border-radius: var(--radius-sm); color: var(--color-text-secondary); cursor: pointer; }.drive-explorer__action-overflow summary::-webkit-details-marker { display: none; }.drive-explorer__action-overflow summary:hover { background: var(--color-surface-muted); color: var(--color-action-primary); }.drive-explorer__action-overflow summary svg { width: var(--icon-size-md); height: var(--icon-size-md); fill: currentcolor; }.drive-explorer__action-overflow-menu { position: absolute; z-index: 10; right: 0; top: calc(100% + var(--space-1)); display: flex; gap: var(--space-1); padding: var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-raised); box-shadow: var(--shadow-float); }
+@container (max-width: 42rem) { .drive-explorer__operation-actions { flex-wrap: nowrap; }.drive-explorer__operation-actions .drive-explorer__action--overflowable { display: none; }.drive-explorer__action-overflow { display: block; } }
+.drive-explorer__items--list { display: grid; align-content: start; gap: var(--space-1); }
+.drive-explorer__items--list .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: var(--space-2) var(--space-3); }
+@media (max-width: 900px) { .drive-explorer__layout { grid-template-columns: minmax(7.5rem, 18%) minmax(0, 1fr); }.drive-explorer__tree-divider { display: none; } }
 </style>

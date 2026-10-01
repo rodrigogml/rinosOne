@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MaintenanceExecutionHistory;
 use App\Models\User;
 use App\Services\Authorization\AuthorizationService;
+use App\Services\Maintenance\EconomicIndicatorMaintenanceService;
 use App\Services\Maintenance\FinancialInstitutionMaintenanceService;
 use App\Services\Maintenance\IbgeTerritoryMaintenanceService;
 use App\Services\Maintenance\MaintenanceAdministrativeAuditView;
@@ -52,7 +53,11 @@ class MaintenanceController extends Controller
 
     public function audit(Request $request, MaintenanceHubService $hub): JsonResponse
     {
-        $routine = $hub->financialInstitutionCatalog($request->user(), auditLimit: $this->limit($request));
+        $routine = match ($request->string('routineKey')->toString()) {
+            '', FinancialInstitutionMaintenanceService::ROUTINE_KEY => $hub->financialInstitutionCatalog($request->user(), auditLimit: $this->limit($request)),
+            EconomicIndicatorMaintenanceService::ROUTINE_KEY => $hub->economicIndicators($request->user(), auditLimit: $this->limit($request)),
+            default => null,
+        };
 
         if ($routine === null) {
             return $this->notAvailable();
@@ -65,11 +70,19 @@ class MaintenanceController extends Controller
 
     public function synchronize(string $routineKey, string $action, Request $request, MaintenanceHubService $hub): JsonResponse
     {
-        if ($routineKey !== FinancialInstitutionMaintenanceService::ROUTINE_KEY || $action !== 'SYNCHRONIZE') {
+        if ($action !== 'SYNCHRONIZE') {
             return $this->notAvailable();
         }
 
-        $result = $hub->requestFinancialInstitutionSynchronization($request->user());
+        $result = match ($routineKey) {
+            FinancialInstitutionMaintenanceService::ROUTINE_KEY => $hub->requestFinancialInstitutionSynchronization($request->user()),
+            EconomicIndicatorMaintenanceService::ROUTINE_KEY => $hub->requestEconomicIndicatorSynchronization($request->user()),
+            default => null,
+        };
+
+        if ($result === null) {
+            return $this->notAvailable();
+        }
 
         if (! $result->accepted) {
             return response()->json([
@@ -91,6 +104,7 @@ class MaintenanceController extends Controller
     {
         return match ($routineKey) {
             FinancialInstitutionMaintenanceService::ROUTINE_KEY => $hub->financialInstitutionCatalog($principal),
+            EconomicIndicatorMaintenanceService::ROUTINE_KEY => $hub->economicIndicators($principal),
             IbgeTerritoryMaintenanceService::ROUTINE_KEY => $hub->ibgeTerritoryCatalog($principal),
             PersonAuditRetentionMaintenanceService::ROUTINE_KEY => $hub->personAuditRetentionCatalog($principal),
             default => null,
@@ -107,9 +121,9 @@ class MaintenanceController extends Controller
             'state' => $routine->state,
             'scheduleDescription' => $routine->scheduleDescription,
             'capabilities' => [
-                'canSynchronize' => $routine->supportsManualSynchronization && $authorization->check(
+                'canSynchronize' => $routine->supportsManualSynchronization && ($permissionKey = $this->synchronizePermissionKey($routine->routineKey)) !== null && $authorization->check(
                     $principal,
-                    FinancialInstitutionMaintenanceService::SYNCHRONIZE_PERMISSION_KEY,
+                    $permissionKey,
                     AuthorizationScope::Platform,
                 )->allowed,
             ],
@@ -162,6 +176,15 @@ class MaintenanceController extends Controller
         $limit = $request->integer('limit', 20);
 
         return min(100, max(1, $limit));
+    }
+
+    private function synchronizePermissionKey(string $routineKey): ?string
+    {
+        return match ($routineKey) {
+            FinancialInstitutionMaintenanceService::ROUTINE_KEY => FinancialInstitutionMaintenanceService::SYNCHRONIZE_PERMISSION_KEY,
+            EconomicIndicatorMaintenanceService::ROUTINE_KEY => EconomicIndicatorMaintenanceService::SYNCHRONIZE_PERMISSION_KEY,
+            default => null,
+        };
     }
 
     private function notAvailable(): JsonResponse

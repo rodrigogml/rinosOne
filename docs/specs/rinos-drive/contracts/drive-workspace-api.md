@@ -7,7 +7,7 @@ Todos os contratos exigem sessão autenticada, retornam JSON em camelCase e apli
 | Alvo | Prefixo | Contexto resolvido |
 | --- | --- | --- |
 | Pessoal | `/api/v1/drive/personal` | Usuário autenticado. |
-| Work | `/api/v1/tenants/{tenantId}/drive` | Tenant ativo, membership e acesso efetivo ao ramo solicitado. |
+| Work | `/api/v1/tenants/{tenantId}/drive` | Sessão autenticada, membership e acesso efetivo ao ramo solicitado; não exige organização ativa em outra superfície. |
 
 O `tenantId` é validado no servidor; ele não basta para conceder acesso e não depende da organização ativa em outra superfície.
 

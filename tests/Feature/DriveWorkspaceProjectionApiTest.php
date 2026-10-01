@@ -49,6 +49,7 @@ class DriveWorkspaceProjectionApiTest extends TestCase
             ->getJson('/api/v1/drive/personal/tree')
             ->assertOk()
             ->assertJsonFragment(['id' => $shared->id, 'displayName' => 'Shared'])
+            ->assertJsonFragment(['id' => $shared->id, 'logicalSizeBytes' => 42])
             ->assertJsonFragment(['id' => $descendant->id, 'displayName' => 'Contracts'])
             ->assertJsonMissing(['id' => $private->id, 'displayName' => 'Private']);
 

@@ -14,6 +14,7 @@ const open = ref(false);
 const mobilePanelStyle = ref<Record<string, string>>({});
 const preferences = computed(() => store.preferences);
 const visualPreferencesIcon = '/assets/icons/theme_32.png';
+const preferenceIcon = (name: string): string => `/assets/icons/${name}_24.png`;
 const effectiveTheme = computed<'light' | 'dark'>(() => {
     if (preferences.value.theme !== 'system') return preferences.value.theme;
 
@@ -24,6 +25,9 @@ const densityOptions = computed(() => [
     { value: 'default' as const, label: t('access.presentation.default') },
     { value: 'comfortable' as const, label: t('access.presentation.comfortable') },
 ]);
+const textDensityOptions = computed(() => densityOptions.value.map((option, index) => ({ ...option, icon: preferenceIcon(['themeTextSmall', 'themeTextNormal', 'themeTextBig'][index]) })));
+const spacingOptions = computed(() => densityOptions.value.map((option, index) => ({ ...option, icon: preferenceIcon(['padding-s', 'padding-m', 'padding-l'][index]) })));
+const componentSizeOptions = computed(() => densityOptions.value.map((option, index) => ({ ...option, icon: preferenceIcon(['object-size-s', 'object-size-m', 'object-size-g'][index]) })));
 
 function updateTheme(theme: ThemePreference) { store.update({ theme }); }
 function updateFontScale(fontScale: DensityPreference) { store.update({ fontScale }); }
@@ -69,4 +73,4 @@ onMounted(() => document.addEventListener('pointerdown', handlePointerDown));
 onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerDown));
 </script>
 
-<template><div ref="root" class="presentation-control"><IconButton ref="opener" :label="t('access.presentation.visualPreferences')" :aria-expanded="open" aria-haspopup="dialog" @click="toggle"><img class="visual-preferences-palette" :src="visualPreferencesIcon" alt="" aria-hidden="true"></IconButton><section v-if="open" ref="panel" class="presentation-popover" :style="mobilePanelStyle" role="dialog" :aria-label="t('access.presentation.visualPreferences')" tabindex="-1" @keydown="handleKeydown"><SegmentedChoiceGroup id="theme-choice" :label="t('access.presentation.theme')" :model-value="effectiveTheme" :options="[{ value: 'light', label: t('access.presentation.light') }, { value: 'dark', label: t('access.presentation.dark') }]" @update:model-value="updateTheme" /><SegmentedChoiceGroup id="font-scale-choice" :label="t('access.presentation.textDensity')" :model-value="preferences.fontScale" :options="densityOptions" @update:model-value="updateFontScale" /><SegmentedChoiceGroup id="spacing-scale-choice" :label="t('access.presentation.spacing')" :model-value="preferences.spacingScale" :options="densityOptions" @update:model-value="updateSpacingScale" /><SegmentedChoiceGroup id="component-scale-choice" :label="t('access.presentation.componentSize')" :model-value="preferences.componentScale" :options="[{ value: 'compact', label: t('access.presentation.compact') }, { value: 'default', label: t('access.presentation.default') }, { value: 'comfortable', label: t('access.presentation.large') }]" @update:model-value="updateComponentScale" /></section></div></template>
+<template><div ref="root" class="presentation-control"><IconButton ref="opener" :label="t('access.presentation.visualPreferences')" :aria-expanded="open" aria-haspopup="dialog" @click="toggle"><img class="visual-preferences-palette" :src="visualPreferencesIcon" alt="" aria-hidden="true"></IconButton><section v-if="open" ref="panel" class="presentation-popover" :style="mobilePanelStyle" role="dialog" :aria-label="t('access.presentation.visualPreferences')" tabindex="-1" @keydown="handleKeydown"><SegmentedChoiceGroup id="theme-choice" :label="t('access.presentation.theme')" :model-value="effectiveTheme" :options="[{ value: 'light', label: t('access.presentation.light'), icon: preferenceIcon('lamp-on') }, { value: 'dark', label: t('access.presentation.dark'), icon: preferenceIcon('lamp-off') }]" @update:model-value="updateTheme" /><SegmentedChoiceGroup id="font-scale-choice" :label="t('access.presentation.textDensity')" :model-value="preferences.fontScale" :options="textDensityOptions" @update:model-value="updateFontScale" /><SegmentedChoiceGroup id="spacing-scale-choice" :label="t('access.presentation.spacing')" :model-value="preferences.spacingScale" :options="spacingOptions" @update:model-value="updateSpacingScale" /><SegmentedChoiceGroup id="component-scale-choice" :label="t('access.presentation.componentSize')" :model-value="preferences.componentScale" :options="componentSizeOptions" @update:model-value="updateComponentScale" /></section></div></template>

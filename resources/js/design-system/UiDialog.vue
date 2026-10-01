@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ modelValue: boolean; title: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean }>(), { destructive: false, escapable: true, backdropDismissible: true, contained: false });
+const props = withDefaults(defineProps<{ modelValue: boolean; title: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean; wide?: boolean }>(), { destructive: false, escapable: true, backdropDismissible: true, contained: false, wide: false });
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const dialog = ref<HTMLElement | null>(null);
 let returnFocus: HTMLElement | null = null;
@@ -30,4 +30,4 @@ onMounted(async () => { if (props.modelValue) await focusDialog(); });
 onBeforeUnmount(() => returnFocus?.focus());
 </script>
 
-<template><div v-if="modelValue" class="ui-dialog-backdrop" :class="{ 'ui-dialog-backdrop--contained': contained }" @mousedown.self="backdropDismissible && close()"><section ref="dialog" class="ui-dialog" :role="destructive ? 'alertdialog' : 'dialog'" :aria-label="title" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><h2 class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></template>
+<template><div v-if="modelValue" class="ui-dialog-backdrop" :class="{ 'ui-dialog-backdrop--contained': contained }" @mousedown.self="backdropDismissible && close()"><section ref="dialog" class="ui-dialog" :class="{ 'ui-dialog--wide': wide }" :role="destructive ? 'alertdialog' : 'dialog'" :aria-label="title" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><h2 class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></template>

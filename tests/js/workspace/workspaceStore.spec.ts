@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { availableWorkspaceDestinations, availableWorkspaceNavigationCategories, workspaceDestinations, workspaceNavigationCategories } from '../../../resources/js/workspace/workspaceCatalog';
+import { availableWorkspaceDestinations, availableWorkspaceNavigationCategories, globalDriveDestination, workspaceDestinations, workspaceNavigationCategories } from '../../../resources/js/workspace/workspaceCatalog';
 import { useWorkspaceStore } from '../../../resources/js/workspace/workspaceStore';
 import type { WorkspaceDestination } from '../../../resources/js/workspace/workspaceTypes';
 
@@ -58,17 +58,19 @@ describe('workspace runtime store', () => {
             'domain-governance',
         ]);
         expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
-            'personal.drive',
             'personal.authorization-administration',
-            'tenant.drive',
+            'personal.permissions-access',
             'tenant.people',
             'tenant.authorization-administration',
+            'tenant.permissions-access',
             'platform.maintenance',
             'platform.authorization-administration',
+            'platform.permissions-access',
         ]);
-        expect(workspaceDestinations.find((candidate) => candidate.id === 'personal.drive')).toMatchObject({
-            label: 'Rinos Drive Pessoal',
-            navigationLabel: 'Arquivos',
+        expect(globalDriveDestination).toMatchObject({
+            id: 'global.drive',
+            scope: 'global',
+            label: 'Rinos Drive',
             icon: 'drive',
         });
     });
@@ -104,21 +106,20 @@ describe('workspace runtime store', () => {
         expect(store.surfaces.find((surface) => surface.id === contextual?.id)).toBeUndefined();
     });
 
-    it('keeps one Rinos Drive Work instance per tenant and closes it on context change', () => {
+    it('keeps one global Rinos Drive instance while the tenant context changes', () => {
         const store = useWorkspaceStore();
-        const drive = workspaceDestinations.find((candidate) => candidate.id === 'tenant.drive')!;
 
-        const first = store.openDestination(drive, { tenantId: 1 });
-        const sameTenant = store.openDestination(drive, { tenantId: 1 });
-        const otherTenant = store.openDestination(drive, { tenantId: 2 });
+        const first = store.openDestination(globalDriveDestination, { tenantId: 1 });
+        const sameTenant = store.openDestination(globalDriveDestination, { tenantId: 1 });
+        const otherTenant = store.openDestination(globalDriveDestination, { tenantId: 2 });
 
         expect(first?.id).toBe(sameTenant?.id);
-        expect(otherTenant?.id).not.toBe(first?.id);
-        expect(store.surfaces).toHaveLength(2);
+        expect(otherTenant?.id).toBe(first?.id);
+        expect(store.surfaces).toHaveLength(1);
 
         store.clearTenantSurfaces();
 
-        expect(store.surfaces).toEqual([]);
+        expect(store.surfaces.map((surface) => surface.id)).toEqual([first?.id]);
     });
 
     it('preserves a dirty surface when discard is cancelled and closes it after confirmation', () => {

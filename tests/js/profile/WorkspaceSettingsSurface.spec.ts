@@ -120,4 +120,20 @@ describe('WorkspaceSettingsSurface profile integration', () => {
             expect(i18n.global.t('access.profile.removeTitle')).not.toBe('access.profile.removeTitle');
         }
     });
+
+    it('uses the approved visual-preference icons without changing selection controls', async () => {
+        const wrapper = mountSurface();
+        await flushPromises();
+        await wrapper.get('.workspace-settings__nav-list button:nth-child(2)').trigger('click');
+
+        expect(wrapper.get('.workspace-settings__mode[aria-label="Claro"] img').attributes('src')).toBe('/assets/icons/lamp-on_24.png');
+        expect(wrapper.get('.workspace-settings__mode[aria-label="Escuro"] img').attributes('src')).toBe('/assets/icons/lamp-off_24.png');
+        expect(wrapper.get('.workspace-settings__choice[aria-label="Confortável"] img').attributes('src')).toBe('/assets/icons/themeTextBig_24.png');
+        expect(wrapper.findAll('.workspace-settings__choice[aria-label="Compacta"]')[1].get('img').attributes('src')).toBe('/assets/icons/padding-s_24.png');
+        expect(wrapper.findAll('.workspace-settings__choice[aria-label="Padrão"]')[2].get('img').attributes('src')).toBe('/assets/icons/object-size-m_24.png');
+
+        await wrapper.get('.workspace-settings__mode[aria-label="Escuro"]').trigger('click');
+        expect(wrapper.get('.workspace-settings__mode[aria-label="Escuro"]').classes()).toContain('workspace-settings__mode--selected');
+        expect(wrapper.get('.workspace-settings__mode[aria-label="Claro"]').text()).toBe('');
+    });
 });

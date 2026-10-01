@@ -224,6 +224,31 @@ class WorkspaceExportPersistenceTest extends TestCase
         $this->assertDatabaseHas('file_workspaceExport', ['publicId' => $publicId, 'idRequestingUser' => $user->id, 'state' => 'PENDING']);
     }
 
+    public function test_it_accepts_one_readable_folder_for_a_zip_export(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        $folder = WorkspaceFolder::query()->create([
+            'idUser' => $user->id,
+            'displayName' => 'Projetos',
+            'state' => 'ACTIVE',
+        ]);
+        $this->workspaceFile($user, 'folder export contents', 'Readme.txt', $folder);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/drive/personal/exports', [
+            'items' => [['type' => 'folder', 'id' => $folder->id]],
+        ]);
+
+        $response->assertAccepted()->assertJsonPath('state', 'PENDING');
+        $publicId = $response->json('exportId');
+        Queue::assertPushed(GenerateWorkspaceExport::class, fn (GenerateWorkspaceExport $job): bool => $job->exportId === $publicId);
+        $this->assertDatabaseHas('file_workspaceExport', [
+            'publicId' => $publicId,
+            'idRequestingUser' => $user->id,
+            'selectionManifest' => json_encode([['type' => 'folder', 'id' => $folder->id]]),
+        ]);
+    }
+
     public function test_it_revalidates_and_exports_a_personal_folder_explicitly_shared_with_the_requester(): void
     {
         $owner = User::factory()->create();

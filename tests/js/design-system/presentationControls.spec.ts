@@ -49,6 +49,23 @@ describe('presentation controls', () => {
         wrapper.unmount();
     });
 
+    it('uses the four approved icon families while preserving accessible choice labels', async () => {
+        const { wrapper } = mountWithStore(VisualPreferencesPopover);
+
+        await wrapper.get('button[aria-label="Preferências visuais"]').trigger('click');
+
+        expect(wrapper.get('#theme-choice-light').attributes('aria-label')).toBe('Claro');
+        expect(wrapper.get('#theme-choice-light img').attributes('src')).toBe('/assets/icons/lamp-on_24.png');
+        expect(wrapper.get('#theme-choice-dark img').attributes('src')).toBe('/assets/icons/lamp-off_24.png');
+        expect(wrapper.get('#font-scale-choice-comfortable img').attributes('src')).toBe('/assets/icons/themeTextBig_24.png');
+        expect(wrapper.get('#spacing-scale-choice-compact img').attributes('src')).toBe('/assets/icons/padding-s_24.png');
+        expect(wrapper.get('#component-scale-choice-default img').attributes('src')).toBe('/assets/icons/object-size-m_24.png');
+        expect(wrapper.get('#font-scale-choice-comfortable').text()).toBe('');
+        expect(wrapper.get('#font-scale-choice-label + div').classes()).toContain('segmented-choice__options--icons');
+        expect(wrapper.get('#theme-choice-label + div').classes()).toEqual(expect.arrayContaining(['segmented-choice__options--icons', 'segmented-choice__options--pair']));
+        wrapper.unmount();
+    });
+
     it('supports keyboard choices, external dismissal, Escape and opener focus restoration', async () => {
         const { wrapper } = mountWithStore(VisualPreferencesPopover);
         const opener = wrapper.get('button');

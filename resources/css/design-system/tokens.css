@@ -1,25 +1,25 @@
 /* Primitivos: a única camada que declara valores brutos de identidade visual. */
 :root {
     --palette-amethyst-technical-light-action: #7442c8;
-    --palette-amethyst-technical-dark-action: #8d57db;
+    --palette-amethyst-technical-dark-action: #a981f0;
     --palette-architectural-teal-light-action: #007f7b;
-    --palette-architectural-teal-dark-action: #0b958c;
+    --palette-architectural-teal-dark-action: #28b9af;
     --palette-refined-copper-light-action: #a95716;
-    --palette-refined-copper-dark-action: #c86a22;
+    --palette-refined-copper-dark-action: #ee9042;
     --palette-imperial-wine-light-action: #a71d4d;
-    --palette-imperial-wine-dark-action: #bf2e5f;
+    --palette-imperial-wine-dark-action: #e65c88;
     --palette-sober-emerald-light-action: #087a50;
-    --palette-sober-emerald-dark-action: #0a8e5c;
+    --palette-sober-emerald-dark-action: #36bd7b;
     --palette-mineral-gold-light-action: #947300;
-    --palette-mineral-gold-dark-action: #a98300;
+    --palette-mineral-gold-dark-action: #d0aa23;
     --palette-orbital-indigo-light-action: #4f46c8;
-    --palette-orbital-indigo-dark-action: #6158db;
+    --palette-orbital-indigo-dark-action: #8b83ee;
     --palette-industrial-ruby-light-action: #aa2643;
-    --palette-industrial-ruby-dark-action: #aa2643;
+    --palette-industrial-ruby-dark-action: #e45576;
     --palette-deep-cyan-light-action: #006f78;
-    --palette-deep-cyan-dark-action: #087f88;
+    --palette-deep-cyan-dark-action: #34b5c2;
     --palette-executive-coral-light-action: #b44528;
-    --palette-executive-coral-dark-action: #c75131;
+    --palette-executive-coral-dark-action: #ed765d;
     --palette-industrial-ruby-light-canvas: #fffafb;
     --palette-industrial-ruby-light-surface: #ffffff;
     --palette-industrial-ruby-light-text: #281216;
@@ -77,6 +77,7 @@
     --font-scale: 1;
     --spacing-scale: 1;
     --component-scale: 1;
+    --icon-content-scale: 1;
 
     --font-size-xs: calc(0.75rem * var(--font-scale));
     --font-size-sm: calc(0.875rem * var(--font-scale));
@@ -107,9 +108,12 @@
     --control-height-sm: max(2.5rem, calc(2.5rem * var(--component-scale)));
     --control-height-md: max(2.75rem, calc(2.75rem * var(--component-scale)));
     --control-height-lg: max(3rem, calc(3rem * var(--component-scale)));
-    --icon-size-sm: calc(2rem * var(--component-scale));
-    --icon-size-md: calc(2rem * var(--component-scale));
-    --icon-size-lg: calc(2rem * var(--component-scale));
+    --icon-size-sm: calc(1.75rem * var(--icon-content-scale));
+    --icon-size-md: min(calc(2rem * var(--icon-content-scale)), 2.25rem);
+    --icon-size-lg: calc(2.25rem * var(--icon-content-scale));
+    --component-workspace-window-margin: var(--space-3);
+    --component-workspace-window-offset: var(--space-6);
+    --component-workspace-surface-padding: var(--space-4);
     --size-brand-landscape-max: 24rem;
     --size-brand-top-bar-max: 6.5rem;
     --size-dialog-max: 32rem;
@@ -138,17 +142,25 @@
 }
 
 :root[data-spacing-scale='compact'] {
-    --spacing-scale: 0.875;
+    --spacing-scale: 0.8;
+    --component-workspace-window-margin: var(--space-2);
+    --component-workspace-window-offset: var(--space-4);
+    --component-workspace-surface-padding: var(--space-3);
 }
 
 :root[data-spacing-scale='comfortable'] {
     --spacing-scale: 1.25;
+    --component-workspace-window-margin: var(--space-4);
+    --component-workspace-window-offset: var(--space-8);
+    --component-workspace-surface-padding: var(--space-6);
 }
 
 :root[data-component-scale='compact'] {
     --component-scale: 0.9;
+    --icon-content-scale: 0.76;
 }
 
 :root[data-component-scale='comfortable'] {
     --component-scale: 1.125;
+    --icon-content-scale: 1.28;
 }

@@ -13,7 +13,7 @@
 :root,
 :root[data-theme='light'] {
     color-scheme: light;
-    --color-canvas: var(--palette-industrial-ruby-light-canvas);
+    --color-canvas: var(--color-white);
     --color-canvas-background: var(--color-canvas);
     --color-surface: var(--palette-industrial-ruby-light-surface);
     --color-surface-raised: var(--color-silver-50);
@@ -38,8 +38,8 @@
 
 :root[data-theme='dark'] {
     color-scheme: dark;
-    --color-canvas: var(--color-carbon-950);
-    --color-canvas-background: var(--color-carbon-900);
+    --color-canvas: var(--color-absolute-black);
+    --color-canvas-background: var(--color-absolute-black);
     --color-surface: var(--color-carbon-900);
     --color-surface-raised: var(--color-carbon-800);
     --color-surface-muted: var(--color-carbon-700);
@@ -64,8 +64,8 @@
 @media (prefers-color-scheme: dark) {
     :root[data-theme='system'] {
         color-scheme: dark;
-        --color-canvas: var(--color-carbon-950);
-        --color-canvas-background: var(--color-carbon-900);
+        --color-canvas: var(--color-absolute-black);
+        --color-canvas-background: var(--color-absolute-black);
         --color-surface: var(--color-carbon-900);
         --color-surface-raised: var(--color-carbon-800);
         --color-surface-muted: var(--color-carbon-700);

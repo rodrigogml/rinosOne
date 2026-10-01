@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Infrastructure\EconomicIndicator\BcbPtaxSource;
+use App\Infrastructure\EconomicIndicator\BcbSgsEconomicIndicatorSource;
+use App\Infrastructure\EconomicIndicator\EconomicIndicatorSource;
+use App\Infrastructure\EconomicIndicator\EconomicPtaxSource;
 use App\Infrastructure\FinancialInstitution\BcbFinancialInstitutionSource;
 use App\Infrastructure\FinancialInstitution\FinancialInstitutionSource;
 use App\Infrastructure\Locality\IbgeTerritoryApiSource;
@@ -19,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(FinancialInstitutionSource::class, BcbFinancialInstitutionSource::class);
+        $this->app->bind(EconomicIndicatorSource::class, BcbSgsEconomicIndicatorSource::class);
+        $this->app->bind(EconomicPtaxSource::class, BcbPtaxSource::class);
         $this->app->bind(IbgeTerritorySource::class, IbgeTerritoryApiSource::class);
         $this->app->singleton(GlobalSchemaCompatibilityService::class);
     }

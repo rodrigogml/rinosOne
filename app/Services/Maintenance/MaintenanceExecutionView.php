@@ -9,7 +9,7 @@ use Carbon\CarbonInterface;
  */
 final readonly class MaintenanceExecutionView
 {
-    /** @param array<string, int|string|null> $details */
+    /** @param array<string, mixed> $details */
     public function __construct(
         public string $state,
         public string $triggerType,

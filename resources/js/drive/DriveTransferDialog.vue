@@ -9,7 +9,7 @@ const props = defineProps<{ sourceLabel: string; destinationLabel: string; itemC
 const open = defineModel<boolean>({ required: true });
 const emit = defineEmits<{ confirm: [mode: DriveTransferMode] }>();
 const { t } = useI18n();
-const mode = ref<DriveTransferMode>('COPY');
+const mode = ref<DriveTransferMode>(props.sameDrive ? 'MOVE' : 'COPY');
 const defaultMode = computed<DriveTransferMode>(() => props.sameDrive ? 'MOVE' : 'COPY');
 watch(open, (visible) => { if (visible) mode.value = defaultMode.value; });
 watch(defaultMode, (value) => { if (open.value) mode.value = value; });

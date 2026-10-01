@@ -36,8 +36,14 @@ Route::prefix('/tenants/{tenantId}/people')->middleware('person.metrics')->where
         ->get('/references/brazil-states/{stateId}/municipalities', [PersonReferenceCatalogController::class, 'municipalities'])->whereNumber('stateId')->name('people.references.brazil-municipalities');
     Route::middleware(['api.rate-limit', 'person.tenant-context:tenant.people.read'])
         ->get('/references/financial-institutions', [PersonReferenceCatalogController::class, 'financialInstitutions'])->name('people.references.financial-institutions');
+    Route::middleware(['api.rate-limit', 'person.tenant-context:tenant.people.read'])
+        ->get('/filter-schema', [PersonController::class, 'filterSchema'])->name('people.filter-schema');
     Route::middleware(['api.json-size', 'api.rate-limit', 'person.tenant-context:tenant.people.read'])
         ->get('/', [PersonController::class, 'index'])->name('people.index');
+    Route::middleware(['api.json-size', 'api.rate-limit', 'person.tenant-context:tenant.people.read'])
+        ->post('/query', [PersonController::class, 'query'])->name('people.query');
+    Route::middleware(['api.json-size', 'api.rate-limit', 'person.tenant-context:tenant.people.read'])
+        ->post('/selection-ids', [PersonController::class, 'selectionIds'])->name('people.selection-ids');
     Route::middleware(['api.json-size', 'api.rate-limit', 'person.tenant-context:tenant.people.create', 'api.idempotency'])
         ->post('/', [PersonController::class, 'store'])->name('people.store');
     Route::middleware(['api.json-size', 'api.rate-limit', 'person.tenant-context:tenant.people.read'])

@@ -23,4 +23,9 @@ describe('application shell design system styles', () => {
         expect(styles).toContain('.mobile-navigation-drawer__close');
         expect(styles).not.toContain('.presentation-popover { position: fixed');
     });
+
+    it('keeps settings icon sizes independent from the spacing preference', () => {
+        expect(styles).toContain('.workspace-settings__mode--icon, .workspace-settings__choice--icon { display: inline-grid; width: var(--control-height-sm); place-items: center; padding: var(--space-0); }');
+        expect(styles).toContain('.segmented-choice__option--icon img, .workspace-settings__mode--icon img, .workspace-settings__choice--icon img { width: var(--icon-size-sm); height: var(--icon-size-sm); object-fit: contain; }');
+    });
 });

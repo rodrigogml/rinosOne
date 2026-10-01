@@ -16,6 +16,7 @@ export interface WorkspaceContext {
 
 export interface WorkspaceSurfaceDefinition {
     titleKey: string;
+    subtitleKey?: string;
     label?: string;
     icon: string;
     dirty?: boolean;
@@ -59,6 +60,7 @@ export interface WorkspaceSurface {
     scope: WorkspaceDestinationScope;
     tenantId: number | null;
     titleKey: string;
+    subtitleKey?: string;
     label?: string;
     icon: string;
     dirty: boolean;

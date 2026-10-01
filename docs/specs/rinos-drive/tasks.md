@@ -1,6 +1,6 @@
 # Tarefas Rinos One — Rinos Drive
 
-Escopo: implementar Rinos Drive Pessoal e Rinos Drive Work sobre a fundação de arquivos e autorização existentes, incluindo navegador responsivo, árvore, operações de workspace, upload, download, lixeira e exportações privadas temporárias.
+Escopo: implementar a ferramenta global Rinos Drive sobre a fundação de arquivos e autorização existentes, incluindo catálogo pessoal/Work autorizado, compartilhados comigo, navegador responsivo, árvore, dois painéis, transferência lógica, operações de workspace, upload, download, lixeira e exportações privadas temporárias.
 
 **Legenda de status:**
 
@@ -203,7 +203,7 @@ Ref: [Spec](spec.md) FR-DRIVE-031, 035 e 036; [Plan](plan.md) §Transferência l
 - [x] 9.1.2 Criar job/comando agendado de recuperação que renove/reagende ou falhe operação abandonada e libere reservas.
 - [x] 9.1.3 Implementar cancelamento somente em `PENDING`, retenção operacional de estado terminal e limpeza idempotente.
 - [x] 9.1.4 Registrar agendamento, configuração e diagnóstico seguro de job nos documentos operacionais.
-- [ ] 9.1.5 Cobrir reinício de worker, lease vencido, retry, cancelamento, revogação antes do commit e ausência de resultado parcial.
+- [x] 9.1.5 Cobrir reinício de worker, lease vencido, retry, cancelamento, revogação antes do commit e ausência de resultado parcial.
 
 ### 9.2 Expor contratos de transferência e estados seguros `[A]`
 
@@ -222,28 +222,28 @@ Ref: [Contrato](contracts/drive-workspace-api.md) §Transferências entre painé
 
 Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-001 e 004; [Wireframes](wireframes/drive-desktop.md) e [mobile](wireframes/drive-mobile.md).
 
-- [ ] 10.1.1 Mover o acesso do Drive para ferramenta global da topbar e remover as entradas pessoal/tenant duplicadas sem quebrar a instância única.
-- [ ] 10.1.2 Refatorar `DriveExplorer` em casca global e `DriveNavigationPane` com estado de alvo/localização isolado e parser de catálogo.
-- [ ] 10.1.3 Implementar árvore lazy multi-drive, Compartilhados comigo, lixeira por raiz e estados de revogação/stale sem conservar dados inseguros.
-- [ ] 10.1.4 Cobrir desktop, drawer móvel, teclado, foco, leitor de tela, quatro idiomas e roundtrip de catálogo/compartilhados com Vitest e E2E.
+- [x] 10.1.1 Mover o acesso do Drive para ferramenta global da topbar e remover as entradas pessoal/tenant duplicadas sem quebrar a instância única.
+- [x] 10.1.2 Refatorar `DriveExplorer` em casca global e `DriveNavigationPane` com estado de alvo/localização isolado e parser de catálogo.
+- [x] 10.1.3 Implementar árvore lazy multi-drive, Compartilhados comigo, lixeira por raiz e estados de revogação/stale sem conservar dados inseguros.
+- [x] 10.1.4 Cobrir desktop, drawer móvel, teclado, foco, leitor de tela, quatro idiomas e roundtrip de catálogo/compartilhados com Vitest e E2E.
 
 ### 10.2 Implementar painel paralelo e drag-and-drop `[A]`
 
 Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-002 e 003; [Spec](spec.md) US-7.
 
-- [ ] 10.2.1 Implementar abertura/fechamento do segundo painel, largura responsiva, persistência local segura e alternativa móvel por modal.
-- [ ] 10.2.2 Implementar seleção de origem, destinos elegíveis, drag/drop e alternativa por teclado sem permitir self/descendant drop.
-- [ ] 10.2.3 Criar `DriveTransferDialog` com Cancelar/Copiar/Mover, seleção padrão contextual, mensagem de origem/destino e erros seguros.
-- [ ] 10.2.4 Cobrir estados loading/empty/offline/access-denied/partial-stale, acessibilidade, locale e inspeção visual em desktop, tablet e telefone.
+- [x] 10.2.1 Implementar abertura/fechamento do segundo painel, largura responsiva, persistência local segura e alternativa móvel por modal.
+- [x] 10.2.2 Implementar seleção de origem, destinos elegíveis, drag/drop e alternativa por teclado sem permitir self/descendant drop.
+- [x] 10.2.3 Criar `DriveTransferDialog` com Cancelar/Copiar/Mover, seleção padrão contextual, mensagem de origem/destino e erros seguros.
+- [x] 10.2.4 Cobrir estados loading/empty/offline/access-denied/partial-stale, acessibilidade, locale e inspeção visual em desktop, tablet e telefone.
 
 ### 10.3 Integrar progresso persistente e reservas ao shell `[A]`
 
 Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-005; [Contrato](contracts/drive-workspace-api.md) §Transferências entre painéis.
 
-- [ ] 10.3.1 Implementar cliente tipado, parser e polling com backoff de operações próprias, limpeza em unmount e restauração ao reabrir o Drive.
-- [ ] 10.3.2 Exibir faixa de progresso, conclusão não modal, falha recuperável e estado de operação em andamento sem roubar foco.
-- [ ] 10.3.3 Adaptar operações móveis para painel/modal sem ocupar taskbar, safe area ou gerar scroll horizontal do canvas.
-- [ ] 10.3.4 Criar testes de componente e E2E para progresso após fechar/reabrir, cancelamento pendente, reserva e revogação.
+- [x] 10.3.1 Implementar cliente tipado, parser e polling com backoff de operações próprias, limpeza em unmount e restauração ao reabrir o Drive.
+- [x] 10.3.2 Exibir faixa de progresso, conclusão não modal, falha recuperável e estado de operação em andamento sem roubar foco.
+- [x] 10.3.3 Adaptar operações móveis para painel/modal sem ocupar taskbar, safe area ou gerar scroll horizontal do canvas.
+- [x] 10.3.4 Criar testes de componente e E2E para progresso após fechar/reabrir, cancelamento pendente, reserva e revogação.
 
 ---
 
@@ -253,11 +253,21 @@ Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-005; [Contrato](contracts/driv
 
 Ref: [Quickstart](quickstart.md); [Checklists](checklists/); [Spec](spec.md) SC-DRIVE-001, 002, 006 e 007.
 
-- [ ] 11.1.1 Executar quickstart de catálogo, compartilhados, cópia, movimento, lixeira, revogação, reserva e recuperação em ambiente local controlado.
-- [ ] 11.1.2 Executar PHPUnit, Vitest, type-check, build e Playwright desktop/mobile, corrigindo regressões atribuíveis à evolução.
-- [ ] 11.1.3 Atualizar README, arquitetura de superfícies, operação de arquivos, catálogo de ícones e contratos com somente o comportamento entregue.
-- [ ] 11.1.4 Reexecutar análise cross-artifact, registrar evidências de implementação e manter tarefas/documentação sincronizadas.
+- [x] 11.1.1 Executar quickstart de catálogo, compartilhados, cópia, movimento, lixeira, revogação, reserva e recuperação em ambiente local controlado. <!-- 2026-09-30: 44 testes de feature / 215 asserções aprovados no ambiente local controlado. -->
+- [!] 11.1.2 Executar PHPUnit, Vitest, type-check, build e Playwright desktop/mobile, corrigindo regressões atribuíveis à evolução. <!-- 2026-09-30: PHPUnit (559/2463), Vitest (47 arquivos/241 testes), build e E2E Drive desktop/mobile aprovados; type-check bloqueado por 6 erros concorrentes em resources/js/people/PeopleCatalog.vue, fora do escopo do Drive. -->
+- [x] 11.1.3 Atualizar README, arquitetura de superfícies, operação de arquivos, catálogo de ícones e contratos com somente o comportamento entregue. <!-- 2026-09-30: documentação consolidada para Rinos Drive global, catálogo autorizado, compartilhados, painéis paralelos e transferência lógica. -->
+- [x] 11.1.4 Reexecutar análise cross-artifact, registrar evidências de implementação e manter tarefas/documentação sincronizadas. <!-- 2026-09-30: sem finding crítico; status da SDD e checklist de escopo atualizados para a ferramenta global. -->
 - [ ] 11.1.5 Realizar inspeção visual autenticada de catálogo, dois painéis, compartilhados e progresso em homologação antes de encerrar a evolução.
+
+### 11.2 Refinar a hierarquia visual dos painéis `[A]`
+
+- [x] 11.2.1 Remover a identidade decorativa do workspace e o atalho textual de transferência do conteúdo da janela; manter somente a toolbar de ações e iniciar transferência pelo drop no segundo painel. <!-- 2026-09-30 -->
+- [x] 11.2.2 Adicionar divisor redimensionável por ponteiro e teclado entre os painéis no desktop, preservando o modal do segundo painel em telefone. <!-- 2026-09-30 -->
+- [x] 11.2.3 Fazer a ferramenta Rinos Drive preencher a altura interna disponível da janela desktop, preservando rolagem apenas nas árvores e coleções. <!-- 2026-09-30 -->
+- [x] 11.2.4 Consolidar visualizações em grade, lista e detalhes com grupo segmentado de ícones; aninhar a árvore sob cada drive, oferecer expansão por nó e divisores internos redimensionáveis limitados a 25% de cada painel desktop. <!-- 2026-09-30 -->
+- [x] 11.2.5 Corrigir a faixa de redimensionamento das árvores em painéis divididos; consolidar drives como acordeões, mover lixeiras para suas raízes e reunir comandos na barra de operações da coleção com ícones raster. <!-- 2026-09-30 -->
+- [x] 11.2.6 Isolar a troca de raiz entre workspaces, posicionar estado/progresso na barra inferior e permitir exportação ZIP de pasta única, com testes de regressão para não reutilização de localização pessoal em Drive Work. <!-- 2026-09-30 -->
+- [x] 11.2.7 Unificar visualmente o painel paralelo com árvore, breadcrumbs, coleção, visualizações e status próprios; excluir Compartilhados comigo do segundo painel, adotar ícone dedicado, tooltips, marcador-pílula de visualização e overflow de ações em painel estreito. <!-- 2026-09-30 -->
 
 ---
 

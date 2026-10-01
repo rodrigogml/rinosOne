@@ -9,10 +9,13 @@ use App\Http\Requests\Person\DuplicatePersonRequest;
 use App\Http\Requests\Person\InactivatePersonRequest;
 use App\Http\Requests\Person\IndexPersonRequest;
 use App\Http\Requests\Person\ReactivatePersonRequest;
+use App\Http\Requests\Person\QueryPeopleRequest;
+use App\Http\Requests\Person\ResolvePersonSelectionRequest;
 use App\Http\Requests\Person\UpdatePersonRequest;
 use App\Http\Resources\Person\PersonDetailResource;
 use App\Http\Resources\Person\PersonSummaryResource;
 use App\Services\Person\PersonAggregateService;
+use App\Services\Person\PersonAdvancedFilterCatalog;
 use App\Services\Person\PersonDeletionService;
 use App\Services\Person\PersonDeletionUsageService;
 use App\Services\Person\PersonDuplicationService;
@@ -52,6 +55,34 @@ class PersonController extends Controller
                 'lastPage' => $page->lastPage(),
             ],
         ]);
+    }
+
+    public function query(QueryPeopleRequest $request, PersonQueryService $people): JsonResponse
+    {
+        $result = $people->lazy($this->connection($request), $request->search(), $request->advancedFilter(), $request->personType(), $request->status(), $request->sorts(), $request->offset(), $request->limit(), $request->includeIds(), $request->selectedOnly(), $request->selectedIds());
+        $matchingIds = array_flip($result['matchingIds']);
+
+        return response()->json([
+            'people' => $result['people']->map(fn ($person): array => [
+                ...(new PersonSummaryResource($person))->toArray($request),
+                'outsideSearch' => $request->selectedOnly() ? false : ! isset($matchingIds[$person->id]),
+            ])->values(),
+            'range' => ['offset' => $request->offset(), 'limit' => $request->limit(), 'total' => $result['total']],
+            'matchedTotal' => $result['matchedTotal'],
+            'hiddenSelectedTotal' => $result['hiddenSelectedTotal'],
+        ]);
+    }
+
+    public function selectionIds(ResolvePersonSelectionRequest $request, PersonQueryService $people): JsonResponse
+    {
+        return response()->json($people->selectionIds($this->connection($request), $request->search(), $request->advancedFilter(), $request->personType(), $request->status()));
+    }
+
+    public function filterSchema(Request $request, PersonAdvancedFilterCatalog $filters): JsonResponse
+    {
+        $this->connection($request);
+
+        return response()->json(['filterSchema' => $filters->schema()]);
     }
 
     public function store(CreatePersonRequest $request, int $tenantId, PersonAggregateService $aggregate, PersonQueryService $people, PersonRelationshipService $relationships): JsonResponse
