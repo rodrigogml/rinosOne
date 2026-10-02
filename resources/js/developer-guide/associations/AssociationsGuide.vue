@@ -38,7 +38,7 @@ const selectedField = ref('Nome');
             </div>
             <ul class="developer-guide-rule-list">
                 <li>O campo ocupa o espaço flexível; os comandos ficam no fim e possuem largura fixa de controle.</li>
-                <li>O grupo compartilha bordas e anel de foco, mas cada botão conserva <code>label</code> próprio.</li>
+                <li>O grupo compartilha o contorno e o anel de foco. Há divisor entre campo e botão; entre dois botões consecutivos, não há divisor.</li>
                 <li>O botão de filtro é um alternador e expõe <code>aria-pressed</code>; pesquisar executa a consulta do texto atual.</li>
             </ul>
         </section>
@@ -81,16 +81,17 @@ const selectedField = ref('Nome');
             </div>
             <div class="developer-guide-showcase">
                 <div class="developer-guide-association__select-command">
-                    <label>
-                        <span>Campo</span>
-                        <select v-model="selectedField"><option>Nome</option><option>Tipo de pessoa</option><option>Situação</option></select>
-                    </label>
-                    <UiButton variant="secondary"><img class="developer-guide__button-icon" :src="iconPath('dataInsert')" alt="" aria-hidden="true">Inserir condição</UiButton>
+                    <span id="association-field-label">Campo</span>
+                    <div class="developer-guide-association__select-command-controls" role="group" aria-labelledby="association-field-label">
+                        <select v-model="selectedField" aria-label="Campo"><option>Nome</option><option>Tipo de pessoa</option><option>Situação</option></select>
+                        <UiButton variant="secondary"><img class="developer-guide__button-icon" :src="iconPath('dataInsert')" alt="" aria-hidden="true">Inserir condição</UiButton>
+                    </div>
                 </div>
                 <p class="developer-guide-association__state" role="status">Campo selecionado: {{ selectedField }}.</p>
             </div>
             <ul class="developer-guide-rule-list">
-                <li>O <code>label</code> do combo identifica o dado escolhido; o botão descreve o que fará com essa escolha.</li>
+                <li>O rótulo do combo identifica o dado escolhido; o botão descreve o que fará com essa escolha.</li>
+                <li>Entre combo e botão há divisor; somente sequências de botões usam uma superfície contínua, sem divisores internos.</li>
                 <li>Não use um botão como substituto de <code>select</code> quando a pessoa precisa escolher entre opções fechadas.</li>
                 <li>Use <code>secondary</code> enquanto a associação prepara a condição; a confirmação final da busca ou gravação segue o padrão de Botões.</li>
             </ul>

@@ -43,22 +43,22 @@
 .developer-guide-table th { color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
 .developer-guide-table td:first-child { min-width: 11rem; }
 .developer-guide__sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-.developer-guide-association__search-tools { display: flex; width: min(100%, 30rem); align-items: stretch; }
-.developer-guide-association__search-field { display: flex; min-width: var(--space-0); flex: 1; border: var(--component-border-width) solid var(--color-border-subtle); border-inline-end: var(--space-0); border-radius: var(--radius-md) var(--space-0) var(--space-0) var(--radius-md); background: var(--color-surface-muted); }
+.developer-guide-association__search-tools { display: flex; width: min(100%, 30rem); align-items: stretch; overflow: hidden; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.developer-guide-association__search-field { display: flex; min-width: var(--space-0); flex: 1; border: var(--space-0); border-radius: var(--space-0); background: var(--component-field-background); }
 .developer-guide-association__search-field input { width: 100%; min-width: var(--space-0); padding-inline: var(--space-3); border: var(--space-0); outline: var(--space-0); background: transparent; color: var(--color-text-primary); font: inherit; }
 .developer-guide-association__search-field input::placeholder { color: var(--color-text-secondary); font-style: italic; }
-.developer-guide-association__search-tools > .ui-icon-button { border-radius: var(--space-0); border-inline-start: var(--space-0); background: var(--color-surface-muted); }
-.developer-guide-association__search-tools > .ui-icon-button:last-child { border-inline-start: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--space-0) var(--radius-md) var(--radius-md) var(--space-0); }
+.developer-guide-association__search-tools > .ui-icon-button { border: var(--space-0); border-radius: var(--space-0); }
+.developer-guide-association__search-field + .ui-icon-button { border-inline-start: var(--component-border-width) solid var(--color-border-subtle); }
 .developer-guide-association__search-tools:focus-within { outline: 3px solid color-mix(in srgb, var(--color-focus-ring) 20%, transparent); outline-offset: var(--space-0); border-radius: var(--radius-md); }
 .developer-guide-association__state { margin: var(--space-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .developer-guide-association__icon-bar, .developer-guide-association__action-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-0); }
-.developer-guide-association__icon-bar .ui-icon-button { border-radius: var(--space-0); }
-.developer-guide-association__icon-bar .ui-icon-button + .ui-icon-button { border-inline-start: var(--space-0); }
-.developer-guide-association__icon-bar .ui-icon-button:first-child { border-radius: var(--radius-md) var(--space-0) var(--space-0) var(--radius-md); }
-.developer-guide-association__icon-bar .ui-icon-button:last-child { border-radius: var(--space-0) var(--radius-md) var(--radius-md) var(--space-0); }
+.developer-guide-association__icon-bar { width: fit-content; max-width: 100%; overflow: hidden; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.developer-guide-association__icon-bar .ui-icon-button { border: var(--space-0); border-radius: var(--space-0); }
 .developer-guide-association__icon-bar .ui-icon-button[aria-pressed='true'] { background: color-mix(in srgb, var(--color-action-primary) var(--color-mix-subtle), var(--color-surface-muted)); color: var(--color-action-primary); }
 .developer-guide-association__action-bar { gap: var(--space-2); }
-.developer-guide-association__select-command { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); }
-.developer-guide-association__select-command label { display: grid; min-width: min(100%, 15rem); flex: 1; gap: var(--space-2); color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
-.developer-guide-association__select-command select { min-height: var(--control-height-md); padding-inline: var(--space-3); border: var(--component-border-width) solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
+.developer-guide-association__select-command { display: grid; width: min(100%, 32rem); gap: var(--space-2); }
+.developer-guide-association__select-command > span { color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.developer-guide-association__select-command-controls { display: flex; align-items: stretch; overflow: hidden; border: var(--component-border-width) solid var(--component-field-border); border-radius: var(--radius-md); }
+.developer-guide-association__select-command select { min-width: var(--space-0); min-height: var(--control-height-md); flex: 1; padding-inline: var(--space-3); border: var(--space-0); border-radius: var(--space-0); background: var(--component-field-background); color: var(--color-text-primary); font: inherit; }
+.developer-guide-association__select-command-controls .ui-button { flex: 0 0 auto; border: var(--space-0); border-inline-start: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--space-0); }
 @media (max-width: 639px) { .developer-guide__layout { grid-template-columns: minmax(var(--space-0), 1fr); } .developer-guide__sidebar { padding: var(--space-4); border-right: var(--space-0); border-bottom: var(--component-border-width) solid var(--color-border-subtle); } .developer-guide__navigation { position: static; } .developer-guide__subtopics { grid-template-columns: repeat(2, minmax(var(--space-0), 1fr)); margin-left: var(--space-0); padding-left: var(--space-0); border-left: var(--space-0); } .developer-guide__subtopics button { padding: var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); } .developer-guide__content { padding: var(--space-6) var(--space-4); } .developer-guide-article { gap: var(--space-8); } .developer-guide-showcase--split, .developer-guide-definition-list { grid-template-columns: minmax(var(--space-0), 1fr); } .developer-guide-showcase--split > div + div { padding-top: var(--space-5); padding-left: var(--space-0); border-top: var(--component-border-width) solid var(--color-border-subtle); border-left: var(--space-0); } }

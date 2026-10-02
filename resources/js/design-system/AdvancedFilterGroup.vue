@@ -88,7 +88,7 @@ function dropAtEnd(event: DragEvent): void { const draggedId = draggedNodeId(eve
 .advanced-filter-group__body { display: grid; inline-size: max-content; gap: var(--space-3); min-inline-size: 43rem; padding: var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-inline-start: calc(var(--component-border-width) * 4) solid var(--color-action-primary); border-radius: var(--radius-md); background: var(--color-surface-muted); }
 .advanced-filter-group__header, .advanced-filter-group__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .advanced-filter-group label { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-.advanced-filter-group select, .advanced-filter-group input[type='text'] { min-block-size: var(--control-height-sm); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-primary); font: inherit; padding-inline: var(--space-2); }
+.advanced-filter-group select, .advanced-filter-group input[type='text'] { min-block-size: var(--control-height-sm); border: var(--component-border-width) solid var(--component-field-border); border-radius: var(--radius-sm); background: var(--component-field-background); color: var(--color-text-primary); font: inherit; padding-inline: var(--space-2); }
 .advanced-filter-group__context, .advanced-filter-group__hint { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .advanced-filter-group__hint { margin: 0; }
 .advanced-filter-group__children { display: grid; gap: var(--space-2); min-inline-size: 0; }

@@ -29,7 +29,7 @@ const emit = defineEmits<{ submit: [] }>();
 <style scoped>
 .drive-operation-dialog { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
 .drive-operation-dialog :deep(label) { display: grid; gap: var(--space-2); color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
-.drive-operation-dialog :deep(input), .drive-operation-dialog :deep(select) { min-height: var(--control-height-md); padding: 0 var(--space-3); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
+.drive-operation-dialog :deep(input), .drive-operation-dialog :deep(select) { min-height: var(--control-height-md); padding: 0 var(--space-3); border: var(--component-border-width) solid var(--component-field-border); border-radius: var(--radius-md); background: var(--component-field-background); color: var(--color-text-primary); font: inherit; }
 .drive-operation-dialog p { margin: 0; }
 .drive-operation-dialog__error { color: var(--color-danger); }
 .drive-operation-dialog > div { display: flex; justify-content: end; gap: var(--space-3); }

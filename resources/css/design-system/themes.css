@@ -54,6 +54,7 @@
     --color-action-secondary: var(--color-carbon-700);
     --color-action-secondary-content: var(--color-carbon-text-primary);
     --color-focus-ring: var(--palette-active-dark-action);
+    --component-field-background: var(--color-surface);
     --color-success: var(--color-success-300);
     --color-warning: var(--color-warning-300);
     --color-danger: var(--color-danger-300);
@@ -80,6 +81,7 @@
         --color-action-secondary: var(--color-carbon-700);
         --color-action-secondary-content: var(--color-carbon-text-primary);
         --color-focus-ring: var(--palette-active-dark-action);
+        --component-field-background: var(--color-surface);
         --color-success: var(--color-success-300);
         --color-warning: var(--color-warning-300);
         --color-danger: var(--color-danger-300);

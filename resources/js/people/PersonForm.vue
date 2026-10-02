@@ -1488,9 +1488,9 @@ textarea {
     width: 100%;
     min-height: var(--control-height-sm);
     padding: var(--space-2) var(--space-3);
-    border: var(--component-border-width) solid var(--color-border-subtle);
+    border: var(--component-border-width) solid var(--component-field-border);
     border-radius: var(--radius-sm);
-    background: var(--color-surface-raised);
+    background: var(--component-field-background);
     color: var(--color-text-primary);
     font: inherit;
 }

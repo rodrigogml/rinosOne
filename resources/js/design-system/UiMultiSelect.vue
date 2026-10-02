@@ -44,3 +44,7 @@ onBeforeUnmount(() => window.removeEventListener('pointerdown', closeWhenClickin
 .ui-multi-select__option { display: flex; min-block-size: var(--control-height-sm); align-items: center; gap: var(--space-2); border: var(--component-border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-primary); font: inherit; padding: var(--space-1) var(--space-2); text-align: start; cursor: pointer; }.ui-multi-select__option:hover, .ui-multi-select__option:focus-visible { border-color: var(--color-border-subtle); background: var(--color-surface-muted); outline: 0; }
 .ui-multi-select__mark { display: inline-grid; inline-size: 1.125rem; block-size: 1.125rem; flex: 0 0 auto; place-items: center; border: var(--component-border-width) solid var(--color-border-strong); border-radius: var(--radius-sm); color: var(--color-action-primary-content); font-weight: var(--font-weight-bold); }.ui-multi-select__option--selected .ui-multi-select__mark { border-color: var(--color-action-primary); background: var(--color-action-primary); }
 </style>
+
+<style scoped>
+.ui-multi-select__trigger { border-color: var(--component-field-border); background: var(--component-field-background); }
+</style>
