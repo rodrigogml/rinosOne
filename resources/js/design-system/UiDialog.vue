@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ modelValue: boolean; title: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean; wide?: boolean }>(), { destructive: false, escapable: true, backdropDismissible: true, contained: false, wide: false });
+const props = withDefaults(defineProps<{ modelValue: boolean; title: string; subtitle?: string; iconSrc?: string; windowLike?: boolean; fluid?: boolean; teleportTo?: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean; wide?: boolean }>(), { subtitle: '', iconSrc: '', windowLike: false, fluid: false, teleportTo: '', destructive: false, escapable: true, backdropDismissible: true, contained: false, wide: false });
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const dialog = ref<HTMLElement | null>(null);
 let returnFocus: HTMLElement | null = null;
@@ -30,4 +30,4 @@ onMounted(async () => { if (props.modelValue) await focusDialog(); });
 onBeforeUnmount(() => returnFocus?.focus());
 </script>
 
-<template><div v-if="modelValue" class="ui-dialog-backdrop" :class="{ 'ui-dialog-backdrop--contained': contained }" @mousedown.self="backdropDismissible && close()"><section ref="dialog" class="ui-dialog" :class="{ 'ui-dialog--wide': wide }" :role="destructive ? 'alertdialog' : 'dialog'" :aria-label="title" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><h2 class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></template>
+<template><Teleport :to="teleportTo || 'body'" :disabled="!teleportTo"><div v-if="modelValue" class="ui-dialog-backdrop" :class="{ 'ui-dialog-backdrop--contained': contained }" @mousedown.self="backdropDismissible && close()"><section ref="dialog" class="ui-dialog" :class="{ 'ui-dialog--wide': wide, 'ui-dialog--window-like': windowLike, 'ui-dialog--fluid': fluid }" :role="destructive ? 'alertdialog' : 'dialog'" :aria-label="title" aria-modal="true" tabindex="-1" @keydown="handleKeydown"><header v-if="windowLike" class="ui-dialog__window-header"><img v-if="iconSrc" :src="iconSrc" alt="" aria-hidden="true"><div><h2 class="ui-dialog__title">{{ title }}</h2><p v-if="subtitle">{{ subtitle }}</p></div></header><h2 v-else class="ui-dialog__title">{{ title }}</h2><slot :close="close" /></section></div></Teleport></template>

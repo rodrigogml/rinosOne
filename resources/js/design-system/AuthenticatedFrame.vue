@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios';
 import { useI18n } from 'vue-i18n';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import ApplicationTopBar from './ApplicationTopBar.vue';
@@ -27,6 +28,9 @@ const avatarUrl = computed(() => {
 const avatarLabel = computed(() => t('access.shell.avatar', { name: effectiveDisplayName.value || '?' }));
 let cancelRasterIconPreload: (() => void) | null = null;
 function profileUpdated(value: ProfilePresentation): void { profile.value = value; emit('profileUpdated', value); }
+async function loadProfile(): Promise<void> {
+    try { profileUpdated((await axios.get('/api/v1/profile')).data as ProfilePresentation); } catch { /* A imagem é complementar; a topbar mantém as iniciais enquanto o perfil não estiver disponível. */ }
+}
 function signOut() { tenantContext.discard(); workspace.discard(); emit('signOut'); }
 function openSettings() {
     workspace.openDestination(personalSettingsDestination, { tenantId: tenantContext.context?.tenant.id ?? null });
@@ -41,7 +45,7 @@ function openMobileTasks() {
     mobileNavigationOpen.value = false;
     workspace.mobileTaskPanelOpen = true;
 }
-onMounted(() => { cancelRasterIconPreload = scheduleRegisteredRasterIconPreload(); });
+onMounted(() => { cancelRasterIconPreload = scheduleRegisteredRasterIconPreload(); void loadProfile(); });
 onBeforeUnmount(() => { cancelRasterIconPreload?.(); workspace.discard(); });
 </script>
 

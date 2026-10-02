@@ -147,12 +147,11 @@ final class PersonAdvancedFilterCatalog
     {
         $definition = $this->fieldDefinition($condition['field']);
         if ($definition['relation'] === 'bankAccounts' && $scope === null) {
-            $method = ($condition['negated'] ?? false) ? 'whereDoesntHave' : ($boolean === 'or' ? 'orWhereHas' : 'whereHas');
-            $positiveCondition = [...$condition, 'negated' => false];
-            $query->{$method}('bankAccounts', function (Builder $accounts) use ($positiveCondition): void { $this->applyCondition($accounts, $positiveCondition, 'and', 'bankAccounts'); });
+            $method = $boolean === 'or' ? 'orWhereHas' : 'whereHas';
+            $query->{$method}('bankAccounts', function (Builder $accounts) use ($condition): void { $this->applyCondition($accounts, $condition, 'and', 'bankAccounts'); });
             return;
         }
-        $method = ($condition['negated'] ?? false) ? 'whereNot' : ($boolean === 'or' ? 'orWhere' : 'where');
+        $method = $boolean === 'or' ? 'orWhere' : 'where';
         $query->{$method}(function (Builder $nested) use ($condition, $definition): void { $this->applyPredicate($nested, $definition['key'], $condition['operator'], $condition['value'] ?? null); });
     }
 

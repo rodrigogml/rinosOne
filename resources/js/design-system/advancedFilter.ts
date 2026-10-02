@@ -6,7 +6,7 @@ export interface AdvancedFilterOption { value: string; label: string; }
 export interface AdvancedFilterField { key: string; label: string; type: 'TEXT' | 'ENUM'; relation: string | null; operators: AdvancedFilterOperator[]; options: AdvancedFilterOption[]; }
 export interface AdvancedFilterRelation { key: string; label: string; }
 export interface AdvancedFilterSchema { maximumDepth: number; maximumConditions: number; relations: AdvancedFilterRelation[]; fields: AdvancedFilterField[]; }
-export interface AdvancedFilterCondition { kind: 'condition'; id: string; field: string; operator: AdvancedFilterOperator; value?: string | string[]; negated: boolean; }
+export interface AdvancedFilterCondition { kind: 'condition'; id: string; field: string; operator: AdvancedFilterOperator; value?: string | string[]; }
 export interface AdvancedFilterGroup { kind: 'group'; id: string; combinator: AdvancedFilterCombinator; negated: boolean; matchMode: AdvancedFilterMatchMode; relation: string | null; children: AdvancedFilterNode[]; }
 export type AdvancedFilterNode = AdvancedFilterCondition | AdvancedFilterGroup;
 
