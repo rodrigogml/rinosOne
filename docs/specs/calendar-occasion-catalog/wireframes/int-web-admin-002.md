@@ -2,6 +2,8 @@
 
 ```text
 ┌──────────────────────── Novo feriado ────────────────────────────────┐
+│ [ Geral ] [ Recorrência ] [ Vigência e substituição ]                 │
+│                                                                        │
 │ Nome *               [___________________________________________]   │
 │ Categoria *           [Feriado v]                                     │
 │ Esfera *              [País v]                                        │

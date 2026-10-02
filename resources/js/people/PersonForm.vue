@@ -1355,8 +1355,8 @@ onMounted(() => void initialize());
 
 <style scoped>
 .person-form {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0;
     min-block-size: 100%;
     block-size: 100%;
@@ -1366,6 +1366,7 @@ onMounted(() => void initialize());
 }
 .person-form__header {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     min-block-size: var(--control-height-md);
     padding: var(--space-3) var(--space-4);
@@ -1378,26 +1379,29 @@ onMounted(() => void initialize());
     font-weight: var(--font-weight-semibold);
 }
 .person-form__editor {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    block-size: 100%;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
     gap: 0;
+    min-block-size: 0;
     min-height: 0;
     overflow: hidden;
 }
 .person-form__content-frame {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
     gap: var(--space-3);
     min-width: 0;
     min-height: 0;
-    block-size: 100%;
+    min-block-size: 0;
     box-sizing: border-box;
     padding: var(--component-workspace-surface-padding);
     overflow: hidden;
 }
 .person-form__feedback {
     display: grid;
+    flex: 0 0 auto;
     gap: var(--space-1);
     margin: var(--space-3) var(--space-4) 0;
 }
@@ -1409,6 +1413,7 @@ onMounted(() => void initialize());
 }
 .person-form__tabs {
     display: grid;
+    flex: 1 1 0;
     grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
     min-width: 0;
@@ -1526,6 +1531,7 @@ input[aria-invalid="true"] {
 }
 .person-form__command-bar {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: flex-end;
     gap: var(--space-2);

@@ -1,15 +1,22 @@
+<script setup lang="ts">
+import { nextTick, ref } from 'vue';
+import CalendarOccasionCatalog from './CalendarOccasionCatalog.vue';
+import CalendarOccasionForm from './CalendarOccasionForm.vue';
+
+const catalog = ref<InstanceType<typeof CalendarOccasionCatalog> | null>(null);
+const editingId = ref<number | null | undefined>(undefined);
+async function closeEditor(): Promise<void> { editingId.value = undefined; await nextTick(); await catalog.value?.refresh(); await catalog.value?.focus(); }
+</script>
+
 <template>
-    <main class="calendar-occasion-workspace" aria-labelledby="calendar-occasion-title">
-        <p class="calendar-occasion-workspace__eyebrow">Tabelas centrais</p>
-        <h2 id="calendar-occasion-title">Gestão de feriados</h2>
-        <p>O cadastro e a consulta de definições globais de feriados serão realizados nesta área.</p>
-    </main>
+    <section class="calendar-occasion-workspace">
+        <CalendarOccasionCatalog v-if="editingId === undefined" ref="catalog" @create="editingId = null" @edit="editingId = $event" />
+        <CalendarOccasionForm v-else :occasion-id="editingId" @cancel="closeEditor" @saved="closeEditor" />
+    </section>
 </template>
 
 <style scoped>
-.calendar-occasion-workspace { display: grid; align-content: start; gap: var(--space-3); max-width: 72rem; margin: 0 auto; padding: var(--space-4); }
-.calendar-occasion-workspace__eyebrow { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-.calendar-occasion-workspace h2, .calendar-occasion-workspace p { margin: 0; }
-.calendar-occasion-workspace h2 { color: var(--color-text-primary); font-family: var(--font-family-display); font-size: var(--font-size-xl); }
-.calendar-occasion-workspace > p:last-child { color: var(--color-text-secondary); }
+:global(.workspace-stage__surface-content:has(.calendar-occasion-workspace)) { align-content: stretch; align-items: stretch; padding: 0; overflow: hidden; }
+:global(.workspace-stage__surface-instance:has(.calendar-occasion-workspace)) { min-block-size: 100%; block-size: 100%; }
+.calendar-occasion-workspace { display: grid; grid-template-rows: minmax(0, 1fr); min-block-size: 100%; block-size: 100%; min-height: 0; overflow: hidden; }
 </style>

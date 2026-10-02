@@ -3,8 +3,8 @@
 ```text
 Domínio / Administração / Tabelas Centrais
 
-Feriados                                      [ + Novo feriado ]
-Gerencie feriados, pontos facultativos e datas comemorativas.
+Feriados                   [Pesquisar por nome_______________] [ + Novo feriado ]
+Gerencie feriados, pontos facultativos e datas comemorativas. [Filtros] [Colunas]
 
 ┌ Filtros ────────────────────────────────────────────────────────────┐
 │ Nome [________________] Categoria [Todos v] Esfera [Todas v]         │
@@ -12,9 +12,9 @@ Gerencie feriados, pontos facultativos e datas comemorativas.
 │ Período: de [dd/mm/aaaa] até [dd/mm/aaaa]  [Limpar] [Aplicar filtros]│
 └─────────────────────────────────────────────────────────────────────┘
 
-  24 definições
+  24 definições                                      [Editar] [Excluir]
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Nome              Categoria     Esfera / localidade  Recorrência ... │
+│ □  Nome           Categoria     Esfera/localidade    Recorrência ... │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Corpus Christi    Ponto fac.    País / Brasil         Páscoa +60  ⋮  │
 │ Aniversário ...   Feriado       Município / ...       Data fixa   ⋮  │

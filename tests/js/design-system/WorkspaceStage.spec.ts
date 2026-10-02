@@ -62,7 +62,7 @@ describe('WorkspaceStage', () => {
         });
 
         expect(wrapper.findComponent(CalendarOccasionWorkspace).exists()).toBe(true);
-        expect(wrapper.text()).toContain('Gestão de feriados');
+        expect(wrapper.text()).toContain('Nenhuma definição encontrada.');
         expect(wrapper.get('.workspace-stage__header img').attributes('src')).toBe('/assets/icons/holiday_48.png');
     });
 

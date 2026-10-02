@@ -48,7 +48,7 @@ Foundation de Localidades ──────────────────
 | `app/Services/Locality` | Consultas de País, UF e Município para validadores e seletores, sem alterar o catálogo territorial. |
 | `app/Http/Controllers/Api/V1` e `app/Http/Requests` | Fronteira HTTP, validação estrutural, serialização `camelCase` e erros seguros do contrato. |
 | `routes/api` | Rotas de administração, consulta de definições, consulta de ocorrências e referência territorial de leitura. |
-| `resources/js` e `resources/css` | Cliente, tipos, estado e administração responsiva após a especificação de interface. |
+| `resources/js` e `resources/css` | `CalendarOccasionWorkspace`, catálogo e editor responsivos, seguindo a composição de `PeopleWorkspace`, `PeopleCatalog` e `PersonForm`. |
 | `tests/Unit`, `tests/Feature`, `tests/js` e `tests/e2e` | Cobertura do cálculo, integridade, API e jornada humana. |
 
 ## Fluxos técnicos principais
