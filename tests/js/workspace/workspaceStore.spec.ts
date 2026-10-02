@@ -57,6 +57,7 @@ describe('workspace runtime store', () => {
             'tenant-security',
             'domain-governance',
         ]);
+        expect(workspaceNavigationCategories.find((category) => category.id === 'domain-governance')).toMatchObject({ icon: 'planet' });
         expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
             'personal.authorization-administration',
             'personal.permissions-access',
@@ -66,7 +67,11 @@ describe('workspace runtime store', () => {
             'platform.maintenance',
             'platform.authorization-administration',
             'platform.permissions-access',
+            'platform.calendar-occasions',
         ]);
+        expect(workspaceDestinations.find((candidate) => candidate.id === 'platform.calendar-occasions')).toMatchObject({
+            category: 'domain-governance', groupKey: 'central-tables', groupLabel: 'Tabelas Centrais', label: 'Feriados', icon: 'holiday', instancePolicy: 'single',
+        });
         expect(globalDriveDestination).toMatchObject({
             id: 'global.drive',
             scope: 'global',

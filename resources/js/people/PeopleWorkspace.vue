@@ -107,6 +107,8 @@ async function close(message = ""): Promise<void> {
 :global(.workspace-stage__surface-content:has(.people-workspace)) {
     align-content: stretch;
     align-items: stretch;
+    padding: 0;
+    overflow: hidden;
 }
 
 :global(.workspace-stage__surface-instance:has(.people-workspace)) {
@@ -116,12 +118,17 @@ async function close(message = ""): Promise<void> {
 
 .people-workspace {
     display: grid;
+    grid-template-rows: minmax(0, 1fr);
     min-block-size: 100%;
     block-size: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 .people-workspace__catalog-context {
     position: relative;
+    box-sizing: border-box;
     min-block-size: 100%;
     block-size: 100%;
+    padding: var(--component-workspace-surface-padding);
 }
 </style>

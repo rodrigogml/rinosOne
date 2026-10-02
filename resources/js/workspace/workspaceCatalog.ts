@@ -4,7 +4,7 @@ export const workspaceNavigationCategories: readonly WorkspaceNavigationCategory
     { id: 'personal-library', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', label: 'Biblioteca', icon: 'documents' },
     { id: 'tenant-workspace', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Workspace', icon: 'drive' },
     { id: 'tenant-security', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Segurança', icon: 'settings' },
-    { id: 'domain-governance', scope: 'domain', scopeLabel: 'Domínio', titleKey: 'access.workspace.navigation.title', label: 'Administração', icon: 'settings' },
+    { id: 'domain-governance', scope: 'domain', scopeLabel: 'Domínio', titleKey: 'access.workspace.navigation.title', label: 'Administração', icon: 'planet' },
 ];
 
 export const workspaceDestinations: readonly WorkspaceDestination[] = [
@@ -16,6 +16,7 @@ export const workspaceDestinations: readonly WorkspaceDestination[] = [
     { id: 'platform.maintenance', scope: 'domain', category: 'domain-governance', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'maintenance', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Central de Manutenções', icon: 'maintenance' }) },
     { id: 'platform.authorization-administration', scope: 'domain', category: 'domain-governance', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Usuários e acessos', icon: 'settings', instancePolicy: 'single', isAvailable: (context) => context.canReadAuthorization === true, createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Usuários e acessos', icon: 'settings' }) },
     { id: 'platform.permissions-access', scope: 'domain', category: 'domain-governance', groupLabel: 'Administração', titleKey: 'access.permissionManagement.title', label: 'Usuários, permissões e acessos', icon: 'secPermissions', instancePolicy: 'single', isAvailable: (context) => context.canReadAuthorization === true, createSurface: () => ({ titleKey: 'access.permissionManagement.title', label: 'Usuários, permissões e acessos', icon: 'secPermissions' }) },
+    { id: 'platform.calendar-occasions', scope: 'domain', category: 'domain-governance', groupKey: 'central-tables', groupLabel: 'Tabelas Centrais', titleKey: 'access.workspace.title', label: 'Feriados', icon: 'holiday', instancePolicy: 'single', createSurface: () => ({ titleKey: 'access.workspace.title', label: 'Feriados', icon: 'holiday' }) },
 ];
 
 /** Ferramenta global: um único navegador reúne os workspaces disponíveis ao usuário. */

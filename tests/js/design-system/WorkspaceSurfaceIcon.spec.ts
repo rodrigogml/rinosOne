@@ -30,4 +30,11 @@ describe('WorkspaceSurfaceIcon', () => {
         expect(wrapper.find('svg').exists()).toBe(false);
         expect(wrapper.get('img').attributes()).toMatchObject({ src: '/assets/icons/maintenance_32.png', alt: '' });
     });
+
+    it.each(['planet', 'holiday'])('renders the approved raster asset for %s', (name) => {
+        const wrapper = mount(WorkspaceSurfaceIcon, { props: { name } });
+
+        expect(wrapper.find('svg').exists()).toBe(false);
+        expect(wrapper.get('img').attributes('src')).toBe(`/assets/icons/${name}_32.png`);
+    });
 });

@@ -88,6 +88,7 @@ describe('access entry and account creation', () => {
         expect(http.post).toHaveBeenCalledWith('/api/v1/auth/registrations', { email: 'person@example.test', displayName: 'Person', rememberMe: false });
         expect(wrapper.find('#display-name').exists()).toBe(false);
         expect(wrapper.get('#code').attributes('inputmode')).toBe('numeric');
+        expect(wrapper.text()).toContain('Enviamos um código para person@example.test.');
     });
 
     it('validates display name and email before emitting registration', async () => {

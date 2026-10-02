@@ -2,7 +2,7 @@
 
 **Feature**: `financial-ledger-foundation`
 **Criada**: 2026-10-01
-**Status**: Draft
+**Status**: Planejamento técnico concluído; aguardando desenho de interface e backlog.
 **Briefing**: [Módulo Financeiro](../../briefing/20261001-briefing-finance-module.md)
 
 ## Cobertura de Interfaces

@@ -42,6 +42,8 @@ Esse registro é a única manutenção necessária para um novo ícone PNG. Menu
 | `rinoUser-tweek` | Configurações da conta do usuário | Ação Configurações do usuário no menu pessoal |
 | `taskbar2` | Alternar janelas abertas | Botão de alternância de janelas na topbar responsiva |
 | `maintenance` | Central de Manutenções da plataforma | Menu, cabeçalho da janela e taskbar da Central de Manutenções |
+| `planet` | Administração global do domínio | Categoria Administração da esfera de domínio |
+| `holiday` | Cadastro de feriados e ocasiões de calendário | Entrada Feriados em Tabelas Centrais e sua janela |
 
 ## Acessibilidade e cor
 

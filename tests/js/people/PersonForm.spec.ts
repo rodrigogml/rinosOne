@@ -36,6 +36,27 @@ describe("PersonForm", () => {
         );
     });
 
+    it("presents the insertion title and the standardized action bar", async () => {
+        const wrapper = mount(PersonForm, {
+            props: { tenantId: 18, capabilities: { canCreatePeople: true } },
+            global: { plugins: [i18n] },
+        });
+        await flushPromises();
+
+        expect(wrapper.get(".person-form__header h3").text()).toBe(
+            "Inserindo Pessoa",
+        );
+        const actions = wrapper.get(".person-form__command-bar");
+        expect(actions.get(".ui-button--destructive").text()).toContain(
+            "Cancelar",
+        );
+        expect(actions.get(".ui-button--primary").text()).toContain("Salvar");
+        expect(actions.findAll("img").map((image) => image.attributes("src"))).toEqual([
+            "/assets/icons/btCancel_24.png",
+            "/assets/icons/floppyDisk_24.png",
+        ]);
+    });
+
     it("creates a PF without an optional document and returns the saved person", async () => {
         vi.mocked(axios.post).mockResolvedValue({
             data: {
@@ -54,7 +75,7 @@ describe("PersonForm", () => {
             global: { plugins: [i18n] },
         });
         await wrapper.get("input").setValue("Ana");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledWith(
@@ -97,7 +118,7 @@ describe("PersonForm", () => {
         await wrapper.get('#person-type-PJ').trigger("click");
         await wrapper.findAll("input")[2].setValue("04.252.011/0001-10");
         await wrapper.get('#person-type-PF').trigger("click");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledWith(
@@ -178,7 +199,7 @@ describe("PersonForm", () => {
         });
         await flushPromises();
         await wrapper.get("input").setValue("Rubi Renovada");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(axios.put).toHaveBeenCalledWith(
@@ -318,7 +339,7 @@ describe("PersonForm", () => {
 
         expect(wrapper.get("fieldset").attributes("disabled")).toBeDefined();
         expect(
-            wrapper.get("header button:last-child").attributes("disabled"),
+            wrapper.get(".person-form__command-bar button:last-child").attributes("disabled"),
         ).toBeDefined();
     });
 
@@ -340,7 +361,7 @@ describe("PersonForm", () => {
             global: { plugins: [i18n] },
         });
         await wrapper.get("input").setValue("Ana");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(wrapper.get('[role="alert"]').text()).toBe(
@@ -367,7 +388,7 @@ describe("PersonForm", () => {
         });
         await flushPromises();
         await wrapper.get("input").setValue("Ana");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
         expect(wrapper.get('[role="alert"]').text()).toBe(
             "CPF ou CNPJ já pertence a outra Pessoa desta organização.",
@@ -394,7 +415,7 @@ describe("PersonForm", () => {
         await flushPromises();
         await wrapper.get("input").setValue("Ana");
         await wrapper.findAll("input")[2].setValue("123");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(wrapper.get("#person-document-error").text()).toBe(
@@ -427,7 +448,7 @@ describe("PersonForm", () => {
         const contacts = wrapper.findAll(".collection")[2];
         await contacts.get(".collection > button").trigger("click");
         await contacts.get("input").setValue("invalid");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
         expect(contacts.get('[role="alert"]').text()).toBe("Contato inválido");
     });
@@ -465,7 +486,7 @@ describe("PersonForm", () => {
         const addresses = wrapper.findAll(".collection")[0];
         await addresses.get(".collection > button").trigger("click");
         await addresses.findAll("select")[1].setValue("1");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
 
         expect(axios.post).not.toHaveBeenCalled();
         expect(addresses.get('[role="alert"]').text()).toContain(
@@ -497,7 +518,7 @@ describe("PersonForm", () => {
         const collectionInputs = wrapper.findAll(".collection input");
         await collectionInputs[0].setValue("ana@example.test");
         await collectionInputs[1].setValue("ana.pix@example.test");
-        await wrapper.get("header button:last-child").trigger("click");
+        await wrapper.get(".person-form__command-bar button:last-child").trigger("click");
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledWith(
@@ -631,7 +652,9 @@ describe("PersonForm", () => {
         });
         await flushPromises();
         await wrapper.get("input").setValue("Ana");
-        await wrapper.get("header button").trigger("click");
+        await wrapper
+            .get(".person-form__command-bar button:first-child")
+            .trigger("click");
 
         expect(wrapper.get('[role="dialog"]').text()).toContain(
             "Alterações não salvas",
@@ -648,7 +671,7 @@ describe("PersonForm", () => {
             global: { plugins: [i18n] },
         });
         await flushPromises();
-        const back = wrapper.get("header button:first-child");
+        const back = wrapper.get(".person-form__command-bar button:first-child");
         await wrapper.get("input").setValue("Ana");
         await back.trigger("click");
         await flushPromises();
@@ -662,26 +685,22 @@ describe("PersonForm", () => {
         expect(document.activeElement).toBe(back.element);
     });
 
-    it("opens a collection as a focused mobile sheet and returns to its opener", async () => {
+    it("switches related data through the form tabs", async () => {
         const wrapper = mount(PersonForm, {
             attachTo: document.body,
             props: { tenantId: 18, capabilities: { canCreatePeople: true } },
             global: { plugins: [i18n] },
         });
         await flushPromises();
-        const addresses = wrapper.findAll(".collection")[0];
-        const opener = addresses.get(".collection__open");
-        await opener.trigger("click");
+        const tab = wrapper
+            .get('[aria-label="Seções da Pessoa"]')
+            .findAll("button")
+            .find((button) => button.text() === "Endereços")!;
+        await tab.trigger("click");
         await flushPromises();
 
-        expect(addresses.classes()).toContain("collection--active");
-        expect(addresses.attributes("role")).toBe("dialog");
-        expect(addresses.attributes("aria-labelledby")).toBe(
-            "person-addresses-title",
-        );
-        expect(document.activeElement).toBe(addresses.element);
-        await addresses.trigger("keydown", { key: "Escape" });
-        expect(document.activeElement).toBe(opener.element);
+        expect(tab.attributes("aria-selected")).toBe("true");
+        expect(wrapper.get("#person-addresses").attributes("hidden")).toBeUndefined();
     });
 
     it("shows the current item count in every related-data section", async () => {
@@ -719,11 +738,6 @@ describe("PersonForm", () => {
     });
 
     it("provides desktop section navigation for basic data and every collection", async () => {
-        const scrollIntoView = vi.fn();
-        Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
-            configurable: true,
-            value: scrollIntoView,
-        });
         const wrapper = mount(PersonForm, {
             props: { tenantId: 18, capabilities: { canCreatePeople: true } },
             global: { plugins: [i18n] },
@@ -736,8 +750,8 @@ describe("PersonForm", () => {
             .findAll("button")
             .find((button) => button.text() === "Contatos")!;
         await contacts.trigger("click");
-        expect(scrollIntoView).toHaveBeenCalledOnce();
-        expect(contacts.attributes("aria-current")).toBe("page");
+        expect(contacts.attributes("aria-selected")).toBe("true");
+        expect(wrapper.get("#person-contacts").attributes("hidden")).toBeUndefined();
         wrapper.unmount();
     });
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia } from 'pinia';
 import WorkspaceStage from '../../../resources/js/design-system/WorkspaceStage.vue';
 import AuthorizationAdministrationSurface from '../../../resources/js/authorization/AuthorizationAdministrationSurface.vue';
+import CalendarOccasionWorkspace from '../../../resources/js/calendar-occasions/CalendarOccasionWorkspace.vue';
 import type { WorkspaceSurface } from '../../../resources/js/workspace/workspaceTypes';
 import { i18n } from '../../../resources/js/i18n';
 
@@ -52,6 +53,17 @@ describe('WorkspaceStage', () => {
         });
 
         expect(wrapper.get('.workspace-stage__header img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_48.png');
+    });
+
+    it('mounts the holiday management workspace for the central-table destination', () => {
+        const wrapper = mount(WorkspaceStage, {
+            props: { surface: { ...activeSurface, destinationId: 'platform.calendar-occasions', label: 'Feriados', icon: 'holiday' } },
+            global: { plugins: [createPinia(), i18n] },
+        });
+
+        expect(wrapper.findComponent(CalendarOccasionWorkspace).exists()).toBe(true);
+        expect(wrapper.text()).toContain('Gestão de feriados');
+        expect(wrapper.get('.workspace-stage__header img').attributes('src')).toBe('/assets/icons/holiday_48.png');
     });
 
     it('returns safely to the workspace when the authorization surface loses access', async () => {

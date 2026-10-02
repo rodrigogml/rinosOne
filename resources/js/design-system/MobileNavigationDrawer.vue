@@ -22,7 +22,19 @@ const scopedCategories = computed(() => {
 
     return [...groups.values()];
 });
-const activeDestinations = computed(() => (props.destinations ?? []).filter((destination) => destination.category === activeCategoryId.value));
+const activeDestinationGroups = computed(() => {
+    const category = (props.categories ?? []).find((candidate) => candidate.id === activeCategoryId.value);
+    const fallbackGroupKey = category?.titleKey ?? '';
+    const groups = new Map<string, { label?: string; destinations: WorkspaceDestination[] }>();
+
+    for (const destination of (props.destinations ?? []).filter((candidate) => candidate.category === activeCategoryId.value)) {
+        const groupKey = destination.groupKey ?? fallbackGroupKey;
+        const group = groups.get(groupKey) ?? { label: destination.groupLabel, destinations: [] };
+        groups.set(groupKey, { ...group, destinations: [...group.destinations, destination] });
+    }
+
+    return [...groups].map(([key, group]) => ({ key, ...group }));
+});
 let returnFocus: HTMLElement | null = null;
 const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -88,11 +100,14 @@ onBeforeUnmount(() => returnFocus?.focus());
                                     <span class="mobile-navigation-drawer__category-indicator" aria-hidden="true">{{ activeCategoryId === category.id ? '−' : '+' }}</span>
                                 </button>
                                 <div v-if="activeCategoryId === category.id" class="mobile-navigation-drawer__destinations">
-                                    <button v-for="destination in activeDestinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">
-                                        <WorkspaceSurfaceIcon :name="destination.icon" size="sm" />
-                                        <span>{{ destination.navigationLabel ?? destination.label ?? t(destination.titleKey) }}</span>
-                                    </button>
-                                    <p v-if="!activeDestinations.length">{{ emptyLabel }}</p>
+                                    <section v-for="group in activeDestinationGroups" :key="group.key" class="mobile-navigation-drawer__destination-group">
+                                        <h3 class="mobile-navigation-drawer__destination-group-title">{{ group.label ?? t(category.titleKey) }}</h3>
+                                        <button v-for="destination in group.destinations" :key="destination.id" class="mobile-navigation-drawer__destination" type="button" @click="openDestination(destination)">
+                                            <WorkspaceSurfaceIcon :name="destination.icon" size="sm" />
+                                            <span>{{ destination.navigationLabel ?? destination.label ?? t(destination.titleKey) }}</span>
+                                        </button>
+                                    </section>
+                                    <p v-if="!activeDestinationGroups.length">{{ emptyLabel }}</p>
                                 </div>
                             </section>
                         </div>

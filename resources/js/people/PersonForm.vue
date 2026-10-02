@@ -106,6 +106,13 @@ const relationshipSearch = ref("");
 let relationshipSearchTimer: ReturnType<typeof setTimeout> | null = null;
 const isNew = computed(() => props.personId === null);
 const activeSection = ref("basic");
+const cancelIcon = "/assets/icons/btCancel_24.png";
+const saveIcon = "/assets/icons/floppyDisk_24.png";
+const operationTitle = computed(() => {
+    if (isNew.value) return "Inserindo Pessoa";
+    if (props.initialAction === "duplicate") return "Duplicando Pessoa";
+    return "Editando Pessoa";
+});
 const displayNamePreview = computed(() => {
     const name = model.value.name.trim();
     const alias = model.value.alias?.trim();
@@ -544,10 +551,6 @@ function personLifecycleChanged(person: PersonDetail): void {
 }
 function navigateToSection(section: string): void {
     activeSection.value = section;
-    formRoot.value?.querySelector<HTMLElement>(`#person-${section}`)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-    });
 }
 onMounted(() => void initialize());
 </script>
@@ -559,73 +562,78 @@ onMounted(() => void initialize());
             isNew ? t('access.people.create') : t('access.people.edit')
         "
     >
-        <header>
-            <button type="button" @click="requestCancel($event)">
-                {{ t("access.people.back") }}
-            </button>
-            <h3>
-                {{
-                    isNew ? t("access.people.create") : t("access.people.edit")
-                }}
-            </h3>
-            <button type="button" :disabled="!canSave" @click="save">
-                {{
-                    saving ? t("access.people.saving") : t("access.people.save")
-                }}
-            </button>
+        <header class="person-form__header">
+            <h3>{{ operationTitle }}</h3>
         </header>
         <p v-if="loading" role="status">{{ t("access.people.loading") }}</p>
-        <form v-else ref="formRoot" @submit.prevent="save">
-            <p v-if="!online" role="status">{{ t("access.people.offline") }}</p>
-            <p v-if="success" role="status" aria-live="polite">
-                {{ success }}
-            </p>
-            <p v-if="error" role="alert">{{ error }}</p>
-            <p v-if="Object.keys(fieldErrors).length" class="wide" role="alert">
-                {{ t("access.people.validationSummary") }}
-            </p>
+        <form ref="formRoot" class="person-form__editor" @submit.prevent="save">
+            <div class="person-form__feedback">
+                <p v-if="!online" role="status">{{ t("access.people.offline") }}</p>
+                <p v-if="success" role="status" aria-live="polite">
+                    {{ success }}
+                </p>
+                <p v-if="error" role="alert">{{ error }}</p>
+                <p v-if="Object.keys(fieldErrors).length" role="alert">
+                    {{ t("access.people.validationSummary") }}
+                </p>
+            </div>
+            <div class="person-form__content-frame">
+            <section v-show="!loading" class="person-form__tabs">
             <nav
                 class="person-form__section-navigation"
+                role="tablist"
                 :aria-label="t('access.people.sections')"
             >
                 <button
                     type="button"
-                    :aria-current="activeSection === 'basic' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'basic'"
+                    aria-controls="person-basic"
                     @click="navigateToSection('basic')"
                 >
                     {{ t("access.people.basicData") }}
                 </button>
                 <button
                     type="button"
-                    :aria-current="activeSection === 'addresses' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'addresses'"
+                    aria-controls="person-addresses"
                     @click="navigateToSection('addresses')"
                 >
                     {{ t("access.people.addresses") }}
                 </button>
                 <button
                     type="button"
-                    :aria-current="activeSection === 'contacts' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'contacts'"
+                    aria-controls="person-contacts"
                     @click="navigateToSection('contacts')"
                 >
                     {{ t("access.people.contacts") }}
                 </button>
                 <button
                     type="button"
-                    :aria-current="activeSection === 'bank-accounts' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'bank-accounts'"
+                    aria-controls="person-bank-accounts"
                     @click="navigateToSection('bank-accounts')"
                 >
                     {{ t("access.people.bankAccounts") }}
                 </button>
                 <button
                     type="button"
-                    :aria-current="activeSection === 'pix-keys' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'pix-keys'"
+                    aria-controls="person-pix-keys"
                     @click="navigateToSection('pix-keys')"
                 >
                     {{ t("access.people.pixKeys") }}
                 </button>
                 <button
                     type="button"
-                    :aria-current="activeSection === 'relationships' ? 'page' : undefined"
+                    role="tab"
+                    :aria-selected="activeSection === 'relationships'"
+                    aria-controls="person-relationships"
                     @click="navigateToSection('relationships')"
                 >
                     {{ t("access.people.relationships") }}
@@ -636,6 +644,12 @@ onMounted(() => void initialize());
                 :disabled="!canEdit || saving"
                 class="person-form__fields"
             >
+                <section
+                    v-show="activeSection === 'basic'"
+                    class="person-form__basic-tab"
+                    role="tabpanel"
+                    aria-label="Dados principais"
+                >
                 <SegmentedChoiceGroup
                     id="person-type"
                     :label="t('access.people.personType')"
@@ -721,15 +735,15 @@ onMounted(() => void initialize());
                     >{{ t("access.people.notes")
                     }}<textarea v-model="model.notes" rows="4" />
                 </label>
+                </section>
                 <section
                     id="person-addresses"
                     class="collection"
+                    :hidden="activeSection !== 'addresses'"
+                    role="tabpanel"
                     tabindex="-1"
                     @keydown.escape="closeCollection"
                     @keydown="trapFocus"
-                    :role="
-                        activeCollection === 'addresses' ? 'dialog' : undefined
-                    "
                     :aria-modal="
                         activeCollection === 'addresses' ? 'true' : undefined
                     "
@@ -897,14 +911,11 @@ onMounted(() => void initialize());
                 <section
                     id="person-bank-accounts"
                     class="collection"
+                    :hidden="activeSection !== 'bank-accounts'"
+                    role="tabpanel"
                     tabindex="-1"
                     @keydown.escape="closeCollection"
                     @keydown="trapFocus"
-                    :role="
-                        activeCollection === 'bankAccounts'
-                            ? 'dialog'
-                            : undefined
-                    "
                     :aria-modal="
                         activeCollection === 'bankAccounts' ? 'true' : undefined
                     "
@@ -1005,12 +1016,11 @@ onMounted(() => void initialize());
                 <section
                     id="person-contacts"
                     class="collection"
+                    :hidden="activeSection !== 'contacts'"
+                    role="tabpanel"
                     tabindex="-1"
                     @keydown.escape="closeCollection"
                     @keydown="trapFocus"
-                    :role="
-                        activeCollection === 'contacts' ? 'dialog' : undefined
-                    "
                     :aria-modal="
                         activeCollection === 'contacts' ? 'true' : undefined
                     "
@@ -1079,12 +1089,11 @@ onMounted(() => void initialize());
                 <section
                     id="person-pix-keys"
                     class="collection"
+                    :hidden="activeSection !== 'pix-keys'"
+                    role="tabpanel"
                     tabindex="-1"
                     @keydown.escape="closeCollection"
                     @keydown="trapFocus"
-                    :role="
-                        activeCollection === 'pixKeys' ? 'dialog' : undefined
-                    "
                     :aria-modal="
                         activeCollection === 'pixKeys' ? 'true' : undefined
                     "
@@ -1149,14 +1158,11 @@ onMounted(() => void initialize());
                 <section
                     id="person-relationships"
                     class="collection"
+                    :hidden="activeSection !== 'relationships'"
+                    role="tabpanel"
                     tabindex="-1"
                     @keydown.escape="closeCollection"
                     @keydown="trapFocus"
-                    :role="
-                        activeCollection === 'relationships'
-                            ? 'dialog'
-                            : undefined
-                    "
                     :aria-modal="
                         activeCollection === 'relationships'
                             ? 'true'
@@ -1268,24 +1274,45 @@ onMounted(() => void initialize());
                     </div>
                 </section>
             </fieldset>
+            </section>
+            <footer class="person-form__command-bar">
+                <div v-if="loadedPerson" class="person-form__secondary-actions">
+                    <PersonDuplicationActions
+                        ref="duplicationActions"
+                        :tenant-id="tenantId"
+                        :person="loadedPerson"
+                        :capabilities="capabilities"
+                        @duplicated="emit('duplicated', $event)"
+                    />
+                    <PersonLifecycleActions
+                        ref="lifecycleActions"
+                        :tenant-id="tenantId"
+                        :person="loadedPerson"
+                        :capabilities="capabilities"
+                        @changed="personLifecycleChanged"
+                        @deleted="emit('cancel')"
+                    />
+                </div>
+                <button
+                    type="button"
+                    class="ui-button ui-button--destructive"
+                    @click="requestCancel($event)"
+                >
+                    <img :src="cancelIcon" alt="" aria-hidden="true" />
+                    {{ t("access.people.cancel") }}
+                </button>
+                <button
+                    type="button"
+                    class="ui-button ui-button--primary"
+                    :disabled="!canSave"
+                    @click="save"
+                >
+                    <img :src="saveIcon" alt="" aria-hidden="true" />
+                    {{ saving ? t("access.people.saving") : t("access.people.save") }}
+                </button>
+            </footer>
+            </div>
         </form>
-        <div v-if="loadedPerson" class="person-form__actions">
-            <PersonDuplicationActions
-                ref="duplicationActions"
-                :tenant-id="tenantId"
-                :person="loadedPerson"
-                :capabilities="capabilities"
-                @duplicated="emit('duplicated', $event)"
-            />
-            <PersonLifecycleActions
-                ref="lifecycleActions"
-                :tenant-id="tenantId"
-                :person="loadedPerson"
-                :capabilities="capabilities"
-                @changed="personLifecycleChanged"
-                @deleted="emit('cancel')"
-            />
-        </div>
         <section
             v-if="discardConfirmation"
             class="person-form__discard"
@@ -1329,54 +1356,111 @@ onMounted(() => void initialize());
 <style scoped>
 .person-form {
     display: grid;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+    min-block-size: 100%;
+    block-size: 100%;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.person-form__header {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--control-height-md);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--component-border-width) solid var(--color-border-subtle);
+}
+.person-form__header h3 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+}
+.person-form__editor {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    block-size: 100%;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.person-form__content-frame {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    min-width: 0;
+    min-height: 0;
+    block-size: 100%;
+    box-sizing: border-box;
+    padding: var(--component-workspace-surface-padding);
+    overflow: hidden;
+}
+.person-form__feedback {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-3) var(--space-4) 0;
+}
+.person-form__feedback:empty {
+    display: none;
+}
+.person-form__feedback p {
+    margin: 0;
+}
+.person-form__tabs {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    border: var(--component-border-width) solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
 }
 .person-form__fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+    display: block;
+    block-size: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: auto;
     margin: 0;
-    padding: 0;
+    padding: var(--space-4);
     border: 0;
 }
 .person-form__fields:disabled {
     opacity: 0.75;
 }
-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-}
-header h3 {
-    flex: 1;
-}
-form {
-    display: grid;
-    gap: var(--space-3);
-}
 .person-form__section-navigation {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    padding-bottom: var(--space-2);
+    gap: 0;
+    min-width: 0;
+    overflow-x: auto;
+    padding: var(--space-2) var(--space-3) 0;
     border-bottom: var(--component-border-width) solid var(--color-border-subtle);
+    background: var(--color-surface);
 }
 .person-form__section-navigation button {
+    flex: 0 0 auto;
     min-height: var(--control-height-sm);
-    padding: 0 var(--space-2);
-    border: var(--component-border-width) solid transparent;
-    border-radius: var(--radius-sm);
+    padding: 0 var(--space-3);
+    border: 0;
+    border-bottom: calc(var(--component-border-width) * 2) solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     background: transparent;
     color: var(--color-text-secondary);
     font: inherit;
     cursor: pointer;
 }
-.person-form__section-navigation button[aria-current="page"] {
-    border-color: var(--color-border-subtle);
+.person-form__section-navigation button[aria-selected="true"] {
+    border-bottom-color: var(--color-action-primary);
     background: var(--color-surface-raised);
     color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+.person-form__basic-tab {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
 }
 .person-form__display-name {
     display: grid;
@@ -1413,7 +1497,7 @@ input[aria-invalid="true"] {
 }
 .wide,
 .collection {
-    grid-column: 1/-1;
+    inline-size: 100%;
 }
 .collection__heading {
     display: flex;
@@ -1430,15 +1514,48 @@ input[aria-invalid="true"] {
 .collection {
     display: grid;
     gap: var(--space-2);
-    padding: var(--space-3);
-    border: var(--component-border-width) solid var(--color-border-subtle);
-    border-radius: var(--radius-md);
+    min-block-size: 100%;
+    align-content: start;
+    padding: 0;
+    border: 0;
 }
-.collection > div,
-.person-form__actions {
+.collection > div {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+}
+.person-form__command-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+.person-form__secondary-actions {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+.person-form__secondary-actions :deep(.person-duplication-actions),
+.person-form__secondary-actions :deep(.person-lifecycle-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+.person-form__command-bar .ui-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.person-form__command-bar img {
+    inline-size: var(--icon-size-md);
+    block-size: var(--icon-size-md);
+    object-fit: contain;
 }
 .person-form__discard {
     position: fixed;
@@ -1456,33 +1573,16 @@ input[aria-invalid="true"] {
 }
 @media (max-width: 700px) {
     .person-form__section-navigation {
-        display: none;
+        padding-inline: var(--space-2);
     }
-    .person-form__fields {
+    .person-form__fields,
+    .person-form__basic-tab {
         grid-template-columns: 1fr;
     }
     input,
     select,
     textarea {
         font-size: max(1rem, 16px);
-    }
-    header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        column-gap: var(--space-3);
-        position: sticky;
-        top: 0;
-        background: var(--color-surface);
-        z-index: 1;
-    }
-    header h3 {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        margin: 0;
-    }
-    header button:last-child {
-        grid-column: 2;
-        grid-row: 1;
     }
     .person-form__discard {
         inset: auto 0 0;
@@ -1491,30 +1591,9 @@ input[aria-invalid="true"] {
         padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
         border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
-    .person-form__fields:not(:disabled)
-        .collection:not(.collection--active)
-        > :not(.collection__heading) {
-        display: none;
-    }
-    .collection__open {
-        display: block;
-    }
-    .collection--active {
-        position: fixed;
-        z-index: 20;
-        inset: 0;
-        overflow: auto;
-        padding: var(--space-4);
-        padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
-        border: 0;
-        border-radius: 0;
-        background: var(--color-surface);
-    }
-    .collection--active .collection__open {
-        display: none;
-    }
-    .collection--active .collection__back {
-        display: block;
+    .person-form__command-bar {
+        position: sticky;
+        bottom: 0;
     }
 }
 </style>

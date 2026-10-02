@@ -46,4 +46,24 @@ describe('WorkspaceMegaMenu', () => {
 
         expect(wrapper.get('.workspace-mega-menu__destination-icon').attributes('viewBox')).toBe('0 0 48 48');
     });
+
+    it('renders destinations with different group keys in parallel sections', () => {
+        const centralTables: WorkspaceDestination = {
+            ...destination,
+            id: 'platform.calendar-occasions',
+            groupKey: 'central-tables',
+            groupLabel: 'Tabelas Centrais',
+            label: 'Feriados',
+            icon: 'holiday',
+        };
+        const administration: WorkspaceDestination = { ...destination, groupLabel: 'Administração', label: 'Manutenções' };
+
+        const wrapper = mount(WorkspaceMegaMenu, {
+            props: { category, destinations: [administration, centralTables], emptyLabel: 'Nenhuma área disponível.' },
+            global: { plugins: [i18n] },
+        });
+
+        expect(wrapper.findAll('.workspace-mega-menu__group-title').map((heading) => heading.text())).toEqual(['Administração', 'Tabelas Centrais']);
+        expect(wrapper.findAll('.workspace-mega-menu__group').at(1)?.text()).toContain('Feriados');
+    });
 });

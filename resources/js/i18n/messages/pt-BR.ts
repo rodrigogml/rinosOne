@@ -43,6 +43,7 @@ export const ptBR = {
         confirmation: {
             title: "Confirme seu e-mail",
             body: "Digite o código de 6 dígitos enviado na mensagem.",
+            sentTo: "Enviamos um código para {email}.",
             validFor: "Válido por {time}.",
             remembered: "Você escolheu permanecer conectado neste navegador.",
         },

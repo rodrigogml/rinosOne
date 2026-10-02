@@ -8,6 +8,7 @@ import DriveExplorer from '../drive/DriveExplorer.vue';
 import AuthorizationAdministrationSurface from '../authorization/AuthorizationAdministrationSurface.vue';
 import PermissionManagementSurface from '../authorization/PermissionManagementSurface.vue';
 import PeopleWorkspace from '../people/PeopleWorkspace.vue';
+import CalendarOccasionWorkspace from '../calendar-occasions/CalendarOccasionWorkspace.vue';
 import WorkspaceSurfaceIcon from './WorkspaceSurfaceIcon.vue';
 import type { ProfilePresentation } from '../profile/ProfileSettingsPanel.vue';
 import { useTenantContextStore } from '../tenant/tenantContextStore';
@@ -51,6 +52,7 @@ const mountedSurfaces = computed(() => props.surfaces?.length
                     <AuthorizationAdministrationSurface v-else-if="['personal.authorization-administration', 'tenant.authorization-administration', 'platform.authorization-administration'].includes(mountedSurface.destinationId)" :surface="mountedSurface" @access-denied="emit('requestClose', mountedSurface.id)" />
                     <PermissionManagementSurface v-else-if="['personal.permissions-access', 'tenant.permissions-access', 'platform.permissions-access'].includes(mountedSurface.destinationId)" :surface="mountedSurface" />
                     <PeopleWorkspace v-else-if="mountedSurface.destinationId === 'tenant.people'" :surface="mountedSurface" :capabilities="tenantContext.context?.capabilities" :tenant-name="tenantContext.context?.tenant.displayName" />
+                    <CalendarOccasionWorkspace v-else-if="mountedSurface.destinationId === 'platform.calendar-occasions'" />
                     <p v-else class="workspace-stage__empty-content">{{ t('access.workspace.surface.unavailableDescription') }}</p>
                 </div>
             </slot>

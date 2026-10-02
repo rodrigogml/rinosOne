@@ -73,4 +73,19 @@ describe('mobile navigation drawer', () => {
         expect(wrapper.get('[aria-label="Expandir Organização Alfa"]').attributes('aria-expanded')).toBe('false');
         expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
     });
+
+    it('separates destination groups inside the selected mobile category', async () => {
+        const categories: WorkspaceNavigationCategory[] = [{ id: 'domain', scope: 'domain', scopeLabel: 'Domínio', titleKey: 'access.workspace.navigation.title', icon: 'planet' }];
+        const administration: WorkspaceDestination = { id: 'platform.maintenance', scope: 'domain', category: 'domain', groupLabel: 'Administração', titleKey: 'access.workspace.title', label: 'Manutenções', icon: 'maintenance', createSurface: () => ({ titleKey: 'access.workspace.title', icon: 'maintenance' }) };
+        const centralTables: WorkspaceDestination = { ...administration, id: 'platform.calendar-occasions', groupKey: 'central-tables', groupLabel: 'Tabelas Centrais', label: 'Feriados', icon: 'holiday' };
+        const wrapper = mount(MobileNavigationDrawer, {
+            props: { modelValue: true, brandLabel: 'Rinos One', title: 'Navegação', closeLabel: 'Fechar', emptyLabel: 'Vazia', categories, destinations: [administration, centralTables] },
+            global: { plugins: [i18n] },
+        });
+
+        await wrapper.get('.mobile-navigation-drawer__category-trigger').trigger('click');
+
+        expect(wrapper.findAll('.mobile-navigation-drawer__destination-group-title').map((heading) => heading.text())).toEqual(['Administração', 'Tabelas Centrais']);
+        expect(wrapper.findAll('.mobile-navigation-drawer__destination-group')).toHaveLength(2);
+    });
 });
