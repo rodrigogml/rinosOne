@@ -289,13 +289,13 @@
 .workspace-mega-menu__destination:hover { border-color: var(--color-border-subtle); background: var(--color-surface-muted); }
 .workspace-mega-menu__destination-icon { width: var(--icon-size-md); height: var(--icon-size-md); flex: none; }
 .workspace-mega-menu__empty { color: var(--color-text-secondary); }
-.workspace-taskbar { width: 100%; max-width: none; overflow-x: auto; padding: var(--space-2); border: var(--space-0); border-radius: var(--space-0); background: transparent; box-shadow: none; }
+.workspace-taskbar { position: relative; z-index: 1; width: 100%; max-width: none; overflow-x: auto; padding: var(--space-4) var(--space-2) var(--space-2); border: var(--space-0); border-radius: var(--space-0); background: transparent; box-shadow: none; }
 .workspace-taskbar__items { display: flex; width: max-content; min-width: 100%; justify-content: center; gap: var(--space-2); padding-inline: var(--space-3); }
-.workspace-taskbar__item { position: relative; display: inline-flex; min-width: var(--space-0); align-items: center; }
+.workspace-taskbar__item { position: relative; display: inline-flex; min-width: var(--space-0); align-items: center; transform: translateY(var(--space-1)); }
 .workspace-taskbar__activate { position: relative; display: inline-grid; width: var(--control-height-lg); min-height: var(--control-height-lg); place-items: center; padding: var(--space-0); border: var(--space-0); background: transparent; color: var(--color-text-secondary); cursor: pointer; transform-origin: center bottom; transition: transform var(--duration-feedback) var(--easing-standard), color var(--duration-feedback) var(--easing-standard); }
-.workspace-taskbar__activate:hover { color: var(--color-text-primary); transform: scale(1.16) translateY(calc(var(--space-1) * -1)); }
+.workspace-taskbar__activate:hover { z-index: 1; color: var(--color-text-primary); transform: scale(1.16) translateY(calc(var(--space-1) * -1)); }
 .workspace-taskbar__activate--active { color: var(--color-text-primary); }
-.workspace-taskbar__activate--active .workspace-surface-icon { transform: translateY(calc(var(--space-2) * -1)); }
+.workspace-taskbar__activate--active .workspace-surface-icon { transform: translateY(calc(var(--space-1) * -1)); }
 .workspace-taskbar__activate--unavailable { color: var(--color-text-disabled); text-decoration: line-through; }
 .workspace-taskbar__activate .workspace-surface-icon { width: calc(2.5rem * var(--component-scale)); height: calc(2.5rem * var(--component-scale)); }
 .workspace-taskbar__dirty { position: absolute; top: var(--space-1); right: var(--space-1); color: var(--color-warning); font-size: var(--font-size-sm); }

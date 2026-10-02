@@ -63,14 +63,14 @@ function scopeLabel(scope: WorkspaceDestinationScope, fallback: string): string 
                             type="button"
                             :aria-controls="'workspace-mega-menu'"
                             :aria-expanded="activeCategoryId === category.id"
-                            :aria-label="`${scopeLabel(group.scope, group.label)}: ${category.label ?? t(category.titleKey)}`"
-                            :title="`${scopeLabel(group.scope, group.label)}: ${category.label ?? t(category.titleKey)}`"
+                            :aria-label="`${scopeLabel(group.scope, group.label)}: ${category.navigationLabel ?? category.label ?? t(category.titleKey)}`"
+                            :title="`${scopeLabel(group.scope, group.label)}: ${category.navigationLabel ?? category.label ?? t(category.titleKey)}`"
                             :data-category-id="category.id"
                             @click="emit('selectCategory', category.id)"
                             @mouseenter="emit('previewCategory', category.id)"
                         >
                             <WorkspaceSurfaceIcon class="workspace-navigation-rail__category-icon" :name="category.icon" />
-                            <span v-if="!collapsed" class="workspace-navigation-rail__category-label">{{ category.label ?? t(category.titleKey) }}</span>
+                            <span v-if="!collapsed" class="workspace-navigation-rail__category-label">{{ category.navigationLabel ?? category.label ?? t(category.titleKey) }}</span>
                         </button>
                     </div>
                 </div>

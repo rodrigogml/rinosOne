@@ -57,6 +57,11 @@ describe('workspace runtime store', () => {
             'tenant-security',
             'domain-governance',
         ]);
+        expect(workspaceNavigationCategories.find((category) => category.id === 'tenant-workspace')).toMatchObject({
+            label: 'Workspace',
+            navigationLabel: 'Definições',
+            icon: 'tenant2',
+        });
         expect(workspaceNavigationCategories.find((category) => category.id === 'domain-governance')).toMatchObject({ icon: 'planet' });
         expect(workspaceDestinations.map((candidate) => candidate.id)).toEqual([
             'personal.authorization-administration',

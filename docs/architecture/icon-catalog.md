@@ -47,9 +47,12 @@ Esse registro é a única manutenção necessária para um novo ícone PNG. Menu
 
 ## Acessibilidade e cor
 
-Ícones decorativos usam `aria-hidden="true"`. Um botão composto somente por ícone deve possuir `aria-label` com o verbo da ação, como `Fechar janela` ou `Sair da conta`. O SVG não substitui o rótulo acessível.
+Ícones decorativos usam `aria-hidden="true"`. A composição, as variantes, os estados e o contrato acessível dos botões pertencem ao [guia vivo de Botões](/dev); este catálogo conserva somente as regras do próprio ícone. Em particular, um ícone não substitui o nome acessível da ação.
 
 Estados de interação — normal, hover, foco, indisponível e destrutivo — são definidos pelo componente e pelos tokens de cor. Não fixe branco, preto ou cores de tema no SVG.
+
+> [!IMPORTANT]
+> Para criar ou alterar qualquer botão, consulte `/dev` em homologação e reutilize os componentes exemplificados ali. Não replique regras visuais de botões em documentos de funcionalidade ou em estilos locais.
 
 ## Uso semântico obrigatório
 

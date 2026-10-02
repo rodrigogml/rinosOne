@@ -2,7 +2,7 @@ import type { WorkspaceContext, WorkspaceDestination, WorkspaceNavigationCategor
 
 export const workspaceNavigationCategories: readonly WorkspaceNavigationCategory[] = [
     { id: 'personal-library', scope: 'personal', scopeLabel: 'Pessoal', titleKey: 'access.workspace.navigation.title', label: 'Biblioteca', icon: 'documents' },
-    { id: 'tenant-workspace', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Workspace', icon: 'drive' },
+    { id: 'tenant-workspace', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Workspace', navigationLabel: 'Definições', icon: 'tenant2' },
     { id: 'tenant-security', scope: 'tenant', scopeLabel: 'Organização', titleKey: 'access.workspace.navigation.title', label: 'Segurança', icon: 'settings' },
     { id: 'domain-governance', scope: 'domain', scopeLabel: 'Domínio', titleKey: 'access.workspace.navigation.title', label: 'Administração', icon: 'planet' },
 ];

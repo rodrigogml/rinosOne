@@ -34,6 +34,8 @@ export interface WorkspaceNavigationCategory {
     scopeLabel: string;
     titleKey: string;
     label?: string;
+    /** Rótulo curto exibido somente nas barras de navegação. */
+    navigationLabel?: string;
     icon: string;
 }
 

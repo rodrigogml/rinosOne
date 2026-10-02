@@ -606,7 +606,7 @@ Object.assign(ptBR.access as unknown as Record<string, unknown>, {
 Object.assign(
     (ptBR.access as unknown as { people: Record<string, string> }).people,
     {
-        edit: "Editar",
+        edit: "Alterar",
         back: "Voltar para Pessoas",
         save: "Salvar",
         saving: "Salvando…",

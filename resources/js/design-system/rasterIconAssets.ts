@@ -54,6 +54,7 @@ export const registeredRasterIconNames = [
     'rinoUser-tweek',
     'taskbar',
     'taskbar2',
+    'tenant2',
     'tableCleanSelection',
     'tableColumns',
     'tableLockSelection',

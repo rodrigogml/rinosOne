@@ -98,13 +98,13 @@ O logotipo paisagem e o ícone serão copiados de `etc/ID Visual/` para ativos p
 | `BrandMark` | Logotipo paisagem ou ícone, com variantes de tamanho | Entrada, criação e áreas futuras |
 | `UiCard` | Superfície elevada e espaçamento interno padronizado | Cartões de acesso e agrupamentos |
 | `UiField` | Rótulo, controle, ajuda, erro e estado acessível | E-mail, senha, código e nome |
-| `UiButton` | Variantes de ação, estados e tamanho | Ações principais, secundárias e destrutivas |
+| `UiButton` | Ações textuais compartilhadas; seu contrato visual canônico está no [guia vivo de Botões](/dev) | Ações principais, secundárias e destrutivas |
 | `UiAlert` | Feedback de sucesso, erro, aviso e informação | Todos os fluxos de acesso |
 | `IconButton` | Ação somente por ícone com rótulo acessível | Tema e controles futuros |
 | `VisualPreferencesPopover` | Tema e três escalas de densidade em quatro grupos de escolhas | Entrada, criação e áreas futuras |
 | `LanguageSelector` | Idioma, bandeira, nome e menu acessível | Entrada, criação e áreas futuras |
 
-As telas apenas compõem estes componentes. Um novo caso de uso deve ampliar um componente existente ou introduzir componente compartilhado com contrato próprio; não haverá estilização exclusiva em tela sem justificativa documentada.
+As telas apenas compõem estes componentes. O padrão visual e os exemplos executáveis de botões são mantidos exclusivamente no [guia vivo de Botões](/dev), disponível em homologação. Um novo caso de uso deve ampliar um componente existente ou introduzir componente compartilhado com contrato próprio; não haverá estilização exclusiva em tela sem justificativa documentada.
 
 ## Project Structure
 

@@ -8,9 +8,10 @@ class VisualPreferencesBootstrapTest extends TestCase
 {
     public function test_document_bootstrap_applies_only_safe_visual_preferences_before_vite_mounts(): void
     {
-        $template = file_get_contents(resource_path('views/application.blade.php'));
-        $bootstrapPosition = strpos($template, "const key = 'rinos-one.visual-preferences.v1';");
-        $vitePosition = strpos($template, "@vite(['resources/css/app.css', 'resources/js/app.ts'])");
+        $template = file_get_contents(resource_path('views/partials/visual-preferences-bootstrap.blade.php'));
+        $application = file_get_contents(resource_path('views/application.blade.php'));
+        $bootstrapPosition = strpos($application, "@include('partials.visual-preferences-bootstrap')");
+        $vitePosition = strpos($application, "@vite(['resources/css/app.css', 'resources/js/app.ts'])");
 
         $this->assertNotFalse($bootstrapPosition);
         $this->assertNotFalse($vitePosition);

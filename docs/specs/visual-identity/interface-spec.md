@@ -54,7 +54,7 @@
 
 **Localization**: usa chaves do catálogo para todos os rótulos e mensagens. Textos longos podem expandir em até duas linhas sem cortar controles. `lang` do documento acompanha o idioma ativo.
 
-**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`; usa tokens semânticos e calculados, sem valores locais.
+**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`; usa tokens semânticos e calculados, sem valores locais. O contrato visual e os exemplos de `UiButton` ficam no [guia vivo de Botões](/dev), para evitar padrões duplicados nesta spec.
 
 **Integration and Contracts**: consome operações existentes de login por senha e solicitação de acesso sem senha descritas em [auth-api.md](../user-auth/contracts/auth-api.md). Não altera payloads, contratos nem a política de sessão.
 

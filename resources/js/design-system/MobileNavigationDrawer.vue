@@ -96,7 +96,7 @@ onBeforeUnmount(() => returnFocus?.focus());
                             <section v-for="category in group.categories" :key="category.id" class="mobile-navigation-drawer__category">
                                 <button class="mobile-navigation-drawer__category-trigger" type="button" :aria-expanded="activeCategoryId === category.id" @click="selectCategory(category.id)">
                                     <WorkspaceSurfaceIcon :name="category.icon" size="sm" />
-                                    <span>{{ category.label ?? t(category.titleKey) }}</span>
+                                    <span>{{ category.navigationLabel ?? category.label ?? t(category.titleKey) }}</span>
                                     <span class="mobile-navigation-drawer__category-indicator" aria-hidden="true">{{ activeCategoryId === category.id ? '−' : '+' }}</span>
                                 </button>
                                 <div v-if="activeCategoryId === category.id" class="mobile-navigation-drawer__destinations">

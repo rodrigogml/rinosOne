@@ -77,18 +77,12 @@
 - A janela abre inicialmente na listagem; a edição é uma navegação própria da mesma janela.
 - Barra superior: busca e, futuramente, filtros; no extremo direito, controles de tabela e seleção.
 - Tabela: Nome de exibição, Tipo, CPF/CNPJ e Situação; não exibe Contatos, que são relação 1:N.
-- Barra inferior, alinhada à direita: `Inserir`, `Duplicar`, `Editar`, `Visualizar`, `Excluir`.
+- Barra inferior, alinhada à direita: comandos de registro definidos no [guia vivo de Botões](/dev), com rótulo, ícone e variante normativos.
 - Barra de status permanente abaixo da tabela, independente de rodapés de sumarização: `Y registros encontrados`, acrescido de `X itens selecionados` e, quando aplicável, `W selecionados ocultos pela busca¹`.
 
 ### Ações e ícones
 
-| Ação | Rótulo | Ícone |
-| --- | --- | --- |
-| Inserir | Inserir | `dataInsert` |
-| Duplicar | Duplicar | `dataDuplicate` |
-| Editar | Editar | `dataEdit` |
-| Visualizar | Visualizar | `dataView` |
-| Excluir | Excluir | `dataDelete` |
+Os rótulos, ícones, variantes e restrições de sinônimos dos comandos de listagem são mantidos exclusivamente no [guia vivo de Botões](/dev). Esta seção registra apenas o comportamento específico de Pessoas.
 
 - O destino Pessoas usa `personCompany` no menu e na janela.
 - O campo de busca usa `search` internamente, sem borda, moldura ou texto no controle icônico. O hint é `Buscar...`, em itálico e tom discreto.
