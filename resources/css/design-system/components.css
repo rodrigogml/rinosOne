@@ -63,6 +63,7 @@
 .ui-button--destructive { background: var(--component-button-danger-background); color: var(--component-button-danger-content); }
 .ui-button--destructive:not(:disabled):hover { background: color-mix(in srgb, var(--color-danger-700) 86%, var(--color-absolute-black)); }
 .ui-icon-button { width: var(--control-height-md); padding: var(--space-0); background: var(--component-button-secondary-background); color: var(--color-text-primary); border-color: var(--color-border-subtle); }
+.ui-button[aria-pressed='true'], .ui-icon-button[aria-pressed='true'] { border-color: var(--color-action-primary); background: color-mix(in srgb, var(--color-action-primary) var(--color-mix-subtle), var(--component-button-secondary-background)); color: var(--color-action-primary); }
 .ui-icon-button__icon { display: block; width: var(--icon-size-md); height: var(--icon-size-md); }
 .ui-icon-button__icon > svg, .ui-icon-button__icon > img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .ui-alert { display: flex; gap: var(--space-3); padding: var(--space-4); border: var(--component-border-width) solid currentcolor; border-radius: var(--radius-md); font-size: var(--font-size-sm); }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import IconButton from '../../design-system/IconButton.vue';
 import UiButton from '../../design-system/UiButton.vue';
 
@@ -32,6 +33,9 @@ const iconOnlyCommands: ReadonlyArray<{ label: string; icon: string; scope: stri
     { label: 'Limpar seleção', icon: 'tableCleanSelection', scope: 'Remove a seleção mantida na listagem.' },
     { label: 'Colunas', icon: 'tableColumns', scope: 'Abre a configuração de colunas da listagem.' },
 ];
+
+const keepSelection = ref(false);
+const showSelected = ref(false);
 </script>
 
 <template>
@@ -120,6 +124,48 @@ const iconOnlyCommands: ReadonlyArray<{ label: string; icon: string; scope: stri
             <pre class="developer-guide-code"><code>&lt;UiButton type=&quot;submit&quot; :loading=&quot;saving&quot;&gt;
   &#123;&#123; saving ? 'Salvando alterações' : 'Salvar alterações' &#125;&#125;
 &lt;/UiButton&gt;</code></pre>
+        </section>
+
+        <section id="buttons-toggle" class="developer-guide-section" aria-labelledby="buttons-toggle-title" tabindex="-1">
+            <div class="developer-guide-section__heading">
+                <h2 id="buttons-toggle-title">Botões de alternância</h2>
+                <p>Também chamados de <em>toggle buttons</em>, mantêm e tornam visível um estado ligado ou desligado. São usados para ativar modos persistentes da própria tela, não para executar uma ação pontual.</p>
+            </div>
+            <div class="developer-guide-showcase developer-guide-showcase--split developer-guide-toggle-demo">
+                <div>
+                    <h3>Compacto</h3>
+                    <div class="developer-guide-showcase__examples">
+                        <IconButton label="Manter seleção" :aria-pressed="keepSelection" @click="keepSelection = !keepSelection"><img :src="iconPath('tableLockSelection')" alt="" aria-hidden="true"></IconButton>
+                    </div>
+                    <p class="developer-guide-toggle-demo__state" role="status">Manter seleção: {{ keepSelection ? 'ligado' : 'desligado' }}.</p>
+                    <pre class="developer-guide-code"><code>&lt;IconButton
+  label=&quot;Manter seleção&quot;
+  :aria-pressed=&quot;keepSelection&quot;
+  @click=&quot;keepSelection = !keepSelection&quot;
+&gt;…&lt;/IconButton&gt;</code></pre>
+                </div>
+                <div>
+                    <h3>Ícone e texto</h3>
+                    <div class="developer-guide-showcase__examples">
+                        <UiButton variant="secondary" :aria-pressed="showSelected" @click="showSelected = !showSelected"><img class="developer-guide__button-icon" :src="iconPath('tableShowSelected')" alt="" aria-hidden="true">Exibir selecionados</UiButton>
+                    </div>
+                    <p class="developer-guide-toggle-demo__state" role="status">Exibir selecionados: {{ showSelected ? 'ligado' : 'desligado' }}.</p>
+                    <pre class="developer-guide-code"><code>&lt;UiButton
+  variant=&quot;secondary&quot;
+  :aria-pressed=&quot;showSelected&quot;
+  @click=&quot;showSelected = !showSelected&quot;
+&gt;
+  &lt;img src=&quot;/assets/icons/tableShowSelected_24.png&quot; alt=&quot;&quot; aria-hidden=&quot;true&quot;&gt;
+  Exibir selecionados
+&lt;/UiButton&gt;</code></pre>
+                </div>
+            </div>
+            <ul class="developer-guide-rule-list">
+                <li>O estado é obrigatório e é exposto com <code>aria-pressed</code> recebendo um booleano reativo. A aparência de pressionado é consequência desse atributo; não a simule somente com uma classe ou cor local.</li>
+                <li>O nome da função permanece estável nos dois estados, como “Manter seleção”; <code>aria-pressed</code> informa se ela está ligada ou desligada. Botões compactos sempre recebem <code>label</code>.</li>
+                <li>Use para modos binários persistentes, como manter seleção ou exibir somente os selecionados. Em uma barra de controles, alternadores compactos podem ser colocados lado a lado.</li>
+                <li>Não use <code>aria-pressed</code> para abrir ou fechar conteúdo: nesse caso, o padrão é <code>aria-expanded</code>. Uma ação sem estado persistente continua sendo um botão comum.</li>
+            </ul>
         </section>
 
         <section id="buttons-accessibility" class="developer-guide-section" aria-labelledby="buttons-accessibility-title" tabindex="-1">

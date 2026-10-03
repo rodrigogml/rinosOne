@@ -13,6 +13,7 @@ const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: Read
         { id: 'buttons-variants', label: 'Variantes' },
         { id: 'buttons-composition', label: 'Composição' },
         { id: 'buttons-states', label: 'Estados' },
+        { id: 'buttons-toggle', label: 'Alternância' },
         { id: 'buttons-accessibility', label: 'Acessibilidade' },
         { id: 'buttons-screen-commands', label: 'Comandos de tela' },
     ] },

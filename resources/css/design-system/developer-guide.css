@@ -51,6 +51,7 @@
 .developer-guide-association__search-field + .ui-icon-button { border-inline-start: var(--component-border-width) solid var(--color-border-subtle); }
 .developer-guide-association__search-tools:focus-within { outline: 3px solid color-mix(in srgb, var(--color-focus-ring) 20%, transparent); outline-offset: var(--space-0); border-radius: var(--radius-md); }
 .developer-guide-association__state { margin: var(--space-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.developer-guide-toggle-demo__state { margin: var(--space-3) var(--space-0) var(--space-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .developer-guide-association__icon-bar, .developer-guide-association__action-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-0); }
 .developer-guide-association__icon-bar { width: fit-content; max-width: 100%; overflow: hidden; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); }
 .developer-guide-association__icon-bar .ui-icon-button { border: var(--space-0); border-radius: var(--space-0); }

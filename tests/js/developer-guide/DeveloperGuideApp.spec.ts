@@ -19,6 +19,7 @@ describe('developer guide application', () => {
         expect(wrapper.get('.ui-button--primary').text()).toBe('Salvar alterações');
         expect(wrapper.get('.ui-button--secondary').text()).toBe('Cancelar');
         expect(wrapper.get('.ui-button--destructive').text()).toBe('Excluir registro');
+        expect(wrapper.get('#buttons-toggle-title').text()).toBe('Botões de alternância');
         expect(wrapper.findAll('.developer-guide-table .ui-button').find((button) => button.text().includes('Cancelar'))?.classes()).toContain('ui-button--secondary');
         expect(wrapper.get('#buttons-screen-commands-title').text()).toBe('Comandos padrão das telas');
         expect(wrapper.get('.developer-guide-table').text()).toContain('Alterar');
@@ -28,6 +29,26 @@ describe('developer guide application', () => {
         await wrapper.get('.developer-guide__subtopics button').trigger('click');
         expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
         wrapper.unmount();
+    });
+
+    it('exposes the persistent state of compact and text toggle buttons', async () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const wrapper = mount(DeveloperGuideApp, { global: { plugins: [pinia, i18n] } });
+
+        const compactToggle = wrapper.get('.developer-guide-toggle-demo [aria-label="Manter seleção"]');
+        const textToggle = wrapper.get('.developer-guide-toggle-demo .ui-button');
+
+        expect(compactToggle.attributes('aria-pressed')).toBe('false');
+        expect(textToggle.attributes('aria-pressed')).toBe('false');
+
+        await compactToggle.trigger('click');
+        await textToggle.trigger('click');
+
+        expect(compactToggle.attributes('aria-pressed')).toBe('true');
+        expect(textToggle.attributes('aria-pressed')).toBe('true');
+        expect(wrapper.text()).toContain('Manter seleção: ligado.');
+        expect(wrapper.text()).toContain('Exibir selecionados: ligado.');
     });
 
     it('opens the Associations guide with live compound controls', async () => {
