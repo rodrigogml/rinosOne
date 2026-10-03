@@ -70,7 +70,7 @@ const selectedField = ref('Nome');
             <ul class="developer-guide-rule-list">
                 <li>Não misture, na mesma barra compacta, comandos de seleção, navegação e ações destrutivas.</li>
                 <li>Em uma barra de texto, o comando destrutivo fica separado visualmente ou após as ações seguras.</li>
-                <li>Em telas estreitas, a barra textual quebra entre botões; a barra compacta preserva a sequência e não reduz o alvo de toque.</li>
+                <li>Em telas estreitas, a barra textual quebra entre botões; a barra compacta preserva a sequência e não reduz o alvo de toque. Ícones usam superfícies transparentes, espaçamento entre comandos e uma pílula discreta abaixo do estado ativo.</li>
             </ul>
         </section>
 

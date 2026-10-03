@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\Authorization\AuthorizationAdministrationControl
 use App\Http\Controllers\Api\V1\Authorization\ContextualAuthorizationAdministrationController;
 use App\Http\Controllers\Api\V1\Authorization\ContextualAuthorizationResourceShareController;
 use App\Http\Controllers\Api\V1\Authorization\ResourceAuthorizationController;
+use App\Http\Controllers\Api\V1\CalendarOccasion\CalendarOccasionController;
+use App\Http\Controllers\Api\V1\CalendarOccasion\CalendarOccasionLocalityController;
 use App\Http\Controllers\Api\V1\Drive\DriveWorkspaceController;
 use App\Http\Controllers\Api\V1\Locality\PostalReferenceLookupController;
 use App\Http\Controllers\Api\V1\Person\PersonController;
@@ -26,6 +28,19 @@ Route::delete('/auth/other-sessions', DestroyOtherSessionsController::class);
 Route::get('/auth/session', CurrentSessionController::class);
 Route::post('/localities/postal-references/lookup', [PostalReferenceLookupController::class, 'lookup']);
 Route::get('/localities/postal-references/lookup-status', [PostalReferenceLookupController::class, 'status']);
+
+Route::prefix('/platform/calendar-occasions')->group(static function (): void {
+    Route::middleware(['api.json-size', 'api.rate-limit'])->get('/', [CalendarOccasionController::class, 'index']);
+    Route::middleware(['api.json-size', 'api.rate-limit'])->post('/', [CalendarOccasionController::class, 'store']);
+    Route::middleware(['api.json-size', 'api.rate-limit'])->get('/{calendarOccasionId}', [CalendarOccasionController::class, 'show'])->whereNumber('calendarOccasionId');
+    Route::middleware(['api.json-size', 'api.rate-limit'])->patch('/{calendarOccasionId}', [CalendarOccasionController::class, 'update'])->whereNumber('calendarOccasionId');
+    Route::middleware(['api.json-size', 'api.rate-limit'])->delete('/{calendarOccasionId}', [CalendarOccasionController::class, 'destroy'])->whereNumber('calendarOccasionId');
+});
+Route::prefix('/platform/calendar-occasion-localities')->group(static function (): void {
+    Route::middleware(['api.rate-limit'])->get('/countries', [CalendarOccasionLocalityController::class, 'countries']);
+    Route::middleware(['api.rate-limit'])->get('/countries/{countryId}/brazil-states', [CalendarOccasionLocalityController::class, 'states'])->whereNumber('countryId');
+    Route::middleware(['api.rate-limit'])->get('/brazil-states/{brazilStateId}/municipalities', [CalendarOccasionLocalityController::class, 'municipalities'])->whereNumber('brazilStateId');
+});
 
 Route::prefix('/tenants/{tenantId}/people')->middleware('person.metrics')->whereNumber('tenantId')->group(static function (): void {
     Route::middleware(['api.rate-limit', 'person.tenant-context:tenant.people.read'])

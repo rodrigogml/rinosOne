@@ -77,4 +77,17 @@ describe('developer guide application', () => {
         expect(wrapper.get('.toast-host__toast--success').text()).toContain('Pessoa salva com sucesso.');
         wrapper.unmount();
     });
+
+    it('opens the Dialogs guide and presents its visual models through the central host', async () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const wrapper = mount(DeveloperGuideApp, { attachTo: document.body, global: { plugins: [pinia, i18n] } });
+
+        await wrapper.get('.developer-guide__topic:nth-of-type(4)').trigger('click');
+        await wrapper.get('.developer-guide-table .ui-button').trigger('click');
+
+        expect(wrapper.get('h1').text()).toBe('Caixas de diálogo');
+        expect(wrapper.get('.dialog-host__message-region').text()).toContain('alterações pendentes');
+        wrapper.unmount();
+    });
 });

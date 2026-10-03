@@ -2,23 +2,21 @@
 
 ```text
 ┌──────────────────────── Novo feriado ────────────────────────────────┐
-│ [ Geral ] [ Recorrência ] [ Vigência e substituição ]                 │
+│ Identificação e aplicação ────────────────────────────────────────── │
+│ Nome * [__________________________]  Categoria * [Feriado v]         │
+│ Abrangência * [País v]              País * [Brasil v]                 │
+│                                         ^ área reservada até escolher │
+│                                           a abrangência                │
 │                                                                        │
-│ Nome *               [___________________________________________]   │
-│ Categoria *           [Feriado v]                                     │
-│ Esfera *              [País v]                                        │
-│ País *                [Brasil v]                                      │
-│ UF / Município         aparecem conforme a esfera                     │
-│                                                                        │
-│ Vigência: início [dd/mm/aaaa]       fim [dd/mm/aaaa]                  │
-│                                                                        │
+│ Definição de recorrência ─────────────────────────────────────────── │
 │ Tipo de recorrência * [Anual em data fixa v]                          │
 │ Dia * [  ]  Mês * [          v]                                       │
 │                                                                        │
-│ Substitui ponto facultativo [Buscar definição compatível________]     │
+│ Vigência ────────────────────────────────────────────────────────── │
+│ Início [dd/mm/aaaa]                 Fim [dd/mm/aaaa]                  │
 │                                                                        │
 │                                            [Cancelar] [Salvar]        │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-O painel de recorrência troca seus campos pelo tipo selecionado. Em telefone, o diálogo ocupa toda a tela e mantém as ações no rodapé.
+O painel de recorrência troca seus campos pelo tipo selecionado. A localidade ocupa sempre a segunda coluna da linha de Abrangência, mas só recebe o seletor compatível após a escolha. Em telefone, os blocos passam a uma coluna e mantêm as ações no rodapé.

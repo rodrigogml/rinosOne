@@ -1357,6 +1357,18 @@ test("resumes and cancels a pending cross-drive transfer after reopening Rinos D
 
     await page.getByRole("button", { name: "Rinos Drive" }).click();
     await expect(page.locator(".drive-explorer__drive-header").filter({ hasText: "Meu Drive" })).toBeVisible();
+    const collectionMetrics = await page.locator(".drive-explorer__collection").evaluate((collection) => {
+        const items = collection.querySelector<HTMLElement>(".drive-explorer__items");
+        const status = collection.querySelector<HTMLElement>(".drive-explorer__status-bar");
+        if (!items || !status) throw new Error("Drive collection regions were not rendered");
+        const collectionBox = collection.getBoundingClientRect();
+        const itemsBox = items.getBoundingClientRect();
+        const statusBox = status.getBoundingClientRect();
+        return { collectionBottom: collectionBox.bottom, itemsHeight: itemsBox.height, statusBottom: statusBox.bottom, statusHeight: statusBox.height };
+    });
+    expect(collectionMetrics.itemsHeight).toBeGreaterThan(200);
+    expect(collectionMetrics.statusHeight).toBeLessThan(80);
+    expect(Math.abs(collectionMetrics.statusBottom - collectionMetrics.collectionBottom)).toBeLessThanOrEqual(1);
     await page.getByRole("button", { name: "Abrir segundo painel" }).click();
     await page.locator(".drive-navigation-pane__drive-header").filter({ hasText: "Oficina Rubi" }).click();
     const contractFile = page.locator(".drive-explorer__layout .drive-explorer__item").filter({ hasText: "Contrato.pdf" });

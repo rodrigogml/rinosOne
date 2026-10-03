@@ -57,6 +57,11 @@
     --color-success-700: #15803d;
     --color-warning-700: #b45309;
     --color-danger-700: #b91c1c;
+    --color-danger-500: #f2a1a5;
+    --color-danger-600: #dc2626;
+    --color-danger-900: #3a1016;
+    --color-yellow-300: #fde047;
+    --color-yellow-200: #fef08a;
     --color-success-300: #86efac;
     --color-warning-300: #fcd34d;
     --color-danger-300: #fca5a5;
@@ -75,6 +80,7 @@
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
+    --font-weight-extra-bold: 800;
 
     --font-scale: 1;
     --spacing-scale: 1;

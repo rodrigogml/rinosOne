@@ -8,6 +8,7 @@ import UiAlert from './design-system/UiAlert.vue';
 import UiButton from './design-system/UiButton.vue';
 import UiField from './design-system/UiField.vue';
 import ToastHost from './design-system/toast/ToastHost.vue';
+import DialogHost from './design-system/dialog/DialogHost.vue';
 
 type PublicView = 'login' | 'register';
 type ChallengePurpose = 'register' | 'passwordless';
@@ -63,4 +64,5 @@ onUnmounted(() => { window.clearInterval(expiryTimer); window.clearInterval(rese
     </AccessFrame>
     <AuthenticatedFrame v-else :display-name="session?.user.displayName" @profile-updated="session && (session.user.displayName = $event.user.displayName)" @sign-out="logout" />
     <ToastHost :has-top-bar="security" />
+    <DialogHost />
 </template>

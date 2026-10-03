@@ -32,7 +32,12 @@
     --color-info: var(--color-info-700);
     --color-success: var(--color-success-700);
     --color-warning: var(--color-warning-700);
+    --color-warning-header: var(--color-yellow-200);
+    --color-info-header: var(--color-info-300);
     --color-danger: var(--color-danger-700);
+    --color-danger-header: var(--color-danger-500);
+    --color-danger-header-content: var(--color-danger-900);
+    --color-bug-header: var(--color-danger-600);
     --shadow-card: var(--shadow-elevation-card-light);
     --shadow-float: var(--shadow-elevation-float-light);
 }
@@ -59,7 +64,12 @@
     --color-info: var(--color-info-300);
     --color-success: var(--color-success-300);
     --color-warning: var(--color-warning-300);
+    --color-warning-header: var(--color-yellow-200);
+    --color-info-header: var(--color-info-300);
     --color-danger: var(--color-danger-300);
+    --color-danger-header: var(--color-danger-500);
+    --color-danger-header-content: var(--color-danger-900);
+    --color-bug-header: var(--color-danger-600);
     --shadow-card: var(--shadow-elevation-card-dark);
     --shadow-float: var(--shadow-elevation-float-dark);
 }
@@ -87,7 +97,12 @@
         --color-info: var(--color-info-300);
         --color-success: var(--color-success-300);
         --color-warning: var(--color-warning-300);
+        --color-warning-header: var(--color-yellow-200);
+        --color-info-header: var(--color-info-300);
         --color-danger: var(--color-danger-300);
+        --color-danger-header: var(--color-danger-500);
+        --color-danger-header-content: var(--color-danger-900);
+        --color-bug-header: var(--color-danger-600);
         --shadow-card: var(--shadow-elevation-card-dark);
         --shadow-float: var(--shadow-elevation-float-dark);
     }

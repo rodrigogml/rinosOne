@@ -56,7 +56,7 @@ Atualização recebe os mesmos campos da criação, parcialmente, e sempre reval
 
 ## Consultar definições
 
-**Método**: `GET /api/v1/calendar-occasions`
+**Método**: `GET /api/v1/platform/calendar-occasions`
 
 | Query | Tipo | Obrigatório | Significado |
 | --- | --- | --- | --- |

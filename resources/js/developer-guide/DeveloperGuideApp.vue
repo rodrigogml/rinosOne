@@ -5,8 +5,10 @@ import ButtonsGuide from './buttons/ButtonsGuide.vue';
 import DeveloperGuideTopBar from './DeveloperGuideTopBar.vue';
 import ToastMessagesGuide from './toast-messages/ToastMessagesGuide.vue';
 import ToastHost from '../design-system/toast/ToastHost.vue';
+import DialogsGuide from './dialogs/DialogsGuide.vue';
+import DialogHost from '../design-system/dialog/DialogHost.vue';
 
-type GuideTopic = 'buttons' | 'associations' | 'toast-messages';
+type GuideTopic = 'buttons' | 'associations' | 'toast-messages' | 'dialogs';
 
 const activeTopic = ref<GuideTopic>('buttons');
 const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: ReadonlyArray<{ id: string; label: string }> }> = [
@@ -30,6 +32,12 @@ const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: Read
         { id: 'toast-types', label: 'Tipos e posição' },
         { id: 'toast-lifecycle', label: 'Ciclo e fila' },
         { id: 'toast-emission', label: 'Emissão centralizada' },
+    ] },
+    { id: 'dialogs', label: 'Caixas de diálogo', sections: [
+        { id: 'dialogs-overview', label: 'Visão geral' },
+        { id: 'dialogs-models', label: 'Modelos visuais' },
+        { id: 'dialogs-behavior', label: 'Foco e Escape' },
+        { id: 'dialogs-emission', label: 'Emissão centralizada' },
     ] },
 ];
 const activeGuideTopic = computed(() => guideTopics.find((topic) => topic.id === activeTopic.value)!);
@@ -73,9 +81,11 @@ function navigateTo(sectionId: string): void {
             <main id="developer-guide-content" class="developer-guide__content" :aria-label="activeTitle">
                 <ButtonsGuide v-if="activeTopic === 'buttons'" />
                 <AssociationsGuide v-else-if="activeTopic === 'associations'" />
-                <ToastMessagesGuide v-else />
+                <ToastMessagesGuide v-else-if="activeTopic === 'toast-messages'" />
+                <DialogsGuide v-else />
             </main>
         </div>
         <ToastHost has-top-bar />
+        <DialogHost />
     </div>
 </template>

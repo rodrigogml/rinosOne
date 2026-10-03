@@ -3,9 +3,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import axios from 'axios';
 import { useI18n } from 'vue-i18n';
 import UiAlert from '../design-system/UiAlert.vue';
-import UiButton from '../design-system/UiButton.vue';
 import IconButton from '../design-system/IconButton.vue';
 import { rasterIconSource } from '../design-system/rasterIconAssets';
+import { toast } from '../design-system/toast/toastService';
 import DriveDetailsPanel from './DriveDetailsPanel.vue';
 import ResourceSharingPanel from '../authorization/ResourceSharingPanel.vue';
 import DriveOperationDialog from './DriveOperationDialog.vue';
@@ -25,7 +25,6 @@ import {
     uploadDriveFile,
     driveDownloadUrl,
     requestDriveExport,
-    cancelDriveExport,
     loadDriveExport,
     driveExportDownloadUrl,
     type DriveDetailsProjection,
@@ -50,6 +49,8 @@ const { t, locale } = useI18n();
 type ViewMode = 'grid' | 'list' | 'details';
 interface TreeFolder extends DriveItem { depth: number; hasChildren: boolean; }
 type VisibleDriveItem = DriveItem & { originTarget?: DriveWorkspaceTarget };
+type DrivePanelContext = { target: DriveWorkspaceTarget; projection: DriveLocationProjection; items: DriveItem[] };
+type SessionExport = { exportId: string; target: DriveWorkspaceTarget; state: string; expiresAt: string | null; createdAt: string };
 
 const isGlobalSurface = computed(() => props.surface.destinationId === 'global.drive');
 const target = ref<DriveWorkspaceTarget | null>(isGlobalSurface.value
@@ -60,12 +61,16 @@ const target = ref<DriveWorkspaceTarget | null>(isGlobalSurface.value
 const catalog = ref<DriveCatalogProjection | null>(null);
 const sharedWithMe = ref<SharedWithMeProjection | null>(null);
 const sharedRootOpen = ref(false);
+const exportsRootOpen = ref(false);
+const sessionExports = ref<SessionExport[]>([]);
+const selectedExportIds = ref<string[]>([]);
+const exportSelectionAnchorId = ref<string | null>(null);
 const isWork = computed(() => target.value?.kind === 'tenant');
 const workspaceName = computed(() => sharedRootOpen.value
     ? catalog.value?.sharedWithMe.displayName ?? 'Compartilhados comigo'
     : catalog.value?.drives.find((entry) => entry.target.kind === target.value?.kind && (entry.target.kind !== 'tenant' || target.value?.kind !== 'tenant' || entry.target.tenantId === target.value.tenantId))?.displayName
         ?? t(isWork.value ? 'access.drive.work' : 'access.drive.personal'));
-const rootLocation = computed<DriveLocation>(() => ({ kind: 'root', id: null, displayName: t(isWork.value ? 'access.drive.organizationRoot' : 'access.drive.root'), parentFolderId: null }));
+const rootLocation = computed<DriveLocation>(() => ({ kind: 'root', id: null, displayName: isGlobalSurface.value ? workspaceName.value : t(isWork.value ? 'access.drive.organizationRoot' : 'access.drive.root'), parentFolderId: null }));
 const tree = ref<DriveItem[]>([]);
 const projection = ref<DriveLocationProjection | null>(null);
 const selectedIds = ref<number[]>([]);
@@ -81,11 +86,15 @@ const expandedTreeFolderIds = ref(new Set<number>());
 const primaryLayoutElement = ref<HTMLElement | null>(null);
 const primaryTreeWidth = ref<number | null>(null);
 const secondaryPaneOpen = ref(false);
+const isMobileViewport = ref(false);
 const secondaryDestination = ref<{ target: DriveWorkspaceTarget; projection: DriveLocationProjection } | null>(null);
-const secondaryPane = ref<{ refresh: () => Promise<void> } | null>(null);
+const secondaryPane = ref<{ refresh: () => Promise<void>; toggleTree: () => void } | null>(null);
 const panesElement = ref<HTMLElement | null>(null);
 const primaryPaneWidth = ref<number | null>(null);
 const transferDialogOpen = ref(false);
+const transferSource = ref<DrivePanelContext | null>(null);
+const transferDestination = ref<{ target: DriveWorkspaceTarget; projection: DriveLocationProjection } | null>(null);
+const draggedSecondarySource = ref<DrivePanelContext | null>(null);
 const transferring = ref(false);
 const transferError = ref('');
 const activeTransfer = ref<DriveTransfer | null>(null);
@@ -93,7 +102,7 @@ const transferPolling = ref(false);
 const transferNotice = ref('');
 let transferPollTimer: number | null = null;
 let transferPollDelay = 1000;
-const viewMode = ref<ViewMode>('grid');
+const viewMode = ref<ViewMode>('list');
 const detailsOpen = ref(false);
 const detailsLoading = ref(false);
 const detailsError = ref('');
@@ -105,6 +114,8 @@ const createFolderOpen = ref(false);
 const createFolderName = ref('');
 const createFolderError = ref('');
 const creatingFolder = ref(false);
+const createFolderTarget = ref<DriveWorkspaceTarget | null>(null);
+const createFolderParentId = ref<number | null>(null);
 const trashConfirmationOpen = ref(false);
 const trashError = ref('');
 const trashingItems = ref(false);
@@ -156,6 +167,7 @@ const treeFolders = computed<TreeFolder[]>(() => {
     return ordered;
 });
 const collectionLabel = computed(() => projection.value?.location.displayName ?? workspaceName.value);
+const exportRootLabel = 'Exportações';
 const selectedCount = computed(() => selectedIds.value.length);
 const selectedItem = computed(() => selectedIds.value.length === 1 ? items.value.find((item) => item.id === selectedIds.value[0]) ?? null : null);
 const selectedItems = computed(() => items.value.filter((item) => selectedIds.value.includes(item.id)));
@@ -174,15 +186,17 @@ const statusSummary = computed(() => t('access.drive.statusSummary', itemCounts.
 const selectionSummary = computed(() => selectedCount.value
     ? t('access.drive.statusSelectionSummary', { ...selectedItemCounts.value, size: formatBytes(selectedLogicalSizeBytes.value) })
     : '');
-const canCreateFolder = computed(() => !sharedRootOpen.value && projection.value?.location.kind !== 'trash' && projection.value?.capabilities.edit === true);
+const canCreateFolder = computed(() => !exportsRootOpen.value && !sharedRootOpen.value && projection.value?.location.kind !== 'trash' && projection.value?.capabilities.edit === true);
 const canTrashSelection = computed(() => !sharedRootOpen.value && projection.value?.location.kind !== 'trash' && selectedItems.value.length > 0 && selectedItems.value.every((item) => item.capabilities.trash));
 const canMoveSelection = computed(() => !sharedRootOpen.value && selectedItem.value !== null && selectedItem.value.capabilities.edit && projection.value?.location.kind !== 'trash');
 const canUpload = computed(() => canCreateFolder.value && !offline.value);
-const canDownloadSelection = computed(() => target.value !== null && selectedItem.value?.capabilities.read === true);
-const canTransferSelection = computed(() => !sharedRootOpen.value && target.value !== null && secondaryDestination.value?.projection.capabilities.edit === true && selectedItems.value.length > 0 && projection.value?.location.kind !== 'trash');
+const selectedExports = computed(() => sessionExports.value.filter((entry) => selectedExportIds.value.includes(entry.exportId)));
+const isTrashLocation = computed(() => !exportsRootOpen.value && projection.value?.location.kind === 'trash');
+const canDownloadSelection = computed(() => exportsRootOpen.value
+    ? selectedExports.value.length > 0 && selectedExports.value.every((entry) => entry.state === 'READY')
+    : target.value !== null && selectedItems.value.length > 0 && selectedItems.value.every((item) => item.capabilities.read));
 const transferNoticeTone = computed(() => activeTransfer.value?.state === 'COMPLETED' ? 'success' : 'warning');
 const exporting = ref(false);
-const exportDialogOpen = ref(false);
 const exportMessage = ref('');
 const activeExportId = ref<string | null>(null);
 const activeExportState = ref<string | null>(null);
@@ -218,6 +232,10 @@ function toggleCatalogDrive(nextTarget: DriveWorkspaceTarget): void {
     }
     void openCatalogDrive(nextTarget);
 }
+function exportStateLabel(state: string): string {
+    const key = state === 'FAILED' ? 'exportFailedStatus' : `export${state.charAt(0)}${state.slice(1).toLowerCase()}`;
+    return t(`access.drive.${key}`);
+}
 function toggleTreeFolder(folder: TreeFolder): void {
     if (!folder.hasChildren) return;
     const next = new Set(expandedTreeFolderIds.value);
@@ -237,7 +255,7 @@ function selectItem(item: DriveItem, event?: MouseEvent | KeyboardEvent): void {
     else selectedIds.value = [item.id];
     selectionAnchorId.value = item.id;
 }
-function clearSelection(): void { selectedIds.value = []; selectionAnchorId.value = null; }
+function clearSelection(): void { selectedIds.value = []; selectedExportIds.value = []; selectionAnchorId.value = null; exportSelectionAnchorId.value = null; }
 function clearDetails(): void { detailsOpen.value = false; detailsLoading.value = false; detailsError.value = ''; details.value = null; }
 function openSharing(): void { if (details.value?.item.kind === 'folder') sharingFolder.value = details.value.item; }
 async function openDetails(): Promise<void> {
@@ -253,14 +271,25 @@ async function openDetails(): Promise<void> {
             : t('access.drive.detailsFailed');
     } finally { detailsLoading.value = false; }
 }
-function openCreateFolder(): void { createFolderName.value = ''; createFolderError.value = ''; createFolderOpen.value = true; }
+function openCreateFolder(): void {
+    if (!target.value || !projection.value) return;
+    openCreateFolderAt(target.value, projection.value.location);
+}
+function openCreateFolderAt(nextTarget: DriveWorkspaceTarget, location: DriveLocation): void {
+    if (location.kind === 'trash') return;
+    createFolderTarget.value = nextTarget;
+    createFolderParentId.value = location.kind === 'folder' ? location.id : null;
+    createFolderName.value = '';
+    createFolderError.value = '';
+    createFolderOpen.value = true;
+}
 async function createFolder(): Promise<void> {
     const displayName = createFolderName.value.trim();
-    if (!target.value || !projection.value || !displayName) { createFolderError.value = t('access.drive.folderNameRequired'); return; }
+    if (!createFolderTarget.value || !displayName) { createFolderError.value = t('access.drive.folderNameRequired'); return; }
     creatingFolder.value = true;
     createFolderError.value = '';
     try {
-        await createDriveFolder(target.value, displayName, projection.value.location.kind === 'folder' ? projection.value.location.id : null);
+        await createDriveFolder(createFolderTarget.value, displayName, createFolderParentId.value);
         createFolderOpen.value = false;
         await refresh();
     } catch (reason) {
@@ -338,33 +367,24 @@ function receiveUploadSelection(event: Event): void { const input = event.target
 function cancelUpload(entry: UploadEntry): void { entry.controller?.abort(); if (entry.state === 'queued') entry.state = 'cancelled'; }
 function dismissUpload(entryId: number): void { uploadQueue.value = uploadQueue.value.filter((entry) => entry.id !== entryId); }
 async function downloadSelectedItem(): Promise<void> {
-    if (!target.value || !selectedItem.value || !selectedItem.value.capabilities.read || offline.value) return;
-    if (selectedItem.value.kind === 'file') {
-        window.location.assign(driveDownloadUrl(target.value, selectedItem.value.id));
+    if (exportsRootOpen.value) {
+        downloadSessionExports(selectedExports.value);
         return;
     }
-    exporting.value = true;
-    exportMessage.value = '';
-    try {
-        const exportJob = await requestDriveExport(target.value, [selectedItem.value]);
-        activeExportId.value = exportJob.exportId;
-        activeExportState.value = exportJob.state;
-        exportMessage.value = t('access.drive.exportState', { state: exportJob.state.toLowerCase() });
-        scheduleExportPoll();
-    } catch { exportMessage.value = t('access.drive.exportFailed'); }
-    finally { exporting.value = false; }
-}
-function openExportDialog(): void { exportMessage.value = ''; exportDialogOpen.value = true; }
-async function requestExport(): Promise<void> {
-    if (!target.value || selectedItems.value.length < 2 || offline.value) return;
+    if (!target.value || !selectedItems.value.length || !selectedItems.value.every((item) => item.capabilities.read) || offline.value) return;
+    if (selectedItems.value.length === 1 && selectedItems.value[0].kind === 'file') {
+        window.location.assign(driveDownloadUrl(target.value, selectedItems.value[0].id));
+        return;
+    }
     exporting.value = true;
     exportMessage.value = '';
     try {
         const exportJob = await requestDriveExport(target.value, selectedItems.value);
         activeExportId.value = exportJob.exportId;
         activeExportState.value = exportJob.state;
-        exportDialogOpen.value = false;
+        sessionExports.value = [{ exportId: exportJob.exportId, target: target.value, state: exportJob.state, expiresAt: exportJob.expiresAt, createdAt: new Date().toISOString() }, ...sessionExports.value];
         exportMessage.value = t('access.drive.exportState', { state: exportJob.state.toLowerCase() });
+        toast.info('O conteúdo está sendo compactado para download. Você será avisado quando o download começar.');
         scheduleExportPoll();
     } catch { exportMessage.value = t('access.drive.exportFailed'); }
     finally { exporting.value = false; }
@@ -376,16 +396,57 @@ function scheduleExportPoll(): void {
         try {
             const exportJob = await loadDriveExport(target.value, activeExportId.value);
             activeExportState.value = exportJob.state;
+            sessionExports.value = sessionExports.value.map((entry) => entry.exportId === exportJob.exportId ? { ...entry, state: exportJob.state, expiresAt: exportJob.expiresAt } : entry);
             exportMessage.value = t('access.drive.exportState', { state: exportJob.state.toLowerCase() });
-            if (exportJob.state === 'PENDING' || exportJob.state === 'PROCESSING') scheduleExportPoll();
+            if (exportJob.state === 'READY') { toast.success('A compactação foi concluída. O download será iniciado agora.'); downloadExport(); }
+            else if (exportJob.state === 'PENDING' || exportJob.state === 'PROCESSING') scheduleExportPoll();
         } catch { activeExportId.value = null; }
     }, 3000);
 }
-async function cancelExport(): Promise<void> {
-    if (!target.value || activeExportId.value === null) return;
-    exporting.value = true;
-    try { const exportJob = await cancelDriveExport(target.value, activeExportId.value); activeExportState.value = exportJob.state; exportMessage.value = t('access.drive.exportState', { state: exportJob.state.toLowerCase() }); }
-    finally { exporting.value = false; }
+function openExports(): void {
+    expandedDriveKeys.value = new Set();
+    exportsRootOpen.value = true;
+    sharedRootOpen.value = false;
+    clearSelection();
+    clearDetails();
+}
+function closeExports(): void { exportsRootOpen.value = false; clearSelection(); }
+function downloadSessionExport(entry: SessionExport): void {
+    if (entry.state === 'READY') window.location.assign(driveExportDownloadUrl(entry.target, entry.exportId));
+}
+async function downloadSessionExports(entries: SessionExport[]): Promise<void> {
+    for (const entry of entries.filter((candidate) => candidate.state === 'READY')) {
+        try {
+            const response = await fetch(driveExportDownloadUrl(entry.target, entry.exportId), { credentials: 'same-origin' });
+            if (!response.ok) throw new Error('Export download failed');
+            const blob = await response.blob();
+            const anchor = document.createElement('a');
+            anchor.href = URL.createObjectURL(blob);
+            anchor.download = 'exportacao.zip';
+            document.body.append(anchor);
+            anchor.click();
+            anchor.remove();
+            window.setTimeout(() => URL.revokeObjectURL(anchor.href), 1_000);
+            await new Promise((resolve) => window.setTimeout(resolve, 250));
+        } catch {
+            toast.info('Não foi possível iniciar um dos downloads. Tente baixá-lo novamente.');
+        }
+    }
+}
+function updateSessionExport(next: SessionExport): void {
+    const existing = sessionExports.value.some((entry) => entry.exportId === next.exportId);
+    sessionExports.value = existing ? sessionExports.value.map((entry) => entry.exportId === next.exportId ? { ...entry, ...next } : entry) : [next, ...sessionExports.value];
+}
+function selectExport(entry: SessionExport, event?: MouseEvent): void {
+    if (event?.shiftKey && exportSelectionAnchorId.value !== null) {
+        const from = sessionExports.value.findIndex((candidate) => candidate.exportId === exportSelectionAnchorId.value);
+        const to = sessionExports.value.findIndex((candidate) => candidate.exportId === entry.exportId);
+        if (from >= 0 && to >= 0) selectedExportIds.value = sessionExports.value.slice(Math.min(from, to), Math.max(from, to) + 1).map((candidate) => candidate.exportId);
+        return;
+    }
+    if (event?.ctrlKey || event?.metaKey) selectedExportIds.value = selectedExportIds.value.includes(entry.exportId) ? selectedExportIds.value.filter((id) => id !== entry.exportId) : [...selectedExportIds.value, entry.exportId];
+    else selectedExportIds.value = [entry.exportId];
+    exportSelectionAnchorId.value = entry.exportId;
 }
 function downloadExport(): void {
     if (!target.value || activeExportId.value === null || activeExportState.value !== 'READY') return;
@@ -393,6 +454,7 @@ function downloadExport(): void {
 }
 async function openLocation(location: DriveLocation): Promise<void> {
     if (!target.value || offline.value) return;
+    exportsRootOpen.value = false;
     loading.value = true;
     error.value = '';
     try {
@@ -412,6 +474,7 @@ async function openLocation(location: DriveLocation): Promise<void> {
 }
 async function openCatalogDrive(nextTarget: DriveWorkspaceTarget): Promise<void> {
     if (offline.value) return;
+    exportsRootOpen.value = false;
     sharedRootOpen.value = false;
     expandedDriveKeys.value = new Set(expandedDriveKeys.value).add(driveKey(nextTarget));
     if (target.value === null || !sameTarget(target.value, nextTarget)) {
@@ -430,6 +493,7 @@ async function openCatalogDrive(nextTarget: DriveWorkspaceTarget): Promise<void>
 }
 async function openSharedWithMe(): Promise<void> {
     if (offline.value) return;
+    exportsRootOpen.value = false;
     loading.value = true;
     error.value = '';
     try {
@@ -467,6 +531,7 @@ async function refresh(): Promise<void> {
         selectedIds.value = selectedIds.value.filter((id) => [...nextProjection.folders, ...nextProjection.files].some((item) => item.id === id));
         if (detailsOpen.value) clearDetails();
         stale.value = false;
+        await secondaryPane.value?.refresh();
     } catch (reason) {
         const denied = axios.isAxiosError(reason) && reason.response?.status === 403;
         stale.value = denied ? false : hasData.value;
@@ -546,11 +611,16 @@ function restoreViewMode(): void {
     if (value === 'grid' || value === 'list' || value === 'details') viewMode.value = value;
 }
 function toggleSecondaryPane(): void {
+    if (isMobileViewport.value) return;
     secondaryPaneOpen.value = !secondaryPaneOpen.value;
     if (!secondaryPaneOpen.value) {
         secondaryDestination.value = null;
         primaryPaneWidth.value = null;
     }
+}
+function updateMobileViewport(): void {
+    isMobileViewport.value = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 700px)').matches;
+    if (isMobileViewport.value && secondaryPaneOpen.value) secondaryPaneOpen.value = false;
 }
 
 function clampPrimaryPaneWidth(value: number): number {
@@ -621,7 +691,18 @@ function resizePrimaryTreeBy(offset: number): void {
     const layoutWidth = primaryLayoutElement.value?.getBoundingClientRect().width ?? 0;
     primaryTreeWidth.value = clampPrimaryTreeWidth((primaryTreeWidth.value ?? Math.min(240, Math.floor(layoutWidth * .25))) + offset);
 }
-function openTransferDialog(): void { if (canTransferSelection.value) { transferError.value = ''; transferDialogOpen.value = true; } }
+function primaryPanelContext(): DrivePanelContext | null {
+    return target.value && projection.value && !sharedRootOpen.value
+        ? { target: target.value, projection: projection.value, items: selectedItems.value }
+        : null;
+}
+function openTransferDialog(source: DrivePanelContext, destination: { target: DriveWorkspaceTarget; projection: DriveLocationProjection }): void {
+    if (!source.items.length || !destination.projection.capabilities.edit || offline.value) { error.value = t('access.drive.transferInvalid'); return; }
+    transferSource.value = source;
+    transferDestination.value = destination;
+    transferError.value = '';
+    transferDialogOpen.value = true;
+}
 function setSecondaryDestination(nextTarget: DriveWorkspaceTarget, nextProjection: DriveLocationProjection): void { secondaryDestination.value = { target: nextTarget, projection: nextProjection }; }
 function sameTarget(left: DriveWorkspaceTarget, right: DriveWorkspaceTarget): boolean { return left.kind === right.kind && (left.kind !== 'tenant' || right.kind !== 'tenant' || left.tenantId === right.tenantId); }
 function destinationIntersectsSelectedFolder(): boolean {
@@ -636,19 +717,36 @@ function destinationIntersectsSelectedFolder(): boolean {
     });
 }
 function receiveTransferDrop(): void {
-    if (!canTransferSelection.value || destinationIntersectsSelectedFolder()) { error.value = t('access.drive.transferInvalid'); return; }
-    openTransferDialog();
+    const source = primaryPanelContext();
+    if (!source || !secondaryDestination.value || destinationIntersectsSelectedFolder()) { error.value = t('access.drive.transferInvalid'); return; }
+    openTransferDialog(source, secondaryDestination.value);
 }
+function rememberSecondaryTransferSource(source: DrivePanelContext): void { draggedSecondarySource.value = source; }
+function receiveSecondaryTransferToPrimary(source: DrivePanelContext): void {
+    const destination = primaryPanelContext();
+    if (!destination) { error.value = t('access.drive.transferInvalid'); return; }
+    openTransferDialog(source, { target: destination.target, projection: destination.projection });
+}
+function receivePrimaryDrop(files: FileList | File[]): void {
+    if (draggedSecondarySource.value) {
+        const source = draggedSecondarySource.value;
+        draggedSecondarySource.value = null;
+        receiveSecondaryTransferToPrimary(source);
+        return;
+    }
+    void uploadFiles(files);
+}
+async function refreshAfterSecondaryMutation(): Promise<void> { await refresh(); }
 async function confirmTransfer(mode: DriveTransferMode): Promise<void> {
-    if (!target.value || !secondaryDestination.value || !projection.value) return;
+    if (!transferSource.value || !transferDestination.value) return;
     transferring.value = true;
     transferError.value = '';
     try {
-        activeTransfer.value = await requestDriveTransfer({ sourceTarget: { ...target.value, folderId: projection.value.location.kind === 'folder' ? projection.value.location.id : null }, destinationTarget: { ...secondaryDestination.value.target, folderId: secondaryDestination.value.projection.location.kind === 'folder' ? secondaryDestination.value.projection.location.id : null }, items: selectedItems.value.map((item) => ({ id: item.id, kind: item.kind })), mode });
+        activeTransfer.value = await requestDriveTransfer({ sourceTarget: { ...transferSource.value.target, folderId: transferSource.value.projection.location.kind === 'folder' ? transferSource.value.projection.location.id : null }, destinationTarget: { ...transferDestination.value.target, folderId: transferDestination.value.projection.location.kind === 'folder' ? transferDestination.value.projection.location.id : null }, items: transferSource.value.items.map((item) => ({ id: item.id, kind: item.kind })), mode });
         persistActiveTransfer();
         scheduleTransferPoll();
         transferDialogOpen.value = false;
-        clearSelection();
+        if (target.value && sameTarget(target.value, transferSource.value.target)) clearSelection();
     } catch { transferError.value = t('access.drive.transferFailed'); }
     finally { transferring.value = false; }
 }
@@ -698,6 +796,8 @@ function dismissTransferStatus(): void { activeTransfer.value = null; transferNo
 
 onMounted(() => {
     restoreViewMode();
+    updateMobileViewport();
+    window.addEventListener('resize', updateMobileViewport);
     if (isGlobalSurface.value) secondaryPaneOpen.value = window.localStorage.getItem(SECONDARY_PANE_STORAGE_KEY) === 'open';
     window.addEventListener('online', online);
     window.addEventListener('offline', offlineNow);
@@ -722,6 +822,7 @@ watch(target, () => {
     clearSelection();
 });
 onBeforeUnmount(() => {
+    window.removeEventListener('resize', updateMobileViewport);
     if (exportPollTimer !== null) clearTimeout(exportPollTimer);
     clearTransferPoll();
     stopPanelResize();
@@ -743,17 +844,18 @@ onBeforeUnmount(() => {
                 <div class="drive-explorer__tree-heading"><strong>{{ t('access.drive.tree') }}</strong><button type="button" class="drive-explorer__drawer-close" :aria-label="t('access.drive.closeTree')" @click="closeTreeDrawer">×</button></div>
                 <nav class="drive-explorer__tree-list" role="tree" :aria-label="t('access.drive.tree')">
                     <section v-for="drive in catalog?.drives ?? []" :key="driveKey(drive.target)" class="drive-explorer__drive-section" :class="{ 'drive-explorer__drive-section--active': isActiveDrive(drive.target) }">
-                        <button type="button" role="treeitem" :aria-current="isActiveDrive(drive.target) ? 'page' : undefined" :aria-expanded="isActiveDrive(drive.target) ? isDriveExpanded(drive.target) : undefined" class="drive-explorer__drive-header" @keydown="moveTreeFocus" @click="toggleCatalogDrive(drive.target)"><img :src="rasterIconSource('drive', 'sm') ?? ''" alt="" aria-hidden="true"><span>{{ drive.displayName }}</span></button>
+                        <div class="drive-explorer__drive-control"><button type="button" class="drive-explorer__drive-toggle" :aria-label="isDriveExpanded(drive.target) ? 'Recolher drive' : 'Expandir drive'" :aria-expanded="isDriveExpanded(drive.target)" @click="toggleDriveTree(drive.target)"><img :src="rasterIconSource('drive', 'sm') ?? ''" alt="" aria-hidden="true"></button><button type="button" role="treeitem" :aria-current="isActiveDrive(drive.target) ? 'page' : undefined" class="drive-explorer__drive-header" @keydown="moveTreeFocus" @click="openCatalogDrive(drive.target)"><span>{{ drive.displayName }}</span></button></div>
                         <div v-if="isActiveDrive(drive.target) && isDriveExpanded(drive.target)" class="drive-explorer__drive-content">
                             <div v-for="folder in treeFolders" :key="folder.id" class="drive-explorer__tree-row drive-explorer__tree-row--nested" :style="{ '--drive-depth': folder.depth }">
                                 <button v-if="folder.hasChildren" type="button" class="drive-explorer__tree-toggle" :aria-label="expandedTreeFolderIds.has(folder.id) ? 'Recolher' : 'Expandir'" :aria-expanded="expandedTreeFolderIds.has(folder.id)" @click="toggleTreeFolder(folder)"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></button>
                                 <span v-else class="drive-explorer__tree-toggle drive-explorer__tree-toggle--empty"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></span>
                                 <button type="button" role="treeitem" :aria-current="isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openLocation({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId })"><span>{{ folder.displayName }}</span></button>
                             </div>
-                            <button type="button" role="treeitem" :aria-current="projection?.location.kind === 'trash' ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': projection?.location.kind === 'trash' }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
+                            <button type="button" role="treeitem" :aria-current="isTrashLocation ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isTrashLocation }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
                         </div>
                     </section>
                     <button v-if="catalog" type="button" role="treeitem" :aria-current="sharedRootOpen ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': sharedRootOpen }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openSharedWithMe"><img :src="rasterIconSource('fileSharedWithMe', 'sm') ?? ''" alt="" aria-hidden="true"><span>{{ catalog.sharedWithMe.displayName }}</span></button>
+                    <button v-if="sessionExports.length" type="button" role="treeitem" :aria-current="exportsRootOpen ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': exportsRootOpen }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openExports"><img :src="rasterIconSource('fileZipExport', 'sm') ?? ''" alt="" aria-hidden="true"><span>{{ exportRootLabel }}</span></button>
                     <template v-if="!isGlobalSurface && !sharedRootOpen">
                         <div v-for="folder in treeFolders" :key="folder.id" class="drive-explorer__tree-row drive-explorer__tree-row--nested" :style="{ '--drive-depth': folder.depth }">
                             <button v-if="folder.hasChildren" type="button" class="drive-explorer__tree-toggle" :aria-label="expandedTreeFolderIds.has(folder.id) ? 'Recolher' : 'Expandir'" :aria-expanded="expandedTreeFolderIds.has(folder.id)" @click="toggleTreeFolder(folder)"><img :src="folderTreeIcon(folder)" alt="" aria-hidden="true"></button>
@@ -761,54 +863,55 @@ onBeforeUnmount(() => {
                             <button type="button" role="treeitem" :aria-current="isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isCurrent({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId }) }" class="drive-explorer__tree-item" @keydown="moveTreeFocus" @click="openLocation({ kind: 'folder', id: folder.id, displayName: folder.displayName, parentFolderId: folder.parentFolderId })"><span>{{ folder.displayName }}</span></button>
                         </div>
                     </template>
-                    <button v-if="!isGlobalSurface" type="button" role="treeitem" :aria-current="projection?.location.kind === 'trash' ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': projection?.location.kind === 'trash' }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
+                    <button v-if="!isGlobalSurface" type="button" role="treeitem" :aria-current="isTrashLocation ? 'page' : undefined" :class="{ 'drive-explorer__tree-item--active': isTrashLocation }" class="drive-explorer__tree-item drive-explorer__tree-item--trash" @keydown="moveTreeFocus" @click="openLocation({ kind: 'trash', id: null, displayName: t('access.drive.trash'), parentFolderId: null })"><img :src="trashIconSource()" alt="" aria-hidden="true"><span>{{ t('access.drive.trash') }}</span></button>
                 </nav>
-                <p v-if="projection" class="drive-explorer__usage">{{ t('access.drive.used', { size: formatBytes(projection.usage.totalBytes) }) }}</p>
+                <p v-if="projection" class="drive-explorer__usage" :title="t('access.drive.used', { size: formatBytes(projection.usage.totalBytes) })">{{ t('access.drive.used', { size: formatBytes(projection.usage.totalBytes) }) }}</p>
             </aside>
             <div v-if="primaryTreeVisible" class="drive-explorer__tree-divider" :aria-label="t('access.drive.resizeTree')" tabindex="0" @pointerdown="startPrimaryTreeResize" @keydown.arrow-left.prevent="resizePrimaryTreeBy(-24)" @keydown.arrow-right.prevent="resizePrimaryTreeBy(24)" @keydown.home.prevent="resizePrimaryTreeBy(-Number.MAX_SAFE_INTEGER)" @keydown.end.prevent="resizePrimaryTreeBy(Number.MAX_SAFE_INTEGER)" />
-            <section class="drive-explorer__collection" :aria-busy="loading || undefined" @dragover.prevent @drop.stop.prevent="uploadFiles($event.dataTransfer?.files ?? [])">
+            <section class="drive-explorer__collection" :aria-busy="loading || undefined" @dragover.prevent @drop.stop.prevent="receivePrimaryDrop($event.dataTransfer?.files ?? [])">
                 <div class="drive-explorer__collection-header">
                 <button ref="treeTrigger" type="button" class="drive-explorer__tree-trigger" :aria-label="t('access.drive.openTree')" @click="treeDrawerOpen = true">☰</button>
-                    <nav class="drive-explorer__breadcrumbs" :aria-label="t('access.drive.path')"><button type="button" @click="openLocation(rootLocation)">{{ rootLocation.displayName }}</button><template v-for="crumb in projection?.breadcrumbs ?? []" :key="`${crumb.kind}-${crumb.id}`"><span aria-hidden="true">/</span><button type="button" :aria-current="isCurrent(crumb) ? 'page' : undefined" @click="openLocation(crumb)">{{ crumb.displayName }}</button></template></nav>
+                    <nav class="drive-explorer__breadcrumbs" :aria-label="t('access.drive.path')"><button type="button" @click="exportsRootOpen ? closeExports() : openLocation(rootLocation)">{{ exportsRootOpen ? exportRootLabel : rootLocation.displayName }}</button><template v-if="!exportsRootOpen"><template v-for="crumb in projection?.breadcrumbs ?? []" :key="`${crumb.kind}-${crumb.id}`"><span aria-hidden="true">/</span><button type="button" :aria-current="isCurrent(crumb) ? 'page' : undefined" @click="openLocation(crumb)">{{ crumb.displayName }}</button></template></template></nav>
                     <span ref="locationHeading" class="sr-only" tabindex="-1">{{ collectionLabel }}</span>
                 </div>
                 <div class="drive-explorer__collection-tools">
-                    <div v-if="isGlobalSurface" class="drive-explorer__window-action"><IconButton :label="t(secondaryPaneOpen ? 'access.drive.closeSecondPanel' : 'access.drive.openSecondPanel')" :aria-pressed="secondaryPaneOpen" @click="toggleSecondaryPane"><img :src="rasterIconSource('fileSidePanel', 'sm') ?? ''" alt=""></IconButton></div>
+                    <div v-if="isGlobalSurface && !isMobileViewport" class="drive-explorer__window-action"><IconButton v-if="secondaryPaneOpen" :label="t('access.drive.toggleSecondTree')" @click="secondaryPane?.toggleTree()"><img :src="rasterIconSource('navBar', 'sm') ?? ''" alt=""></IconButton><IconButton :label="t(secondaryPaneOpen ? 'access.drive.closeSecondPanel' : 'access.drive.openSecondPanel')" :aria-pressed="secondaryPaneOpen" @click="toggleSecondaryPane"><img :src="rasterIconSource('fileSidePanel', 'sm') ?? ''" alt=""></IconButton></div>
                     <div class="drive-explorer__operation-actions" role="toolbar" :aria-label="t('access.drive.actions')">
-                        <IconButton v-if="selectedCount" class="drive-explorer__clear-selection" :label="t('access.drive.clearSelection')" @click="clearSelection"><img :src="rasterIconSource('fileCleanSelection', 'md') ?? ''" alt=""></IconButton>
+                        <IconButton v-if="selectedCount || selectedExportIds.length" class="drive-explorer__clear-selection" :label="t('access.drive.clearSelection')" @click="clearSelection"><img :src="rasterIconSource('fileCleanSelection', 'md') ?? ''" alt=""></IconButton>
                         <IconButton :label="t(primaryTreeVisible ? 'access.drive.closeTree' : 'access.drive.openTree')" :aria-pressed="primaryTreeVisible" @click="primaryTreeVisible = !primaryTreeVisible"><img :src="rasterIconSource('navBar', 'sm') ?? ''" alt=""></IconButton>
                         <IconButton :label="t('access.drive.refresh')" :disabled="offline || loading" @click="refresh"><img :src="rasterIconSource('fileRefresh', 'sm') ?? ''" alt=""></IconButton>
                         <IconButton :label="t('access.drive.newFolder')" :disabled="!canCreateFolder || offline" @click="openCreateFolder"><img :src="rasterIconSource('fileNewFolder', 'sm') ?? ''" alt=""></IconButton>
                         <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.upload')" :disabled="!canUpload" @click="chooseUploads"><img :src="rasterIconSource('driveUpload', 'sm') ?? ''" alt=""></IconButton>
                         <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.download')" :disabled="!canDownloadSelection || offline || exporting" @click="downloadSelectedItem"><img :src="rasterIconSource('driveDownload', 'sm') ?? ''" alt=""></IconButton>
-                        <template v-if="projection?.location.kind === 'trash'"><button type="button" class="drive-explorer__details-trigger drive-explorer__action--overflowable" :disabled="!selectedCount || offline || restoringItems" @click="restoreSelectedItems">{{ t('access.drive.restore') }}</button><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'sm') ?? ''" alt=""></IconButton></template>
-                        <template v-else><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'sm') ?? ''" alt=""></IconButton><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('dataDelete', 'sm') ?? ''" alt=""></IconButton></template>
+                        <template v-if="isTrashLocation"><button type="button" class="drive-explorer__details-trigger drive-explorer__action--overflowable" :disabled="!selectedCount || offline || restoringItems" @click="restoreSelectedItems">{{ t('access.drive.restore') }}</button><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'sm') ?? ''" alt=""></IconButton></template>
+                        <template v-else><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'sm') ?? ''" alt=""></IconButton><IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('fileDelete', 'sm') ?? ''" alt=""></IconButton></template>
                         <IconButton class="drive-explorer__action--overflowable" :label="t('access.drive.details')" :disabled="selectedItem === null || offline" @click="openDetails"><img :src="rasterIconSource('fileDetailPanel', 'sm') ?? ''" alt=""></IconButton>
-                        <details class="drive-explorer__action-overflow"><summary :aria-label="t('access.drive.moreActions')" :title="t('access.drive.moreActions')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg></summary><div class="drive-explorer__action-overflow-menu"><IconButton :label="t('access.drive.upload')" :disabled="!canUpload" @click="chooseUploads"><img :src="rasterIconSource('driveUpload', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.download')" :disabled="!canDownloadSelection || offline || exporting" @click="downloadSelectedItem"><img :src="rasterIconSource('driveDownload', 'md') ?? ''" alt=""></IconButton><template v-if="projection?.location.kind === 'trash'"><IconButton :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'md') ?? ''" alt=""></IconButton></template><template v-else><IconButton :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('dataDelete', 'md') ?? ''" alt=""></IconButton></template><IconButton :label="t('access.drive.details')" :disabled="selectedItem === null || offline" @click="openDetails"><img :src="rasterIconSource('fileDetailPanel', 'md') ?? ''" alt=""></IconButton></div></details>
+                        <details class="drive-explorer__action-overflow"><summary :aria-label="t('access.drive.moreActions')" :title="t('access.drive.moreActions')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg></summary><div class="drive-explorer__action-overflow-menu"><IconButton :label="t('access.drive.upload')" :disabled="!canUpload" @click="chooseUploads"><img :src="rasterIconSource('driveUpload', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.download')" :disabled="!canDownloadSelection || offline || exporting" @click="downloadSelectedItem"><img :src="rasterIconSource('driveDownload', 'md') ?? ''" alt=""></IconButton><template v-if="isTrashLocation"><IconButton :label="t('access.drive.release')" :disabled="!selectedCount || offline" @click="openReleaseConfirmation"><img :src="rasterIconSource('trashBurn', 'md') ?? ''" alt=""></IconButton></template><template v-else><IconButton :label="t('access.drive.move')" :disabled="!canMoveSelection || offline" @click="openMoveDialog"><img :src="rasterIconSource('fileMove', 'md') ?? ''" alt=""></IconButton><IconButton :label="t('access.drive.moveToTrash')" :disabled="!canTrashSelection || offline" @click="openTrashConfirmation"><img :src="rasterIconSource('fileDelete', 'md') ?? ''" alt=""></IconButton></template><IconButton :label="t('access.drive.details')" :disabled="selectedItem === null || offline" @click="openDetails"><img :src="rasterIconSource('fileDetailPanel', 'md') ?? ''" alt=""></IconButton></div></details>
                     </div>
                     <div class="drive-explorer__collection-tools-end"><div class="drive-explorer__view-modes" role="group" :aria-label="t('access.drive.viewMode')"><button v-for="mode in [{ id: 'grid', label: t('access.drive.grid'), icon: 'fileGrade' }, { id: 'list', label: t('access.drive.list'), icon: 'fileList' }, { id: 'details', label: t('access.drive.detailsView'), icon: 'fileDetails' }]" :key="mode.id" type="button" :class="{ 'drive-explorer__view-mode--active': viewMode === mode.id }" class="drive-explorer__view-mode" :aria-label="mode.label" :aria-pressed="viewMode === mode.id" :title="mode.label" @click="viewMode = mode.id as ViewMode"><img :src="rasterIconSource(mode.icon, 'md') ?? ''" alt="" aria-hidden="true"></button></div></div>
                 </div>
-                <div v-if="selectedCount >= 2 || activeExportId" class="drive-explorer__export-action"><UiButton v-if="selectedCount >= 2" :disabled="offline || exporting" :loading="exporting" @click="openExportDialog">{{ t('access.drive.exportSelection') }}</UiButton><UiButton v-if="activeExportState === 'PENDING'" variant="secondary" :disabled="exporting" @click="cancelExport">{{ t('access.drive.cancelExport') }}</UiButton><UiButton v-if="activeExportState === 'READY'" @click="downloadExport">{{ t('access.drive.download') }}</UiButton><span v-if="exportMessage" aria-live="polite">{{ exportMessage }}</span></div>
-                <p v-if="loading && !hasData" class="drive-explorer__loading" aria-live="polite">{{ t('access.drive.loading') }}</p>
-                <p v-else-if="!loading && !items.length" class="drive-explorer__empty">{{ t(projection?.location.kind === 'trash' ? 'access.drive.emptyTrash' : 'access.drive.emptyFolder') }}</p>
-                <div v-else class="drive-explorer__items" :class="`drive-explorer__items--${viewMode}`" role="list" :aria-label="t('access.drive.itemCollection', { name: collectionLabel })">
-                    <button v-for="item in items" :key="`${item.kind}-${item.id}`" type="button" class="drive-explorer__item" :class="{ 'drive-explorer__item--selected': selectedIds.includes(item.id) }" :draggable="selectedIds.includes(item.id)" role="listitem" :aria-pressed="selectedIds.includes(item.id)" @click="selectItem(item, $event)" @dragstart="selectItem(item, $event)" @dblclick="openItem(item)" @keydown.enter.prevent="openItem(item)" @keydown.space.prevent="selectItem(item, $event)"><img class="drive-explorer__item-icon" :class="{ 'drive-explorer__item-icon--folder': item.kind === 'folder' }" :src="itemIconSource(item)" alt="" aria-hidden="true"><span class="drive-explorer__item-name">{{ item.displayName }}</span><span class="drive-explorer__item-type">{{ itemTypeLabel(item) }}</span><span class="drive-explorer__item-size">{{ formatBytes(item.logicalSizeBytes) }}</span><span class="drive-explorer__item-date">{{ formatDate(item.modifiedAt) }}</span></button>
+                <div class="drive-explorer__collection-body">
+                    <div v-if="exportsRootOpen" class="drive-explorer__items" :class="`drive-explorer__items--${viewMode}`" role="list" aria-label="Exportações temporárias"><button v-for="entry in sessionExports" :key="entry.exportId" type="button" class="drive-explorer__item" :class="{ 'drive-explorer__item--selected': selectedExportIds.includes(entry.exportId) }" :aria-pressed="selectedExportIds.includes(entry.exportId)" @click="selectExport(entry, $event)"><img class="drive-explorer__item-icon" :src="rasterIconSource('fileZipExport', 'md') ?? ''" alt=""><span class="drive-explorer__item-name">Exportação ZIP</span><span class="drive-explorer__item-type">{{ exportStateLabel(entry.state) }}</span><span class="drive-explorer__item-size">{{ entry.expiresAt ? `Expira ${formatDate(entry.expiresAt)}` : 'Prazo não informado' }}</span><span class="drive-explorer__item-date">{{ formatDate(entry.createdAt) }}</span></button></div>
+                    <p v-else-if="loading && !hasData" class="drive-explorer__loading" aria-live="polite">{{ t('access.drive.loading') }}</p>
+                    <p v-else-if="!loading && !items.length" class="drive-explorer__empty">{{ t(projection?.location.kind === 'trash' ? 'access.drive.emptyTrash' : 'access.drive.emptyFolder') }}</p>
+                    <div v-else class="drive-explorer__items" :class="`drive-explorer__items--${viewMode}`" role="list" :aria-label="t('access.drive.itemCollection', { name: collectionLabel })">
+                        <button v-for="item in items" :key="`${item.kind}-${item.id}`" type="button" class="drive-explorer__item" :class="{ 'drive-explorer__item--selected': selectedIds.includes(item.id) }" :draggable="selectedIds.includes(item.id)" role="listitem" :aria-pressed="selectedIds.includes(item.id)" @click="selectItem(item, $event)" @dragstart="selectItem(item, $event)" @dblclick="openItem(item)" @keydown.enter.prevent="openItem(item)" @keydown.space.prevent="selectItem(item, $event)"><img class="drive-explorer__item-icon" :class="{ 'drive-explorer__item-icon--folder': item.kind === 'folder' }" :src="itemIconSource(item)" alt="" aria-hidden="true"><span class="drive-explorer__item-name">{{ item.displayName }}</span><span class="drive-explorer__item-type">{{ itemTypeLabel(item) }}</span><span class="drive-explorer__item-size">{{ formatBytes(item.logicalSizeBytes) }}</span><span class="drive-explorer__item-date">{{ formatDate(item.modifiedAt) }}</span></button>
+                    </div>
                 </div>
                 <DriveDetailsPanel :open="detailsOpen" :details="details" :loading="detailsLoading" :error="detailsError" @close="clearDetails" @retry="openDetails" @share="openSharing" />
                 <ResourceSharingPanel v-if="sharingFolder && target" :target="target" :folder="sharingFolder" @close="sharingFolder = null" />
-                <footer class="drive-explorer__status-bar" aria-live="polite"><span>{{ statusSummary }}{{ selectionSummary }}</span><span v-for="entry in uploadQueue" :key="entry.id" class="drive-explorer__status-upload"><span>{{ entry.name }} · {{ t('access.drive.uploadState', { progress: entry.progress, state: uploadStateLabel(entry.state) }) }}</span><button type="button" :aria-label="entry.state === 'queued' || entry.state === 'uploading' ? t('access.drive.cancelUpload') : t('access.drive.dismissUploadMessage')" @click="entry.state === 'queued' || entry.state === 'uploading' ? cancelUpload(entry) : dismissUpload(entry.id)">×</button></span><span v-if="exportMessage">{{ exportMessage }}</span></footer>
+                <footer class="drive-explorer__status-bar" aria-live="polite"><span>{{ statusSummary }}{{ selectionSummary }}</span><span v-for="entry in uploadQueue" :key="entry.id" class="drive-explorer__status-upload"><span>{{ entry.name }} · {{ t('access.drive.uploadState', { progress: entry.progress, state: uploadStateLabel(entry.state) }) }}</span><button type="button" :aria-label="entry.state === 'queued' || entry.state === 'uploading' ? t('access.drive.cancelUpload') : t('access.drive.dismissUploadMessage')" @click="entry.state === 'queued' || entry.state === 'uploading' ? cancelUpload(entry) : dismissUpload(entry.id)">×</button></span></footer>
             </section>
         </div>
-        <div v-if="secondaryPaneOpen" class="drive-explorer__mobile-backdrop" aria-hidden="true" @click="toggleSecondaryPane" />
-        <div v-if="secondaryPaneOpen" class="drive-explorer__pane-divider" role="separator" aria-orientation="vertical" :aria-label="t('access.drive.resizePanels')" tabindex="0" @pointerdown="startPanelResize" @keydown.arrow-left.prevent="resizePanelsBy(-32)" @keydown.arrow-right.prevent="resizePanelsBy(32)" @keydown.home.prevent="resizePanelsBy(-Number.MAX_SAFE_INTEGER)" @keydown.end.prevent="resizePanelsBy(Number.MAX_SAFE_INTEGER)" />
-        <DriveNavigationPane v-if="secondaryPaneOpen && catalog" ref="secondaryPane" class="drive-explorer__secondary-pane" :catalog="catalog.drives" @location-change="setSecondaryDestination" @transfer-drop="receiveTransferDrop" @close="toggleSecondaryPane" />
+        <div v-if="secondaryPaneOpen && !isMobileViewport" class="drive-explorer__mobile-backdrop" aria-hidden="true" @click="toggleSecondaryPane" />
+        <div v-if="secondaryPaneOpen && !isMobileViewport" class="drive-explorer__pane-divider" role="separator" aria-orientation="vertical" :aria-label="t('access.drive.resizePanels')" tabindex="0" @pointerdown="startPanelResize" @keydown.arrow-left.prevent="resizePanelsBy(-32)" @keydown.arrow-right.prevent="resizePanelsBy(32)" @keydown.home.prevent="resizePanelsBy(-Number.MAX_SAFE_INTEGER)" @keydown.end.prevent="resizePanelsBy(Number.MAX_SAFE_INTEGER)" />
+        <DriveNavigationPane v-if="secondaryPaneOpen && !isMobileViewport && catalog" ref="secondaryPane" class="drive-explorer__secondary-pane" :catalog="catalog.drives" :offline="offline" :session-exports="sessionExports" :view-mode="viewMode" @view-mode-change="viewMode = $event" @location-change="setSecondaryDestination" @transfer-drop="receiveTransferDrop" @transfer-start="rememberSecondaryTransferSource" @transfer-to-primary="receiveSecondaryTransferToPrimary" @download-exports="downloadSessionExports" @export-updated="updateSessionExport" @mutated="refreshAfterSecondaryMutation" @close="toggleSecondaryPane" />
         </div>
-        <DriveTransferDialog v-if="target && secondaryDestination" v-model="transferDialogOpen" :source-label="collectionLabel" :destination-label="secondaryDestination.projection.location.displayName" :item-count="selectedItems.length" :same-drive="sameTarget(target, secondaryDestination.target)" :loading="transferring" :error="transferError" @confirm="confirmTransfer" />
+        <DriveTransferDialog v-if="transferSource && transferDestination" v-model="transferDialogOpen" :source-label="transferSource.projection.location.displayName" :destination-label="transferDestination.projection.location.displayName" :item-count="transferSource.items.length" :same-drive="sameTarget(transferSource.target, transferDestination.target)" :loading="transferring" :error="transferError" @confirm="confirmTransfer" />
         <DriveOperationDialog v-model="createFolderOpen" :title="t('access.drive.newFolder')" :confirm-label="t('access.drive.newFolder')" :cancel-label="t('access.drive.cancel')" :loading="creatingFolder" :error="createFolderError" @submit="createFolder"><label>{{ t('access.drive.folderName') }}<input v-model="createFolderName" maxlength="160" autocomplete="off" /></label></DriveOperationDialog>
         <DriveOperationDialog v-model="trashConfirmationOpen" :title="t('access.drive.trashConfirmationTitle')" :confirm-label="t('access.drive.moveToTrash')" :cancel-label="t('access.drive.cancel')" :loading="trashingItems" :error="trashError" @submit="trashSelectedItems"><p>{{ t('access.drive.trashConfirmationDescription', { count: selectedCount }, selectedCount) }}</p></DriveOperationDialog>
         <DriveOperationDialog v-model="moveDialogOpen" :title="t('access.drive.move')" :confirm-label="t('access.drive.move')" :cancel-label="t('access.drive.cancel')" :loading="movingItem" :error="moveError" @submit="moveSelectedItem"><label>{{ t('access.drive.moveDestination') }}<select v-model="moveDestinationId"><option :value="null">{{ rootLocation.displayName }}</option><option v-for="folder in treeFolders.filter((folder) => canMoveTo(folder))" :key="folder.id" :value="folder.id">{{ '— '.repeat(folder.depth) }}{{ folder.displayName }}</option></select></label></DriveOperationDialog>
         <DriveOperationDialog v-model="releaseConfirmationOpen" :title="t('access.drive.releaseTitle')" :confirm-label="t('access.drive.release')" :cancel-label="t('access.drive.cancel')" :loading="releasingItems" :error="releaseError" @submit="releaseSelectedItems"><p>{{ t('access.drive.releaseDescription', { count: selectedCount }, selectedCount) }}</p></DriveOperationDialog>
-        <DriveOperationDialog v-model="exportDialogOpen" :title="t('access.drive.exportTitle')" :confirm-label="t('access.drive.exportSelection')" :cancel-label="t('access.drive.cancel')" :loading="exporting" :error="exportMessage" @submit="requestExport"><p>{{ t('access.drive.exportDescription', { count: selectedCount }, selectedCount) }}</p></DriveOperationDialog>
     </main>
 </template>
 
@@ -830,7 +933,6 @@ onBeforeUnmount(() => {
 @media (max-width: 700px) { .drive-explorer__items--details .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; }.drive-explorer__items--details .drive-explorer__item-type, .drive-explorer__items--details .drive-explorer__item-date { display: none; } }
 .drive-explorer__collection { position: relative; }
 .drive-explorer__selection-actions { display: flex; align-items: center; gap: var(--space-3); }
-.drive-explorer__export-action { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: 0 var(--space-4) var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .drive-explorer__details-trigger { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-height-sm); padding: 0 var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text-secondary); font: inherit; cursor: pointer; }
 .drive-explorer__details-trigger:not(:disabled):hover { border-color: var(--color-action-primary); color: var(--color-action-primary); }
 .drive-explorer__details-trigger:disabled { cursor: not-allowed; opacity: .55; }
@@ -864,12 +966,14 @@ onBeforeUnmount(() => {
 .drive-explorer__view-mode--active::after { position: absolute; bottom: var(--space-1); left: 50%; width: calc(var(--icon-size-md) * .42); height: calc(var(--component-border-width) * 2); border-radius: var(--radius-pill); background: currentcolor; content: ''; transform: translateX(-50%); }
 .drive-explorer__view-mode img { width: var(--icon-size-md); height: var(--icon-size-md); object-fit: contain; }
 .drive-explorer__collection-tools { flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.drive-explorer__operation-actions, .drive-explorer__collection-tools-end { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.drive-explorer__window-action, .drive-explorer__operation-actions, .drive-explorer__collection-tools-end { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .drive-explorer__operation-actions { margin-left: auto; }
 .drive-explorer__collection-tools-end { margin-left: var(--space-2); }
 .drive-explorer__operation-actions .ui-icon-button img, .drive-explorer__window-action .ui-icon-button img { width: var(--icon-size-md); height: var(--icon-size-md); object-fit: contain; }
 .drive-explorer__window-action .ui-icon-button, .drive-explorer__operation-actions .ui-icon-button { border-color: transparent; background: transparent; }
 .drive-explorer__window-action .ui-icon-button:not(:disabled):hover, .drive-explorer__operation-actions .ui-icon-button:not(:disabled):hover { background: var(--color-surface-muted); color: var(--color-action-primary); }
+.drive-explorer__window-action .ui-icon-button[aria-pressed='true'], .drive-explorer__operation-actions .ui-icon-button[aria-pressed='true'] { position: relative; border-color: transparent; background: transparent; color: var(--color-action-primary); }
+.drive-explorer__window-action .ui-icon-button[aria-pressed='true']::after, .drive-explorer__operation-actions .ui-icon-button[aria-pressed='true']::after { position: absolute; bottom: var(--space-1); left: 50%; width: calc(var(--icon-size-md) * .42); height: calc(var(--component-border-width) * 2); border-radius: var(--radius-pill); background: currentcolor; content: ''; transform: translateX(-50%); }
 .drive-explorer__breadcrumbs { font-weight: var(--font-weight-semibold); }
 .drive-explorer__breadcrumbs button { color: var(--color-text-primary); }
 .drive-explorer__breadcrumbs button[aria-current='page'] { color: var(--color-action-primary); }
@@ -877,11 +981,15 @@ onBeforeUnmount(() => {
 .drive-explorer__status-bar > :first-child { color: var(--color-text-primary); }
 .drive-explorer__status-upload { display: inline-flex; align-items: center; gap: var(--space-2); }
 .drive-explorer__status-upload button { display: inline-grid; width: var(--control-height-sm); height: var(--control-height-sm); place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: currentcolor; cursor: pointer; }.drive-explorer__status-upload button:hover { background: var(--color-surface-muted); }
-.drive-explorer__collection { height: 100%; grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+.drive-explorer__collection { height: 100%; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.drive-explorer__collection-body { display: grid; min-width: 0; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
 .drive-explorer__collection { container-type: inline-size; }
 .drive-explorer__action-overflow { position: relative; display: none; }.drive-explorer__action-overflow summary { display: grid; width: var(--control-height-md); height: var(--control-height-md); place-items: center; list-style: none; border-radius: var(--radius-sm); color: var(--color-text-secondary); cursor: pointer; }.drive-explorer__action-overflow summary::-webkit-details-marker { display: none; }.drive-explorer__action-overflow summary:hover { background: var(--color-surface-muted); color: var(--color-action-primary); }.drive-explorer__action-overflow summary svg { width: var(--icon-size-md); height: var(--icon-size-md); fill: currentcolor; }.drive-explorer__action-overflow-menu { position: absolute; z-index: 10; right: 0; top: calc(100% + var(--space-1)); display: flex; gap: var(--space-1); padding: var(--space-2); border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-raised); box-shadow: var(--shadow-float); }
 @container (max-width: 42rem) { .drive-explorer__operation-actions { flex-wrap: nowrap; }.drive-explorer__operation-actions .drive-explorer__action--overflowable { display: none; }.drive-explorer__action-overflow { display: block; } }
 .drive-explorer__items--list { display: grid; align-content: start; gap: var(--space-1); }
 .drive-explorer__items--list .drive-explorer__item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: var(--space-2) var(--space-3); }
 @media (max-width: 900px) { .drive-explorer__layout { grid-template-columns: minmax(7.5rem, 18%) minmax(0, 1fr); }.drive-explorer__tree-divider { display: none; } }
+.drive-explorer__drive-content > .drive-explorer__tree-item--trash { margin-left: var(--space-4); }
+.drive-explorer__usage { overflow: hidden; padding: var(--space-2) var(--space-3); font-size: var(--font-size-xs); text-overflow: ellipsis; white-space: nowrap; }
+.drive-explorer__drive-control { display: flex; min-width: 0; align-items: stretch; gap: var(--space-1); }.drive-explorer__drive-toggle { display: grid; width: var(--control-height-sm); flex: 0 0 var(--control-height-sm); place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-surface-raised) 72%, transparent); cursor: pointer; }.drive-explorer__drive-toggle img { width: var(--icon-size-sm); height: var(--icon-size-sm); object-fit: contain; }.drive-explorer__drive-header { flex: 1 1 auto; }.drive-explorer__tree-item--active, .drive-explorer__drive-section--active .drive-explorer__drive-header { box-shadow: none; background: color-mix(in srgb, var(--color-action-primary) 14%, var(--color-surface-raised)); color: var(--color-text-primary); }
 </style>

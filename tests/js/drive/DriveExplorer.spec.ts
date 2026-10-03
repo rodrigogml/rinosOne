@@ -49,6 +49,7 @@ describe('DriveExplorer', () => {
         expect(wrapper.text()).not.toContain('Workspace pessoal');
         expect(wrapper.text()).toContain('Projetos');
         expect(wrapper.text()).toContain('Contrato.pdf');
+        expect(wrapper.get('.drive-explorer__usage').attributes('title')).toBe('2 KB utilizados');
         await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
         expect(wrapper.text()).toContain('2 Itens (1 Arquivos + 1 Pastas), 1 Itens Selecionados (1 Arquivos + 0 Pastas) - Tamanho Selecionado 2 KB');
     });
@@ -77,6 +78,7 @@ describe('DriveExplorer', () => {
         expect(wrapper.text()).toContain('Meu Drive');
         expect(wrapper.text()).toContain('Oficina Rubi');
         expect(wrapper.text()).toContain('Compartilhados comigo');
+        expect(wrapper.get('.drive-explorer__breadcrumbs').text()).toContain('Meu Drive');
         queueInitialLoad();
         await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
         await flushPromises();
@@ -85,6 +87,11 @@ describe('DriveExplorer', () => {
         expect(wrapper.find('.drive-navigation-pane__tree-heading').text()).toContain('Árvore');
         expect(wrapper.find('.drive-navigation-pane__tree-list').text()).not.toContain('Compartilhados comigo');
         expect(wrapper.find('.drive-navigation-pane__status').exists()).toBe(true);
+        expect(wrapper.find('.drive-explorer__items').classes()).toContain('drive-explorer__items--list');
+        expect(wrapper.find('.drive-navigation-pane__items').classes()).toContain('drive-navigation-pane__items--list');
+        await wrapper.get('.drive-explorer__view-mode[aria-label="Grade"]').trigger('click');
+        expect(wrapper.find('.drive-navigation-pane__items').classes()).toContain('drive-navigation-pane__items--grid');
+        expect(window.localStorage.getItem('rinos-one.drive.view-mode.v1')).toBe('grid');
         expect(wrapper.find('[role="separator"]').attributes('aria-label')).toBe('Redimensionar painéis');
         expect(window.localStorage.getItem('rinos-one.drive.secondary-pane.v1')).toBe('open');
         expect(wrapper.find('.drive-explorer__mobile-backdrop').exists()).toBe(true);
@@ -102,13 +109,56 @@ describe('DriveExplorer', () => {
         queueInitialLoad({ ...rootProjection, location: { ...rootProjection.location, displayName: 'Oficina Rubi' } });
         await wrapper.findAll('.drive-explorer__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
         await flushPromises();
-        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/tenants/42/drive/locations/root');
+        expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/42/drive/locations/root');
+        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/personal/locations/root');
 
         vi.mocked(axios.get).mockResolvedValueOnce({ data: { folders: [], files: [] } });
         await wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Compartilhados comigo'))!.trigger('click');
         await flushPromises();
         expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/shared-with-me');
         expect(wrapper.get('[aria-label="Nova pasta"]').attributes('disabled')).toBeDefined();
+    });
+
+    it('enables folder creation in the secondary panel for an editable organization drive', async () => {
+        vi.mocked(axios.get).mockImplementation((url: string) => {
+            if (url === '/api/v1/drive/catalog') return Promise.resolve({ data: globalCatalog });
+            if (url.endsWith('/tree')) return Promise.resolve({ data: { folders: [] } });
+            return Promise.resolve({ data: { ...rootProjection, folders: [], files: [] } });
+        });
+        const wrapper = mountDrive(globalSurface);
+        await flushPromises();
+        await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
+        await flushPromises();
+
+        const tenantDrive = wrapper.findAll('.drive-navigation-pane__drive-header').find((item) => item.text().includes('Oficina Rubi'));
+        await tenantDrive!.trigger('click');
+        await flushPromises();
+
+        const newFolderButtons = wrapper.findAll('[aria-label="Nova pasta"]');
+        const secondaryNewFolder = newFolderButtons.at(-1)!;
+        expect(secondaryNewFolder.attributes('disabled')).toBeUndefined();
+        await secondaryNewFolder.trigger('click');
+        expect(wrapper.get('[role="dialog"]').text()).toContain('Nova pasta');
+    });
+
+    it('opens the same transfer confirmation when an item is dragged from the secondary panel to the primary panel', async () => {
+        vi.mocked(axios.get).mockImplementation((url: string) => {
+            if (url === '/api/v1/drive/catalog') return Promise.resolve({ data: globalCatalog });
+            if (url.endsWith('/tree')) return Promise.resolve({ data: { folders: rootProjection.folders } });
+            return Promise.resolve({ data: rootProjection });
+        });
+        const wrapper = mountDrive(globalSurface);
+        await flushPromises();
+        await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
+        await flushPromises();
+
+        const secondaryItem = wrapper.get('.drive-navigation-pane__item');
+        await secondaryItem.trigger('click');
+        await secondaryItem.trigger('dragstart');
+        await wrapper.get('.drive-explorer__collection').trigger('drop', { dataTransfer: { files: [] } });
+        await flushPromises();
+
+        expect(wrapper.get('[role="dialog"]').text()).toContain('Transferir itens');
     });
 
     it('clears a personal folder projection before opening an empty organization drive', async () => {
@@ -409,21 +459,24 @@ describe('DriveExplorer', () => {
         expect(wrapper.find('.drive-details-panel').exists()).toBe(false);
     });
 
-    it('confirms a multi-item private export in the local window dialog before queuing it', async () => {
+    it('queues a multi-item private export directly from the download command', async () => {
         queueInitialLoad();
         vi.mocked(axios.post).mockResolvedValueOnce({ data: { exportId: '01JEXPORT', state: 'PENDING', expiresAt: '2026-09-29T12:00:00Z' } });
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
+        expect(wrapper.findAll('.drive-explorer__tree-item').some((item) => item.text().includes('Exportações'))).toBe(false);
+
         await wrapper.findAll('.drive-explorer__item')[0].trigger('click');
         await wrapper.findAll('.drive-explorer__item')[1].trigger('click', { ctrlKey: true });
-        await wrapper.get('.drive-explorer__export-action .ui-button').trigger('click');
-
-        expect(wrapper.get('[role="dialog"]').text()).toContain('Será preparado um arquivo ZIP privado');
-        expect(axios.post).not.toHaveBeenCalled();
-        await wrapper.get('[role="dialog"] form').trigger('submit');
+        await wrapper.get('[aria-label="Baixar"]').trigger('click');
         await flushPromises();
         expect(axios.post).toHaveBeenCalledWith('/api/v1/drive/personal/exports', { items: [{ type: 'folder', id: 7 }, { type: 'file', id: 8 }] });
+
+        const exportsRoot = wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Exportações'))!;
+        expect(exportsRoot.exists()).toBe(true);
+        await exportsRoot.trigger('click');
+        expect(wrapper.text()).toContain('Aguardando processamento');
     });
 
     it('keeps the collection available when access to a details projection is denied', async () => {

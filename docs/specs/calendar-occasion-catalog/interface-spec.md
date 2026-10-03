@@ -29,13 +29,13 @@ O caminho visível é: **Domínio → Administração → Tabelas Centrais → F
 | Interaction ID | Surface ID | Type | Change Type | State | Purpose |
 | --- | --- | --- | --- | --- | --- |
 | INT-WEB-ADMIN-001 | SURF-WEB-ADMIN | Tela | NEW | Planejado | Listar e filtrar definições; iniciar criação, edição ou exclusão. |
-| INT-WEB-ADMIN-002 | SURF-WEB-ADMIN | Tela de edição | NEW | Planejado | Criar ou corrigir uma definição de ocasião de calendário. |
+| INT-WEB-ADMIN-002 | SURF-WEB-ADMIN | Tela de edição | MODIFIED | Planejado | Criar ou corrigir uma definição de ocasião de calendário. |
 
 ## Padrão obrigatório: janela de Pessoas
 
 `CalendarOccasionWorkspace` seguirá a composição de `PeopleWorkspace`: `CalendarOccasionCatalog` é exibido quando nenhum editor está aberto; `CalendarOccasionForm` ocupa a mesma área para novo ou edição; salvar ou cancelar retorna ao catálogo, recarrega os dados e restaura o foco no catálogo. Não haverá diálogo de formulário nem rota paralela.
 
-O catálogo seguirá o padrão visual de `PeopleCatalog`: área de trabalho com altura integral, toolbar, pesquisa por nome, filtros explícitos, grade rolável e virtualizável, configurações de coluna locais e seleção de uma linha. A feature não introduz ações em lote: a seleção única serve para abrir Editar ou Excluir na barra de comandos. O editor seguirá `PersonForm`: cabeçalho, abas, conteúdo rolável e barra de comandos persistente com Cancelar e Salvar; Excluir fica disponível apenas na edição e pede confirmação.
+O catálogo seguirá o padrão visual de `PeopleCatalog`: área de trabalho com altura integral, toolbar, pesquisa por nome, filtros explícitos, grade rolável e virtualizável, configurações de coluna locais e seleção de uma linha. A feature não introduz ações em lote: a seleção única serve para abrir Editar ou Excluir na barra de comandos. O editor seguirá a composição de `PersonForm`: cabeçalho, conteúdo rolável e barra de comandos persistente com Cancelar e Salvar; Excluir fica disponível apenas na edição e pede confirmação. Como este formulário possui poucos grupos de informação, ele não usa abas: títulos de seção mantêm a hierarquia e a leitura estáveis.
 
 ## Interaction Details
 
@@ -43,7 +43,7 @@ O catálogo seguirá o padrão visual de `PeopleCatalog`: área de trabalho com 
 
 **Surface**: SURF-WEB-ADMIN  
 **Surface Type**: WEB  
-**Change Type**: NEW  
+**Change Type**: NEW
 **Purpose**: Administrar definições de feriados, pontos facultativos e datas comemorativas; não exibir nem persistir ocorrências.  
 **Actors and Permissions**: Usuário no contexto de domínio já disponibilizado pela Área de Trabalho. Não há capability ou permissão nova nesta feature.  
 **Entry and Navigation**: Abrir `platform.calendar-occasions` em Domínio → Administração → Tabelas Centrais → Feriados; a instância é única.  
@@ -77,17 +77,17 @@ O catálogo seguirá o padrão visual de `PeopleCatalog`: área de trabalho com 
 
 **Surface**: SURF-WEB-ADMIN  
 **Surface Type**: WEB  
-**Change Type**: NEW  
+**Change Type**: MODIFIED
 **Purpose**: Criar ou corrigir uma definição na mesma janela do catálogo, sem impor versionamento, encerramento prévio ou controle jurídico.
 **Actors and Permissions**: Usuário no contexto de domínio já disponibilizado pela Área de Trabalho; a feature não introduz autorização adicional.  
 **Entry and Navigation**: Aberto por **Novo feriado**, clique/Enter na linha ou Editar da `INT-WEB-ADMIN-001`; substitui o catálogo na mesma superfície. Salvar ou Cancelar retorna ao catálogo e restaura foco.
-**Content and Data**: Cabeçalho “Novo feriado” ou “Editar feriado”; abas **Geral**, **Recorrência** e **Vigência e substituição**. Geral contém Nome, Categoria, Esfera e País/UF/Município. Recorrência contém Tipo e parâmetros exclusivos. Vigência contém início/fim e substituição opcional. Campos vazios de vigência significam “sempre existiu” e “continua vigente”.
-**Actions and Behavior**: `ONE_TIME_DATE` mostra data; `ANNUAL_FIXED_DATE`, dia/mês; `ANNUAL_NTH_WEEKDAY`, mês/ordinal/dia semanal; `EASTER_OFFSET`, deslocamento inteiro com ajuda: Paixão -2, Carnaval segunda -48, terça -47 e Corpus Christi +60. 29/02 ocorre somente em ano bissexto; quinta ocorrência semanal pode não existir. Data comemorativa força País; escopos de Estado/Município só estão disponíveis para Brasil e exigem a cadeia completa. Alterar categoria, esfera ou recorrência remove valores incompatíveis somente após confirmação. Substituição é opcional e aparece só para Feriado estadual/municipal, filtrando candidatas ancestrais facultativas compatíveis; o domínio decide a validade final. Salvar usa POST/PATCH; fechar com alteração pede descarte.  
+**Content and Data**: Cabeçalho “Novo feriado” ou “Editar feriado”. O conteúdo é dividido por títulos de seção do mesmo nível, sem abas: **Identificação e aplicação**, **Definição de recorrência** e **Vigência**. Em desktop, Nome e Categoria ficam na primeira linha. Na seção de aplicação, o rótulo amigável é **Abrangência** — com País, Estado brasileiro e Município brasileiro como opções — seguido por uma área reservada na mesma linha para a localidade pertinente. A localidade permanece vazia até a seleção da abrangência e, então, mostra País, UF ou Município no espaço já reservado; as seções posteriores não se deslocam. Recorrência contém Tipo e parâmetros exclusivos. Vigência contém início/fim. Campos vazios de vigência significam “sempre existiu” e “continua vigente”.
+**Actions and Behavior**: `ONE_TIME_DATE` mostra data; `ANNUAL_FIXED_DATE`, dia/mês; `ANNUAL_NTH_WEEKDAY`, mês/ordinal/dia semanal; `EASTER_OFFSET`, deslocamento inteiro com ajuda: Paixão -2, Carnaval segunda -48, terça -47 e Corpus Christi +60. 29/02 ocorre somente em ano bissexto; quinta ocorrência semanal pode não existir. Data comemorativa força País; escopos de Estado/Município só estão disponíveis para Brasil e exigem a cadeia completa. Alterar categoria, abrangência ou recorrência remove valores incompatíveis somente após confirmação. Substituição é opcional e aparece só para Feriado estadual/municipal, filtrando candidatas ancestrais facultativas compatíveis; o domínio decide a validade final. Salvar usa POST/PATCH; fechar com alteração pede descarte.
 **Validation and Feedback**: Nome, categoria, esfera, País, localidade exigida, recorrência e seus parâmetros são obrigatórios. Fim não antecede início. A validação local dá retorno imediato; `422` apresenta resumo navegável e erro junto ao campo, preservando valores.  
-**Responsive/Adaptive Behavior**: Desktop/tablet mantêm abas e conteúdo rolável dentro da janela, como Pessoas. Telefone mantém abas com rolagem horizontal, campos em uma coluna e barra de comandos fixa respeitando área segura.
-**Accessibility**: Foco inicial no cabeçalho do editor; Cancelar retorna foco ao catálogo. `Escape` solicita descarte se houver alterações. Abas seguem o padrão acessível de Pessoas; campos condicionais entram/removem-se da tabulação e erros usam `aria-describedby`.
+**Responsive/Adaptive Behavior**: Desktop mantém duas colunas nos pares Nome/Categoria e Abrangência/Localidade, com a área de localidade reservada desde o início. Tablet reduz os pares quando necessário sem alterar a ordem das seções. Telefone usa uma coluna, conserva os títulos de seção e a barra de comandos fixa respeita a área segura.
+**Accessibility**: Foco inicial no cabeçalho do editor; Cancelar retorna foco ao catálogo. `Escape` solicita descarte se houver alterações. Os títulos são cabeçalhos semânticos e organizam a navegação por leitor de tela; campos condicionais entram/removem-se da tabulação e erros usam `aria-describedby`.
 **Localization**: Mesma matriz pt-BR/en/es/fr; rótulos de enumeração são localizados, enquanto valores de API continuam os enums do contrato. Data não possui timezone.  
-**Components and Design System**: Reutiliza estrutura de `PersonForm`: cabeçalho, navegação por abas, frame com rolagem, barra de comandos, confirmação de descarte, select encadeado, campo de data e mensagens de erro.
+**Components and Design System**: Reutiliza estrutura de `PersonForm`: cabeçalho, frame com rolagem, títulos de seção, barra de comandos, confirmação de descarte, select encadeado, campo de data e mensagens de erro. Os títulos de seção usam tipografia de subseção e divisor discreto, sem virar uma navegação paralela.
 **Integration and Contracts**: `POST /api/v1/platform/calendar-occasions`, `PATCH /api/v1/platform/calendar-occasions/{calendarOccasionId}`, consulta de definições para candidatas de promoção e endpoints territoriais do [contrato](contracts/calendar-occasion-api.md).  
 **Telemetry**: Não cria evento novo e não registra valores de formulário.  
 **Wireframe Requirement**: REQUIRED  
@@ -117,7 +117,8 @@ O catálogo seguirá o padrão visual de `PeopleCatalog`: área de trabalho com 
 ## Validation Summary
 
 - Navegação Domínio → Administração → Tabelas Centrais → Feriados abre uma única instância, preserva os três itens anteriores, usa `planet` na categoria e `holiday` na entrada.
-- Cada tipo de recorrência mostra somente os parâmetros próprios e não envia valores residuais; data comemorativa/país estrangeiro limitam a esfera a País.
+- Cada tipo de recorrência mostra somente os parâmetros próprios e não envia valores residuais; data comemorativa/país estrangeiro limitam a abrangência a País.
+- O editor mantém Nome e Categoria na primeira linha desktop; Abrangência e sua localidade compartilham uma segunda linha estável; títulos de seção separam Aplicação, Recorrência e Vigência sem abas.
 - Estado e Município exigem a cadeia territorial brasileira; a promoção não permite rebaixar feriado e continua validada no servidor.
 - O filtro por período devolve regras, não ocorrências: `occurrenceDate` não é mostrado nesta interface.
 - Cobrir carregamento, vazio, sucesso, validação, falha remota, offline, acesso indisponível, dados parcialmente desatualizados, teclado, foco e telefone.

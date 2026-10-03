@@ -30,6 +30,7 @@ export const registeredRasterIconNames = [
     'fileSidePanel',
     'funnel',
     'fileSharedWithMe',
+    'fileZipExport',
     'folderClose',
     'folderOpen',
     'holiday',

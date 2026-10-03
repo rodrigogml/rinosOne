@@ -52,10 +52,12 @@
 .developer-guide-association__search-tools:focus-within { outline: 3px solid color-mix(in srgb, var(--color-focus-ring) 20%, transparent); outline-offset: var(--space-0); border-radius: var(--radius-md); }
 .developer-guide-association__state { margin: var(--space-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .developer-guide-toggle-demo__state { margin: var(--space-3) var(--space-0) var(--space-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-.developer-guide-association__icon-bar, .developer-guide-association__action-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-0); }
-.developer-guide-association__icon-bar { width: fit-content; max-width: 100%; overflow: hidden; border: var(--component-border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); }
-.developer-guide-association__icon-bar .ui-icon-button { border: var(--space-0); border-radius: var(--space-0); }
-.developer-guide-association__icon-bar .ui-icon-button[aria-pressed='true'] { background: color-mix(in srgb, var(--color-action-primary) var(--color-mix-subtle), var(--color-surface-muted)); color: var(--color-action-primary); }
+.developer-guide-association__icon-bar, .developer-guide-association__action-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.developer-guide-association__icon-bar { width: fit-content; max-width: 100%; }
+.developer-guide-association__icon-bar .ui-icon-button { border-color: transparent; background: transparent; }
+.developer-guide-association__icon-bar .ui-icon-button:not(:disabled):hover { background: var(--color-surface-muted); color: var(--color-action-primary); }
+.developer-guide-association__icon-bar .ui-icon-button[aria-pressed='true'] { position: relative; border-color: transparent; background: transparent; color: var(--color-action-primary); }
+.developer-guide-association__icon-bar .ui-icon-button[aria-pressed='true']::after { position: absolute; bottom: var(--space-1); left: 50%; width: calc(var(--icon-size-md) * .42); height: calc(var(--component-border-width) * 2); border-radius: var(--radius-pill); background: currentcolor; content: ''; transform: translateX(-50%); }
 .developer-guide-association__action-bar { gap: var(--space-2); }
 .developer-guide-association__select-command { display: grid; width: min(100%, 32rem); gap: var(--space-2); }
 .developer-guide-association__select-command > span { color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
