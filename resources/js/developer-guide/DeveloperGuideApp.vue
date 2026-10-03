@@ -3,8 +3,10 @@ import { computed, ref } from 'vue';
 import AssociationsGuide from './associations/AssociationsGuide.vue';
 import ButtonsGuide from './buttons/ButtonsGuide.vue';
 import DeveloperGuideTopBar from './DeveloperGuideTopBar.vue';
+import ToastMessagesGuide from './toast-messages/ToastMessagesGuide.vue';
+import ToastHost from '../design-system/toast/ToastHost.vue';
 
-type GuideTopic = 'buttons' | 'associations';
+type GuideTopic = 'buttons' | 'associations' | 'toast-messages';
 
 const activeTopic = ref<GuideTopic>('buttons');
 const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: ReadonlyArray<{ id: string; label: string }> }> = [
@@ -22,6 +24,12 @@ const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: Read
         { id: 'associations-field-command', label: 'Campo e comando' },
         { id: 'associations-button-bar', label: 'Barras de botões' },
         { id: 'associations-select-command', label: 'Combo e comando' },
+    ] },
+    { id: 'toast-messages', label: 'Toast messages', sections: [
+        { id: 'toast-overview', label: 'Visão geral' },
+        { id: 'toast-types', label: 'Tipos e posição' },
+        { id: 'toast-lifecycle', label: 'Ciclo e fila' },
+        { id: 'toast-emission', label: 'Emissão centralizada' },
     ] },
 ];
 const activeGuideTopic = computed(() => guideTopics.find((topic) => topic.id === activeTopic.value)!);
@@ -64,8 +72,10 @@ function navigateTo(sectionId: string): void {
             </aside>
             <main id="developer-guide-content" class="developer-guide__content" :aria-label="activeTitle">
                 <ButtonsGuide v-if="activeTopic === 'buttons'" />
-                <AssociationsGuide v-else />
+                <AssociationsGuide v-else-if="activeTopic === 'associations'" />
+                <ToastMessagesGuide v-else />
             </main>
         </div>
+        <ToastHost has-top-bar />
     </div>
 </template>

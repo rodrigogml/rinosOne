@@ -64,4 +64,17 @@ describe('developer guide application', () => {
         expect(wrapper.get('[aria-label="Manter seleção"]')).toBeTruthy();
         expect(wrapper.get('select').text()).toContain('Nome');
     });
+
+    it('opens Toast messages and emits its live examples through the central host', async () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const wrapper = mount(DeveloperGuideApp, { attachTo: document.body, global: { plugins: [pinia, i18n] } });
+
+        await wrapper.get('.developer-guide__topic:nth-of-type(3)').trigger('click');
+        await wrapper.get('.developer-guide-showcase .ui-button').trigger('click');
+
+        expect(wrapper.get('h1').text()).toBe('Toast messages');
+        expect(wrapper.get('.toast-host__toast--success').text()).toContain('Pessoa salva com sucesso.');
+        wrapper.unmount();
+    });
 });

@@ -29,6 +29,7 @@
     --color-action-secondary: var(--color-silver-100);
     --color-action-secondary-content: var(--palette-active-light-action);
     --color-focus-ring: var(--palette-active-light-action);
+    --color-info: var(--color-info-700);
     --color-success: var(--color-success-700);
     --color-warning: var(--color-warning-700);
     --color-danger: var(--color-danger-700);
@@ -55,6 +56,7 @@
     --color-action-secondary-content: var(--color-carbon-text-primary);
     --color-focus-ring: var(--palette-active-dark-action);
     --component-field-background: var(--color-surface);
+    --color-info: var(--color-info-300);
     --color-success: var(--color-success-300);
     --color-warning: var(--color-warning-300);
     --color-danger: var(--color-danger-300);
@@ -82,6 +84,7 @@
         --color-action-secondary-content: var(--color-carbon-text-primary);
         --color-focus-ring: var(--palette-active-dark-action);
         --component-field-background: var(--color-surface);
+        --color-info: var(--color-info-300);
         --color-success: var(--color-success-300);
         --color-warning: var(--color-warning-300);
         --color-danger: var(--color-danger-300);

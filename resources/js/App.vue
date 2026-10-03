@@ -7,6 +7,7 @@ import AuthenticatedFrame from './design-system/AuthenticatedFrame.vue';
 import UiAlert from './design-system/UiAlert.vue';
 import UiButton from './design-system/UiButton.vue';
 import UiField from './design-system/UiField.vue';
+import ToastHost from './design-system/toast/ToastHost.vue';
 
 type PublicView = 'login' | 'register';
 type ChallengePurpose = 'register' | 'passwordless';
@@ -61,4 +62,5 @@ onUnmounted(() => { window.clearInterval(expiryTimer); window.clearInterval(rese
         <form v-else class="access-form" @submit.prevent="confirm"><h1 class="access-card-title">{{ t('access.confirmation.title') }}</h1><p>{{ t('access.confirmation.body') }} <span aria-live="off">{{ t('access.confirmation.validFor', { time: remainingLabel }) }}</span></p><p v-if="challengePurpose === 'register'" class="access-confirmation-email">{{ t('access.confirmation.sentTo', { email }) }}</p><UiField v-if="!linkToken" id="code" :label="t('access.fields.code')" v-slot="field"><input id="code" ref="codeInput" :value="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" :aria-describedby="field.describedBy" required @input="normalizeCode"></UiField><UiAlert v-if="offline" tone="warning">{{ t('access.offline') }}</UiAlert><UiAlert v-if="message" :tone="feedbackKind === 'error' ? 'error' : 'success'">{{ message }}</UiAlert><UiButton type="submit" :loading="processing" :disabled="offline || remainingSeconds === 0">{{ t('access.actions.completeAccess') }}</UiButton><UiButton v-if="!linkToken" variant="secondary" :disabled="processing || offline || resendCooldownSeconds > 0" @click="resend">{{ resendActionLabel }}</UiButton></form>
     </AccessFrame>
     <AuthenticatedFrame v-else :display-name="session?.user.displayName" @profile-updated="session && (session.user.displayName = $event.user.displayName)" @sign-out="logout" />
+    <ToastHost :has-top-bar="security" />
 </template>
