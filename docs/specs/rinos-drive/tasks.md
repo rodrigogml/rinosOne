@@ -223,7 +223,7 @@ Ref: [Contrato](contracts/drive-workspace-api.md) §Transferências entre painé
 Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-001 e 004; [Wireframes](wireframes/drive-desktop.md) e [mobile](wireframes/drive-mobile.md).
 
 - [x] 10.1.1 Mover o acesso do Drive para ferramenta global da topbar e remover as entradas pessoal/tenant duplicadas sem quebrar a instância única.
-- [x] 10.1.2 Refatorar `DriveExplorer` em casca global e `DriveNavigationPane` com estado de alvo/localização isolado e parser de catálogo.
+- [x] 10.1.2 Refatorar `DriveExplorer` em casca global e `DrivePanel` reutilizado nos dois lados, com estado de alvo/localização isolado e parser de catálogo.
 - [x] 10.1.3 Implementar árvore lazy multi-drive, Compartilhados comigo, lixeira por raiz e estados de revogação/stale sem conservar dados inseguros.
 - [x] 10.1.4 Cobrir desktop, drawer móvel, teclado, foco, leitor de tela, quatro idiomas e roundtrip de catálogo/compartilhados com Vitest e E2E.
 
@@ -231,7 +231,7 @@ Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-001 e 004; [Wireframes](wirefr
 
 Ref: [Interface](interface-spec.md) INT-WEB-DRIVE-002 e 003; [Spec](spec.md) US-7.
 
-- [x] 10.2.1 Implementar abertura/fechamento do segundo painel, largura responsiva, persistência local segura e alternativa móvel por modal.
+- [x] 10.2.1 Implementar abertura/fechamento do segundo painel, largura responsiva e persistência local; até 700px, desativar o segundo painel conforme a revisão aprovada da interface.
 - [x] 10.2.2 Implementar seleção de origem, destinos elegíveis, drag/drop e alternativa por teclado sem permitir self/descendant drop.
 - [x] 10.2.3 Criar `DriveTransferDialog` com Cancelar/Copiar/Mover, seleção padrão contextual, mensagem de origem/destino e erros seguros.
 - [x] 10.2.4 Cobrir estados loading/empty/offline/access-denied/partial-stale, acessibilidade, locale e inspeção visual em desktop, tablet e telefone.

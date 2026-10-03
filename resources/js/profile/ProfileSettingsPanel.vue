@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UserAvatar from '../design-system/UserAvatar.vue';
 import UiAlert from '../design-system/UiAlert.vue';
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 
 export interface ProfilePresentation {
     user: {
@@ -70,7 +70,7 @@ function saveName(): void {
         <p v-if="loading" class="profile-settings-panel__status" aria-live="polite">{{ t('access.profile.loading') }}</p>
         <section v-else-if="loadError" class="profile-settings-panel__feedback" aria-live="polite">
             <UiAlert tone="error">{{ loadError }}</UiAlert>
-            <UiButton variant="secondary" @click="emit('retryLoad')">{{ t('access.profile.retry') }}</UiButton>
+            <UIRinoButton variant="secondary" @click="emit('retryLoad')" label="access.profile.retry" />
         </section>
         <template v-else-if="profile">
         <section class="workspace-settings__panel profile-settings-panel__identity" :aria-label="t('access.profile.identity')">
@@ -84,8 +84,8 @@ function saveName(): void {
                 <p>{{ profile?.avatar.available ? t('access.profile.imageCurrent') : t('access.profile.noImage') }}</p>
             </div>
             <div class="workspace-settings__setting-actions">
-                <UiButton variant="secondary" @click="emit('requestEditAvatar')">{{ profile?.avatar.available ? t('access.profile.changeImage') : t('access.profile.addImage') }}</UiButton>
-                <UiButton v-if="profile.avatar.available" variant="destructive" :loading="removingAvatar" @click="emit('requestRemoveAvatar')">{{ t('access.profile.removeImage') }}</UiButton>
+                <UIRinoButton variant="secondary" @click="emit('requestEditAvatar')" :label="profile?.avatar.available ? 'access.profile.changeImage' : 'access.profile.addImage'" />
+                <UIRinoButton v-if="profile.avatar.available" variant="destructive" :loading="removingAvatar" @click="emit('requestRemoveAvatar')" label="access.profile.removeImage" />
             </div>
         </section>
 
@@ -95,8 +95,8 @@ function saveName(): void {
             <p v-if="nameEmpty" id="profile-display-name-error" class="profile-settings-panel__error" role="alert">{{ t('access.profile.nameRequired') }}</p>
             <p v-else-if="nameError" id="profile-display-name-error" class="profile-settings-panel__error" role="alert">{{ nameError }}</p>
             <div class="profile-settings-panel__name-actions">
-                <UiButton type="submit" :disabled="!nameChanged || nameEmpty" :loading="savingName">{{ t('access.profile.save') }}</UiButton>
-                <UiButton v-if="nameError" variant="secondary" :disabled="savingName" @click="emit('retryName', displayName.trim())">{{ t('access.profile.retry') }}</UiButton>
+                <UIRinoButton type="submit" :disabled="!nameChanged || nameEmpty" :loading="savingName" variant="primary" label="access.profile.save" />
+                <UIRinoButton v-if="nameError" variant="secondary" :disabled="savingName" @click="emit('retryName', displayName.trim())" label="access.profile.retry" />
             </div>
         </form>
         </template>

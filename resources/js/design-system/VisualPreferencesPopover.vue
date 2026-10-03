@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVisualPreferencesStore, type DensityPreference, type ThemePreference } from '../preferences/visualPreferences';
-import IconButton from './IconButton.vue';
+import UIRinoButton from './UIRinoButton.vue';
 import SegmentedChoiceGroup from './SegmentedChoiceGroup.vue';
 
 const { t } = useI18n();
@@ -13,7 +13,6 @@ const panel = ref<HTMLElement | null>(null);
 const open = ref(false);
 const mobilePanelStyle = ref<Record<string, string>>({});
 const preferences = computed(() => store.preferences);
-const visualPreferencesIcon = '/assets/icons/theme_32.png';
 const preferenceIcon = (name: string): string => `/assets/icons/${name}_24.png`;
 const effectiveTheme = computed<'light' | 'dark'>(() => {
     if (preferences.value.theme !== 'system') return preferences.value.theme;
@@ -73,4 +72,4 @@ onMounted(() => document.addEventListener('pointerdown', handlePointerDown));
 onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerDown));
 </script>
 
-<template><div ref="root" class="presentation-control"><IconButton ref="opener" :label="t('access.presentation.visualPreferences')" :aria-expanded="open" aria-haspopup="dialog" @click="toggle"><img class="visual-preferences-palette" :src="visualPreferencesIcon" alt="" aria-hidden="true"></IconButton><section v-if="open" ref="panel" class="presentation-popover" :style="mobilePanelStyle" role="dialog" :aria-label="t('access.presentation.visualPreferences')" tabindex="-1" @keydown="handleKeydown"><SegmentedChoiceGroup id="theme-choice" :label="t('access.presentation.theme')" :model-value="effectiveTheme" :options="[{ value: 'light', label: t('access.presentation.light'), icon: preferenceIcon('lamp-on') }, { value: 'dark', label: t('access.presentation.dark'), icon: preferenceIcon('lamp-off') }]" @update:model-value="updateTheme" /><SegmentedChoiceGroup id="font-scale-choice" :label="t('access.presentation.textDensity')" :model-value="preferences.fontScale" :options="textDensityOptions" @update:model-value="updateFontScale" /><SegmentedChoiceGroup id="spacing-scale-choice" :label="t('access.presentation.spacing')" :model-value="preferences.spacingScale" :options="spacingOptions" @update:model-value="updateSpacingScale" /><SegmentedChoiceGroup id="component-scale-choice" :label="t('access.presentation.componentSize')" :model-value="preferences.componentScale" :options="componentSizeOptions" @update:model-value="updateComponentScale" /></section></div></template>
+<template><div ref="root" class="presentation-control"><UIRinoButton ref="opener" accessible-label="access.presentation.visualPreferences" :aria-expanded="open" aria-haspopup="dialog" @click="toggle" icon="theme" /><section v-if="open" ref="panel" class="presentation-popover" :style="mobilePanelStyle" role="dialog" :aria-label="t('access.presentation.visualPreferences')" tabindex="-1" @keydown="handleKeydown"><SegmentedChoiceGroup id="theme-choice" :label="t('access.presentation.theme')" :model-value="effectiveTheme" :options="[{ value: 'light', label: t('access.presentation.light'), icon: preferenceIcon('lamp-on') }, { value: 'dark', label: t('access.presentation.dark'), icon: preferenceIcon('lamp-off') }]" @update:model-value="updateTheme" /><SegmentedChoiceGroup id="font-scale-choice" :label="t('access.presentation.textDensity')" :model-value="preferences.fontScale" :options="textDensityOptions" @update:model-value="updateFontScale" /><SegmentedChoiceGroup id="spacing-scale-choice" :label="t('access.presentation.spacing')" :model-value="preferences.spacingScale" :options="spacingOptions" @update:model-value="updateSpacingScale" /><SegmentedChoiceGroup id="component-scale-choice" :label="t('access.presentation.componentSize')" :model-value="preferences.componentScale" :options="componentSizeOptions" @update:model-value="updateComponentScale" /></section></div></template>

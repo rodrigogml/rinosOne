@@ -54,7 +54,7 @@
 
 **Localization**: usa chaves do catálogo para todos os rótulos e mensagens. Textos longos podem expandir em até duas linhas sem cortar controles. `lang` do documento acompanha o idioma ativo.
 
-**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`; usa tokens semânticos e calculados, sem valores locais. O contrato visual e os exemplos de `UiButton` ficam no [guia vivo de Botões](/dev), para evitar padrões duplicados nesta spec.
+**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UIRinoButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`; usa tokens semânticos e calculados, sem valores locais. O contrato visual e os exemplos de `UIRinoButton` ficam no [guia vivo de Botões](/dev), para evitar padrões duplicados nesta spec.
 
 **Integration and Contracts**: consome operações existentes de login por senha e solicitação de acesso sem senha descritas em [auth-api.md](../user-auth/contracts/auth-api.md). Não altera payloads, contratos nem a política de sessão.
 
@@ -150,7 +150,7 @@
 
 **Localization**: traduz instruções, ações e mensagens sem traduzir valores de código ou dados de e-mail. A formatação do contador é própria de cada idioma.
 
-**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, contador textual, `VisualPreferencesPopover` e `LanguageSelector`.
+**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UIRinoButton`, `UiAlert`, contador textual, `VisualPreferencesPopover` e `LanguageSelector`.
 
 **Integration and Contracts**: mantém as confirmações de código e link do [contrato de acesso](../user-auth/contracts/auth-api.md); não cria novo contrato.
 
@@ -198,7 +198,7 @@
 
 **Localization**: todos os textos, inclusive diálogo, são chaves de idioma; nome de exibição é dado do usuário e não é traduzido.
 
-**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, diálogo reutilizável, `VisualPreferencesPopover` e `LanguageSelector`.
+**Components and Design System**: `AppShell`, `BrandMark`, `UiCard`, `UiField`, `UIRinoButton`, `UiAlert`, diálogo reutilizável, `VisualPreferencesPopover` e `LanguageSelector`.
 
 **Integration and Contracts**: mantém consulta e ações de sessão e senha do [contrato de acesso](../user-auth/contracts/auth-api.md).
 
@@ -246,7 +246,7 @@
 
 **Localization**: nomes de idiomas são exibidos no próprio idioma e, quando necessário, no idioma atual; rótulos das preferências são traduzidos. Nenhuma bandeira é a única forma de identificar idioma.
 
-**Components and Design System**: `IconButton`, `VisualPreferencesPopover`, `SegmentedChoiceGroup` e `LanguageSelector`; todos reutilizáveis e baseados nos tokens do design system.
+**Components and Design System**: `UIRinoButton`, `VisualPreferencesPopover`, `SegmentedChoiceGroup` e `LanguageSelector`; todos reutilizáveis e baseados nos tokens do design system.
 
 **Integration and Contracts**: usa somente o modelo local de preferências definido em [data-model.md](data-model.md). Não chama APIs nem lê dados de sessão.
 

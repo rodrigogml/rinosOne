@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import UiButton from '../../design-system/UiButton.vue';
+import UIRinoButton from '../../design-system/UIRinoButton.vue';
 import { toast } from '../../design-system/toast/toastService';
 
 function showSuccess(): void {
@@ -54,10 +54,10 @@ function showSuccessQueue(): void {
                 <li>Cada tipo mantém sua própria fila, pois sucesso e informação ocupam áreas distintas. A próxima mostra uma prévia de <strong>12 px</strong> na borda da tela, sem sobrepor a mensagem ativa.</li>
             </ul>
             <div class="developer-guide-showcase developer-guide-showcase--split">
-                <div><h3>Sucesso</h3><UiButton @click="showSuccess">Exibir sucesso</UiButton></div>
-                <div><h3>Informação</h3><UiButton variant="secondary" @click="showInfo">Exibir informação</UiButton></div>
+                <div><h3>Sucesso</h3><UIRinoButton @click="showSuccess" variant="primary" label="rinoButtons.context.showSuccess" /></div>
+                <div><h3>Informação</h3><UIRinoButton variant="secondary" @click="showInfo" label="rinoButtons.context.showInfo" /></div>
             </div>
-            <div class="developer-guide-showcase__examples"><UiButton variant="secondary" @click="showSuccessQueue">Demonstrar fila de sucesso</UiButton></div>
+            <div class="developer-guide-showcase__examples"><UIRinoButton variant="secondary" @click="showSuccessQueue" label="rinoButtons.context.successQueue" /></div>
         </section>
 
         <section id="toast-emission" class="developer-guide-section" aria-labelledby="toast-emission-title" tabindex="-1">

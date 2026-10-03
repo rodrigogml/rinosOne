@@ -98,9 +98,8 @@ O logotipo paisagem e o ícone serão copiados de `etc/ID Visual/` para ativos p
 | `BrandMark` | Logotipo paisagem ou ícone, com variantes de tamanho | Entrada, criação e áreas futuras |
 | `UiCard` | Superfície elevada e espaçamento interno padronizado | Cartões de acesso e agrupamentos |
 | `UiField` | Rótulo, controle, ajuda, erro e estado acessível | E-mail, senha, código e nome |
-| `UiButton` | Ações textuais compartilhadas; seu contrato visual canônico está no [guia vivo de Botões](/dev) | Ações principais, secundárias e destrutivas |
+| `UIRinoButton` | Centralizador único de botões e comandos; seu contrato canônico está no [guia vivo de Botões](/dev) | Texto, ícone, composição e alternância em qualquer contexto |
 | `UiAlert` | Feedback de sucesso, erro, aviso e informação | Todos os fluxos de acesso |
-| `IconButton` | Ação somente por ícone com rótulo acessível | Tema e controles futuros |
 | `VisualPreferencesPopover` | Tema e três escalas de densidade em quatro grupos de escolhas | Entrada, criação e áreas futuras |
 | `LanguageSelector` | Idioma, bandeira, nome e menu acessível | Entrada, criação e áreas futuras |
 

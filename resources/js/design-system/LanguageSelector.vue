@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import UIRinoButton from './UIRinoButton.vue';
 import { useI18n } from 'vue-i18n';
 import { useVisualPreferencesStore, type LocalePreference } from '../preferences/visualPreferences';
 
 const { t } = useI18n();
 const store = useVisualPreferencesStore();
 const root = ref<HTMLElement | null>(null);
-const opener = ref<HTMLButtonElement | null>(null);
+const opener = ref<{ focus: () => void } | null>(null);
 const menu = ref<HTMLElement | null>(null);
 const open = ref(false);
 const languages: { code: LocalePreference; flag: string; name: string }[] = [
@@ -30,4 +31,4 @@ onMounted(() => document.addEventListener('pointerdown', handlePointerDown));
 onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerDown));
 </script>
 
-<template><div ref="root" class="presentation-control"><button ref="opener" class="ui-icon-button" type="button" :aria-label="t('access.presentation.selectedLanguage', { language: currentLanguage.name })" :aria-expanded="open" aria-haspopup="listbox" @click="open = !open"><span aria-hidden="true">{{ currentLanguage.flag }}</span></button><ul v-if="open" ref="menu" class="language-menu" role="listbox" :aria-label="t('access.presentation.language')" @keydown="move"><li v-for="language in languages" :key="language.code"><button :id="`language-option-${language.code}`" type="button" role="option" class="language-menu__option" :aria-selected="store.preferences.locale === language.code" @click="select(language.code)"><span aria-hidden="true">{{ language.flag }}</span><span>{{ language.name }}</span></button></li></ul></div></template>
+<template><div ref="root" class="presentation-control"><UIRinoButton ref="opener" :icon="({ 'pt-BR': 'flagBrasil', en: 'flagUSA', es: 'flagSpain', fr: 'flagFrance' })[currentLanguage.code]" accessible-label="access.presentation.selectedLanguage" :label-params="{ language: currentLanguage.name }" :aria-expanded="open" aria-haspopup="listbox" @click="open = !open" /><ul v-if="open" ref="menu" class="language-menu" role="listbox" :aria-label="t('access.presentation.language')" @keydown="move"><li v-for="language in languages" :key="language.code"><button :id="`language-option-${language.code}`" type="button" role="option" class="language-menu__option" :aria-selected="store.preferences.locale === language.code" @click="select(language.code)"><span aria-hidden="true">{{ language.flag }}</span><span>{{ language.name }}</span></button></li></ul></div></template>

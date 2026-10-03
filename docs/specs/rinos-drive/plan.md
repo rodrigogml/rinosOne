@@ -48,10 +48,14 @@ Transferir entre drives não desloca bytes. Uma cópia cria a posse e os víncul
 
 ### Painéis paralelos e comandos locais
 
-- `DriveExplorer` torna-se a casca única com um ou dois `DriveNavigationPane` independentes. Cada painel possui alvo, localização, árvore lazy, seleção, modo de visualização, carregamento, erro e painel de detalhes próprios.
-- Um botão próximo de Atualizar alterna o segundo painel. No telefone, a comparação acontece em drawer/modal de troca, sem duas colunas simultâneas nem scroll horizontal do canvas.
-- Arrastar seleção de um painel para outro sempre abre `DriveTransferDialog`. O diálogo apresenta Cancelar, Copiar e Mover; pré-seleciona Mover no mesmo drive e Copiar entre drives.
+- `DriveExplorer` coordena o catálogo, as transferências e as exportações da janela; instancia uma ou duas cópias de `DrivePanel`. Cada painel possui alvo, localização, árvore, seleção, modo de visualização, carregamento, erro, detalhes e comandos próprios. O secundário só omite Compartilhados comigo, Exportações e o comando de abrir outro painel.
+- O comando de segundo painel fica à esquerda da toolbar, após o controle da árvore. Até 700px, o segundo painel e seu comando ficam desativados, inclusive quando havia preferência local de abertura.
+- Arrastar itens da coleção ou pastas da árvore para a árvore/coleção de qualquer painel sempre abre `DriveTransferDialog`. O diálogo apresenta Cancelar, Copiar e Mover; pré-seleciona Mover no mesmo drive e Copiar entre drives. Mover fica indisponível para origem somente leitura.
 - A seleção só aceita itens de uma mesma origem em cada comando. A interface mostra origem, destino e categoria de operação, nunca caminho físico ou dados de outro drive.
+- A visualização inicia em Detalhes e é persistida por usuário e por painel (`rinos-one.drive.view-mode.v2.<usuário>.<painel>`). Alterar um painel não modifica o outro.
+- Atualizar renova somente a localização e a árvore do próprio painel. Uma mutação renova os painéis afetados preservando suas localizações e visualizações; respostas atrasadas de uma navegação anterior são ignoradas.
+- Exportações conservam seu alvo de origem na coordenação da janela. Trocar de drive ou fechar o segundo painel não cancela seu acompanhamento. Ao fechar a janela, o processamento no servidor continua, mas a lista temporária de exportações da interface é descartada. Falhas transitórias de consulta permitem nova tentativa; revogação/expiração encerra o acompanhamento correspondente.
+- A toolbar reutiliza `UIRinoButton`, `UiControlGroup` e `UiActionPopover`, conforme `/dev`. O menu de excesso fecha ao clicar fora, executar uma ação ou pressionar Escape.
 
 ### Transferência lógica e reservas
 

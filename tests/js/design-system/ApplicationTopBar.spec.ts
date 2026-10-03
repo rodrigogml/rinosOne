@@ -38,8 +38,8 @@ describe('application top bar', () => {
         await opener.trigger('click');
         expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Menu pessoal');
         expect(wrapper.get('.user-menu__settings').text()).toBe('Configurações do usuário');
-        expect(wrapper.get('.user-menu__settings img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_32.png');
-        expect(wrapper.get('button[aria-label="Sair"] img').attributes('src')).toBe('/assets/icons/logout_32.png');
+        expect(wrapper.get('.user-menu__settings img').attributes('src')).toBe('/assets/icons/rinoUser-tweek_48.png');
+        expect(wrapper.get('button[aria-label="Sair"] img').attributes('src')).toBe('/assets/icons/logout_48.png');
         await wrapper.get('button[aria-label="Preferências visuais"]').trigger('click');
         await wrapper.get('[role="dialog"][aria-label="Preferências visuais"]').trigger('keydown', { key: 'Escape' });
         expect(wrapper.get('[role="dialog"][aria-label="Menu pessoal"]')).toBeTruthy();

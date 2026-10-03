@@ -46,7 +46,7 @@
 **Responsive/Adaptive Behavior**: desktop centraliza o formulário em coluna com largura legível; tablet mantém a mesma coluna com margens reduzidas; telefone ocupa a largura disponível, mantém botões com altura mínima adequada ao toque e evita que o teclado virtual cubra a ação principal.
 **Accessibility**: landmark principal, título de primeiro nível, rótulos persistentes, foco inicial no campo de e-mail, navegação integral por teclado, mensagens de erro em região de anúncio e contraste suficiente sem depender de cor.
 **Localization**: português do Brasil, inglês, espanhol e francês; termos canônicos incluem “Criar conta”, “Entrar”, “Entrar sem senha”, “E-mail” e “Senha”. Mensagens não interpolam o e-mail completo em erros ou confirmações públicas.
-**Components and Design System**: `AccessFrame`, `UiField`, `UiButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`, todos baseados em tokens centrais.
+**Components and Design System**: `AccessFrame`, `UiField`, `UIRinoButton`, `UiAlert`, `VisualPreferencesPopover` e `LanguageSelector`, todos baseados em tokens centrais.
 **Integration and Contracts**: consome as operações de iniciar cadastro, entrar por senha e solicitar acesso sem senha em [auth-api.md](contracts/auth-api.md); envia `rememberMe` quando selecionado e não armazena código, link ou senha fora do envio da ação.
 **Telemetry**: N/A nesta fase. Não registrar e-mail, senha, código, link, token, nome de exibição ou texto livre.
 **Wireframe Requirement**: REQUIRED
@@ -82,7 +82,7 @@
 **Responsive/Adaptive Behavior**: mesma coluna de leitura da entrada de acesso; código usa entrada otimizada para teclado físico e virtual, sem bloquear colagem; em telefone, contador, campos e ação permanecem visíveis acima do teclado virtual.
 **Accessibility**: título anuncia a etapa atual; foco vai ao código após o envio e ao nome de exibição depois de uma confirmação de cadastro; contador não anuncia cada segundo; erro, sucesso e expiração são anunciados uma vez; reenvio informa o tempo de espera em texto.
 **Localization**: português do Brasil; usa “Código de confirmação”, “Reenviar mensagem”, “Confirmar e-mail” e “Concluir acesso”. O código tem 6 dígitos numéricos e a emissão é invalidada após 3 erros por padrão; mensagens de expiração não expõem identificadores nem dados de conta.
-**Components and Design System**: reutiliza `AccessFrame`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, contador textual e os controles globais de apresentação.
+**Components and Design System**: reutiliza `AccessFrame`, `UiCard`, `UiField`, `UIRinoButton`, `UiAlert`, contador textual e os controles globais de apresentação.
 **Integration and Contracts**: consome confirmações por código e por link para validação e acesso sem senha em [auth-api.md](contracts/auth-api.md); a rota web do link remove o segredo da URL antes de chamar a API e não o expõe à telemetria.
 **Telemetry**: N/A nesta fase. Não registrar e-mail, código, link, token, nome de exibição ou texto livre.
 **Wireframe Requirement**: REQUIRED
@@ -118,7 +118,7 @@
 **Responsive/Adaptive Behavior**: desktop organiza ações de segurança em grupos claros; tablet e telefone empilham grupos e mantêm ações destrutivas separadas visualmente; confirmação é modal em desktop e painel de largura total em telefone.
 **Accessibility**: heading e landmarks distinguem senha e sessões; ação destrutiva recebe nome explícito, confirmação prende o foco e o devolve à ação original; alertas são anunciados; todos os controles atendem teclado, zoom e toque.
 **Localization**: português do Brasil, inglês, espanhol e francês; termos canônicos são “Definir senha”, “Encerrar esta sessão” e “Invalidar outras sessões”; mensagens distinguem a sessão atual das demais sem identificar dispositivos.
-**Components and Design System**: reutiliza `AuthenticatedFrame`, `UiCard`, `UiField`, `UiButton`, `UiAlert`, `UiDialog` e os controles globais de apresentação.
+**Components and Design System**: reutiliza `AuthenticatedFrame`, `UiCard`, `UiField`, `UIRinoButton`, `UiAlert`, `UiDialog` e os controles globais de apresentação.
 **Integration and Contracts**: consome a leitura da sessão atual, definição de senha e encerramento de sessões em [auth-api.md](contracts/auth-api.md); não mantém estado local após encerramento ou invalidação que exija nova leitura.
 **Telemetry**: N/A nesta fase. Não registrar senha, identificadores de sessão, dados de dispositivo ou conteúdo de formulário.
 **Wireframe Requirement**: REQUIRED

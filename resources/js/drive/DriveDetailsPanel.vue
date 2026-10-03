@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UiAlert from '../design-system/UiAlert.vue';
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import { rasterIconSource } from '../design-system/rasterIconAssets';
 import type { DriveDetailsProjection } from './driveWorkspaceApi';
 
@@ -30,11 +30,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown));
     <aside v-if="open" class="drive-details-panel" :aria-label="t('access.drive.detailsPanel')" :aria-busy="loading || undefined">
         <header class="drive-details-panel__header"><h4>{{ t('access.drive.details') }}</h4><button ref="closeButton" type="button" :aria-label="t('access.drive.closeDetails')" @click="emit('close')">×</button></header>
         <p v-if="loading" class="drive-details-panel__loading" aria-live="polite">{{ t('access.drive.detailsLoading') }}</p>
-        <div v-else-if="error" class="drive-details-panel__error"><UiAlert tone="error">{{ error }}</UiAlert><UiButton variant="secondary" @click="emit('retry')">{{ t('access.drive.retry') }}</UiButton></div>
+        <div v-else-if="error" class="drive-details-panel__error"><UiAlert tone="error">{{ error }}</UiAlert><UIRinoButton variant="secondary" @click="emit('retry')" label="access.drive.retry" /></div>
         <template v-else-if="item">
             <div class="drive-details-panel__identity"><img v-if="itemIcon" :src="itemIcon" alt="" aria-hidden="true"><div><strong>{{ item.displayName }}</strong><span>{{ item.kind === 'folder' ? t('access.drive.folder') : item.detectedMimeType ?? t('access.drive.file') }}</span></div></div>
             <dl class="drive-details-panel__facts"><div><dt>{{ t('access.drive.location') }}</dt><dd>{{ details?.location.displayName }}</dd></div><div><dt>{{ t('access.drive.size') }}</dt><dd>{{ formatBytes(item.logicalSizeBytes) }}</dd></div><div><dt>{{ t('access.drive.modified') }}</dt><dd>{{ formatDate(item.modifiedAt) }}</dd></div><div><dt>{{ t('access.drive.access') }}</dt><dd>{{ details?.capabilities.edit ? t('access.drive.editable') : t('access.drive.readOnly') }}</dd></div></dl>
-            <UiButton v-if="item.kind === 'folder'" variant="secondary" @click="emit('share')">Compartilhar</UiButton>
+            <UIRinoButton v-if="item.kind === 'folder'" variant="secondary" @click="emit('share')" label="rinoButtons.context.share" />
             <p v-if="details?.metadata.length" class="drive-details-panel__metadata-note">{{ t('access.drive.metadataAvailable', { count: details.metadata.length }) }}</p>
         </template>
     </aside>

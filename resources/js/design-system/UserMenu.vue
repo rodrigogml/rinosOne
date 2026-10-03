@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import UIRinoButton from './UIRinoButton.vue';
 import LanguageSelector from './LanguageSelector.vue';
 import UserAvatar from './UserAvatar.vue';
 import VisualPreferencesPopover from './VisualPreferencesPopover.vue';
@@ -18,8 +19,6 @@ const root = ref<HTMLElement | null>(null);
 const opener = ref<HTMLButtonElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const open = ref(false);
-const settingsIcon = '/assets/icons/rinoUser-tweek_32.png';
-const signOutIcon = '/assets/icons/logout_32.png';
 
 function close() { open.value = false; }
 function toggle() { open.value = !open.value; }
@@ -47,13 +46,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerD
             <UserAvatar :display-name="displayName" :image-src="avatarUrl" :label="avatarLabel" />
         </button>
         <section v-if="open" ref="panel" class="user-menu__panel" role="dialog" :aria-label="menuLabel" tabindex="-1" @keydown="handleKeydown">
-            <button class="user-menu__settings" type="button" @click="openSettings"><img class="user-menu__settings-icon" :src="settingsIcon" alt="" aria-hidden="true"><span>{{ settingsLabel }}</span></button>
+            <UIRinoButton class="user-menu__settings" label="access.shell.userSettings" icon="rinoUser-tweek" @click="openSettings" />
             <div class="user-menu__utilities">
                 <VisualPreferencesPopover />
                 <LanguageSelector />
-                <button class="ui-icon-button" type="button" :aria-label="signOutLabel" @click="emit('signOut')">
-                    <img :src="signOutIcon" alt="" aria-hidden="true">
-                </button>
+                <UIRinoButton icon="logout" accessible-label="access.shell.signOut" @click="emit('signOut')" />
             </div>
         </section>
     </div>

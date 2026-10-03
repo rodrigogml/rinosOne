@@ -4,6 +4,7 @@ import { en } from './messages/en';
 import { es } from './messages/es';
 import { fr } from './messages/fr';
 import { ptBR } from './messages/pt-BR';
+import { rinoButtonMessages } from './rinoButtonMessages';
 
 // New authorization labels default to Portuguese until each locale receives a reviewed translation.
 const advancedAuthorizationLabels = ptBR.access.authorization as Record<string, string | Record<string, string>>;
@@ -39,7 +40,12 @@ export const i18n = createI18n({
     legacy: false,
     locale: 'pt-BR',
     fallbackLocale: 'pt-BR',
-    messages: { 'pt-BR': ptBR, en, es, fr },
+    messages: {
+        'pt-BR': { ...ptBR, rinoButtons: rinoButtonMessages['pt-BR'] },
+        en: { ...en, rinoButtons: rinoButtonMessages.en },
+        es: { ...es, rinoButtons: rinoButtonMessages.es },
+        fr: { ...fr, rinoButtons: rinoButtonMessages.fr },
+    },
 });
 
 export function setApplicationLocale(locale: LocalePreference, documentReference: Document | null = typeof document === 'undefined' ? null : document): void {

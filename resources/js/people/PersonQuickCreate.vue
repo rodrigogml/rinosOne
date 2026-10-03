@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import axios from "axios";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -103,9 +104,7 @@ onMounted(async () => {
             <h3 id="person-quick-create-title" ref="title" tabindex="-1">
                 {{ t("access.people.quickCreateTitle") }}
             </h3>
-            <button type="button" :disabled="saving" @click="emit('cancel')">
-                {{ t("access.people.cancel") }}
-            </button>
+            <UIRinoButton type="button" :disabled="saving" @click="emit('cancel')" command="cancel" />
         </header>
         <p>{{ t("access.people.quickCreateDescription") }}</p>
         <form @submit.prevent="save">
@@ -159,19 +158,7 @@ onMounted(async () => {
                 ></label
             >
             <footer>
-                <button
-                    type="button"
-                    :disabled="saving"
-                    @click="emit('cancel')"
-                >
-                    {{ t("access.people.cancel") }}</button
-                ><button type="submit" :disabled="!canSave">
-                    {{
-                        saving
-                            ? t("access.people.saving")
-                            : t("access.people.quickCreateAction")
-                    }}
-                </button>
+                <UIRinoButton type="button" :disabled="saving" @click="emit('cancel')" command="cancel" /><UIRinoButton command="save" type="submit" :disabled="!canSave" :loading="saving" :label="saving ? 'access.people.saving' : undefined" />
             </footer>
         </form>
     </section>

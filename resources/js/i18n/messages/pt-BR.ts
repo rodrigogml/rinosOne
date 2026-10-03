@@ -481,8 +481,8 @@ Object.assign(ptBR.access as unknown as Record<string, unknown>, {
         readOnly: "Somente leitura",
         metadataAvailable: "Metadados seguros disponíveis: {count}.",
         itemCollection: "Itens de {name}",
-        statusSummary: '{total} Itens ({files} Arquivos + {folders} Pastas)',
-        statusSelectionSummary: ', {total} Itens Selecionados ({files} Arquivos + {folders} Pastas) - Tamanho Selecionado {size}',
+        statusSummary: '{total} Itens [{folders}\\|{files}]',
+        statusSelectionSummary: ' \\| Selecionados: {total} Itens [{folders}\\|{files}] {size}',
     },
 });
 Object.assign(
@@ -753,3 +753,4 @@ Object.assign(
         lifecycleSuccess: "A situação da Pessoa foi atualizada.",
     },
 );
+Object.assign((ptBR.access as unknown as { drive: Record<string, string> }).drive, {"exportsRoot":"Exportações","sharedRoot":"Compartilhados comigo","exportPreparing":"O conteúdo está sendo compactado para download. O download começará assim que o arquivo estiver pronto.","exportDownloadStarted":"A compactação foi concluída. O download será iniciado agora.","exportDownloadFailed":"Não foi possível iniciar um dos downloads. Tente baixá-lo novamente."});

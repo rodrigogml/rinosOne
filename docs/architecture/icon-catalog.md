@@ -11,7 +11,7 @@ Todo ícone vetorial deve obedecer a estas regras:
 - Usar `fill="none"`, `stroke-linecap="round"`, `stroke-linejoin="round"` e `stroke-width="2.25"`, salvo exceção aprovada no próprio catálogo. O ícone `performance` usa traço de `4` nos indicadores de barra.
 - Não codificar a dimensão de exibição no SVG. Os atributos de 48 px representam a área de desenho; CSS define o tamanho exibido.
 - No desktop, os tokens de ícone exibem 32 px na escala padrão e acompanham a preferência de tamanho de componentes. No mobile, os tokens usam 16, 20 ou 24 px conforme o contexto para preservar área útil e toque.
-- Um SVG dentro de `IconButton` deve preencher o invólucro `.ui-icon-button__icon`; ele nunca deve transbordar o botão.
+- Botões usam `UIRinoButton` com o identificador de ícone aprovado, sem imagens ou SVG em slots. O contrato de composição e resolução está no [guia vivo de Botões](/dev).
 
 > [!IMPORTANT]
 > O `viewBox` de 48 px é obrigatório mesmo quando o ícone aparece visualmente menor. Não reduza paths para 24 px e não introduza um segundo padrão de viewport.

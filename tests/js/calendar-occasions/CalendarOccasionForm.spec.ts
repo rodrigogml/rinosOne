@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { i18n } from '../../../resources/js/i18n';
 import CalendarOccasionForm from '../../../resources/js/calendar-occasions/CalendarOccasionForm.vue';
 
 vi.mock('axios', () => ({
@@ -27,7 +28,7 @@ describe('CalendarOccasionForm', () => {
 
     it('does not submit residual recurrence parameters for an annual fixed date', async () => {
         vi.mocked(axios.post).mockResolvedValue({ data: { calendarOccasion: { id: 1 } } });
-        const wrapper = mount(CalendarOccasionForm, { props: { occasionId: null } });
+        const wrapper = mount(CalendarOccasionForm, { props: { occasionId: null }, global: { plugins: [i18n] } });
         await flushPromises();
         await fillAnnualFixedDate(wrapper);
         wrapper.findAll('[required]').forEach((field) => field.element.removeAttribute('required'));
@@ -54,7 +55,7 @@ describe('CalendarOccasionForm', () => {
             response: { data: { error: { message: 'Há campos a corrigir.', fields: { 'recurrence.fixedDay': ['O dia informado não existe no mês selecionado.'] } } } },
         });
         vi.mocked(axios.isAxiosError).mockReturnValue(true);
-        const wrapper = mount(CalendarOccasionForm, { props: { occasionId: null } });
+        const wrapper = mount(CalendarOccasionForm, { props: { occasionId: null }, global: { plugins: [i18n] } });
         await flushPromises();
         await fillAnnualFixedDate(wrapper);
         wrapper.findAll('[required]').forEach((field) => field.element.removeAttribute('required'));

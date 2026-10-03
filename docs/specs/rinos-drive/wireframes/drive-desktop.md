@@ -1,28 +1,28 @@
-# Wireframe — Rinos Drive unificado em desktop
+# Wireframe — Rinos Drive em desktop
 
 ```text
-┌──────────────────────────────────────── Rinos Drive ──────────────────────────────────────────────┐
-│ [ícone Drive] Rinos Drive                         [Atualizar] [Abrir painel paralelo]              │
-│ ┌───────────────────────┬──────────────────────────────────────┬──────────────────────────────────┐ │
-│ │ CATÁLOGO E ÁRVORE     │ PAINEL A                             │ PAINEL B                         │ │
-│ │ ▾ Meu Drive           │ Meu Drive / Projetos                 │ Organização Alfa / Financeiro    │ │
-│ │   ▸ Projetos          │ [Grade][Lista][Detalhes][Tabela]     │ [Grade][Lista][Detalhes][Tabela]│ │
-│ │   Lixeira             │ ──────────────────────────────────── │ ──────────────────────────────── │ │
-│ │ ▾ Organização Alfa    │ ┌─────────┐ ┌─────────┐              │ ┌─────────┐ ┌─────────┐            │ │
-│ │   ▸ Financeiro        │ │ Pasta A │ │ Plano   │  ── arrastar ▶│ │ Pasta B │ │ Proposta│            │ │
-│ │   Lixeira             │ └─────────┘ └─────────┘              │ └─────────┘ └─────────┘            │ │
-│ │ ▸ Organização Beta    │                                      │                                  │ │
-│ │ ◇ Compartilhados      │ [progresso seguro da transferência]  │ [uso do drive de origem]          │ │
-│ │   comigo              │                                      │                                  │ │
-│ └───────────────────────┴──────────────────────────────────────┴──────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────── Rinos Drive ──────────────────────────────┐
+│ PAINEL A                              ║ PAINEL B                       │
+│ ┌────────────┬──────────────────────┐ ║ ┌────────────┬────────────────┐ │
+│ │ ÁRVORE     │ Meu Drive / Projetos  │ ║ │ ÁRVORE     │ Empresa / Docs │ │
+│ │ Meu Drive  │ [Árvore][Painel] ⋯    │ ║ │ Meu Drive  │ [Árvore] ⋯     │ │
+│ │  Projetos  │ [Grade|Lista|Detalhes]│ ║ │ Empresa    │ [G|L|D]        │ │
+│ │  Lixeira   │                      │ ║ │  Docs      │                │ │
+│ │ Empresa    │ Coleção com scroll   │ ║ │  Lixeira   │ Coleção        │ │
+│ │  Lixeira   │ interno              │ ║ │            │                │ │
+│ │ Compartilh.│                      │ ║ │            │                │ │
+│ │ Exportações│                      │ ║ │            │                │ │
+│ ├────────────┼──────────────────────┤ ║ ├────────────┼────────────────┤ │
+│ │ Uso        │ Status compacto      │ ║ │ Uso        │ Status         │ │
+│ └────────────┴──────────────────────┘ ║ └────────────┴────────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Regiões e regras
-
-- A janela é instância única e abre pelo botão global Drive na topbar, não por menu pessoal ou tenant.
-- A coluna esquerda contém catálogo e árvore lazy. Cada drive real possui lixeira própria; Compartilhados comigo é raiz virtual sem lixeira.
-- Um painel é o padrão. O botão de painel paralelo cria a segunda coluna; ambas possuem localização, seleção, toolbar, rolagem e estados próprios.
-- Drop de um painel no outro nunca executa diretamente: abre diálogo local com Copiar, Mover e Cancelar. Mesmo drive sugere Mover; drives diferentes sugerem Copiar.
-- Detalhes continuam drawer/painel interno e não alteram taskbar ou canva da aplicação.
-- Quando a largura não comportar dois painéis com conteúdo útil, o segundo painel muda para drawer/modal, conforme regra responsiva.
+- Instância única, aberta pela ferramenta global da topbar; um painel inicialmente.
+- As duas cópias do componente são iguais, exceto Compartilhados comigo, Exportações e o comando de segundo painel, exclusivos do primário. Exportações só aparece após uma solicitação na janela.
+- Localização, seleção, árvore, toolbar, rolagem, detalhes e visualização são independentes. Detalhes é o padrão; preferências são locais por usuário e painel.
+- O divisor central redistribui a largura. Cada árvore também tem divisor, limitado à largura do seu painel.
+- Ícone do drive abre/recolhe sua árvore; texto sempre navega para sua raiz. Cada drive real possui sua própria lixeira.
+- Drop na árvore ou coleção confirma Copiar/Mover/Cancelar; mesmo drive sugere Mover, diferentes sugerem Copiar. Origem somente leitura não permite Mover.
+- O conteúdo ocupa a altura restante; o status é uma faixa no rodapé. Excesso de comandos vai para o popover sem perder ações.
+- Até 700px, o segundo painel é desativado; não se converte em modal ou drawer.

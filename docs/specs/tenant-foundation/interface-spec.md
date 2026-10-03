@@ -46,7 +46,7 @@
 **Responsive/Adaptive Behavior**: em desktop, os dois avatares permanecem à direita da marca. Em telefone, a marca permanece à esquerda; os avatares usam tamanho compacto e o espaço da marca reduz-se antes de ocultar qualquer contexto. O seletor abre como folha modal móvel, não como popover estreito.
 **Accessibility**: o acionador é um botão nomeado; foco visível, alvo tocável conforme tokens existentes, ordem de foco marca, tenant, usuário. Alterações de contexto são anunciadas em região de status.
 **Localization**: todos os rótulos, estados e ações pertencem ao catálogo de idiomas existente em português do Brasil, inglês, espanhol e francês. Nomes de tenant não são traduzidos.
-**Components and Design System**: reutiliza `ApplicationTopBar`, `UserAvatar`, `IconButton`, tokens de avatar e camadas flutuantes. A evolução é um componente semântico reutilizável de avatar/menu de tenant, não um controle exclusivo da barra.
+**Components and Design System**: reutiliza `ApplicationTopBar`, `UserAvatar`, `UIRinoButton`, tokens de avatar e camadas flutuantes. A evolução é um componente semântico reutilizável de avatar/menu de tenant, não um controle exclusivo da barra.
 **Integration and Contracts**: consome a fotografia retornada por `POST /api/v1/tenants/{tenantId}/contexts` e seu encerramento. Não consome nem armazena credencial de infraestrutura.
 **Telemetry**: registra abertura do seletor, seleção concluída, troca, encerramento e invalidação, com identificador técnico do tenant somente no canal de segurança; não inclui nomes, schemas ou conteúdo contextual.
 **Wireframe Requirement**: REQUIRED
@@ -82,7 +82,7 @@
 **Responsive/Adaptive Behavior**: popover respeita bordas da viewport e fica próximo ao avatar em telas largas. Em telefone abre da parte inferior, ocupa largura segura, respeita área segura e permite rolagem interna; lista, ações e botão de fechamento permanecem alcançáveis com teclado virtual aberto.
 **Accessibility**: usa diálogo não modal no desktop e diálogo modal no telefone; foco inicial no título/fechamento, ciclo de foco quando modal e retorno ao avatar ao fechar. Itens da lista têm nome, estado e indicação de seleção para leitor de tela; nunca dependem apenas de cor.
 **Localization**: pluralização de lista vazia e mensagens de disponibilidade são localizadas nos quatro idiomas; nomes de tenant preservam sua grafia.
-**Components and Design System**: reutiliza superfície flutuante, `UserAvatar`, `UiButton`, `UiAlert`, `UiDialog` e tokens de espaçamento; introduz `TenantSelector` reutilizável para futura navegação e páginas de módulos.
+**Components and Design System**: reutiliza superfície flutuante, `UserAvatar`, `UIRinoButton`, `UiAlert`, `UiDialog` e tokens de espaçamento; introduz `TenantSelector` reutilizável para futura navegação e páginas de módulos.
 **Integration and Contracts**: consome `GET /api/v1/tenants`, início e encerramento de contexto do contrato de tenants. A lista só informa apresentação; a seleção sempre chama validação remota.
 **Telemetry**: abertura, lista vazia, seleção tentada, seleção concluída, seleção negada, encerramento e falha de carregamento; sem nomes ou dados da organização.
 **Wireframe Requirement**: REQUIRED
@@ -118,7 +118,7 @@
 **Responsive/Adaptive Behavior**: em desktop usa diálogo central com largura de leitura e lista rolável. Em telefone ocupa área segura com rolagem interna, formulário empilhado e ações de disponibilidade em largura total. Fechar pelo teclado virtual preserva os dados digitados.
 **Accessibility**: diálogo modal com título, descrição e foco inicial no campo de nome. Erro associado ao campo e anunciado; confirmação de desabilitação exige foco explícito na ação segura. O estado de preparação usa texto e ícone, não somente cor.
 **Localization**: título, rótulos, estados, confirmações e erros existem nos quatro idiomas. Nome é conteúdo do usuário e não é traduzido.
-**Components and Design System**: reutiliza `UiDialog`, `UiField`, `UiButton`, `UiAlert`, avatar e tokens. Introduz um item de estado de tenant reutilizável em futuras listas, sem criar cards exclusivos desta tela.
+**Components and Design System**: reutiliza `UiDialog`, `UiField`, `UIRinoButton`, `UiAlert`, avatar e tokens. Introduz um item de estado de tenant reutilizável em futuras listas, sem criar cards exclusivos desta tela.
 **Integration and Contracts**: consome criação, listagem e disponibilidade definidos em [tenant-context.md](contracts/tenant-context.md). A chave de intenção nasce no envio e é reutilizada somente na repetição daquela mesma criação.
 **Telemetry**: abertura, criação iniciada/aceita/falha, mudança de disponibilidade solicitada/concluída e atualização de estado; nomes, chaves de intenção, schemas e detalhes de falha são excluídos.
 **Wireframe Requirement**: REQUIRED

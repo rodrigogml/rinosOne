@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { WorkspaceDialog } from '../workspace/workspaceTypes';
-import UiButton from './UiButton.vue';
+import UIRinoButton from './UIRinoButton.vue';
 import UiDialog from './UiDialog.vue';
 
 const props = defineProps<{ dialogs: readonly WorkspaceDialog[] }>();
@@ -34,10 +34,10 @@ function resolve(confirmed: boolean): void {
     >
         <p class="dialog-description">{{ description }}</p>
         <div class="dialog-actions">
-            <UiButton v-if="activeDialog?.closePolicy === 'dismissible'" variant="secondary" @click="resolve(false)">{{ t('access.workspace.dialog.close') }}</UiButton>
+            <UIRinoButton v-if="activeDialog?.closePolicy === 'dismissible'" variant="secondary" @click="resolve(false)" label="access.workspace.dialog.close" />
             <template v-else>
-                <UiButton variant="secondary" @click="resolve(false)">{{ t('access.workspace.dialog.cancel') }}</UiButton>
-                <UiButton variant="destructive" @click="resolve(true)">{{ t('access.workspace.dialog.discard') }}</UiButton>
+                <UIRinoButton @click="resolve(false)" command="cancel"  />
+                <UIRinoButton variant="destructive" @click="resolve(true)" label="access.workspace.dialog.discard" />
             </template>
         </div>
     </UiDialog>

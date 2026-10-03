@@ -24,4 +24,9 @@ describe('raster icon assets', () => {
     it('registers the dedicated shared-with-me Drive icon', () => {
         expect(rasterIconSource('fileSharedWithMe', 'md')).toBe('/assets/icons/fileSharedWithMe_32.png');
     });
+
+    it('registers the file deletion and restoration icons used by Drive actions', () => {
+        expect(rasterIconSource('fileDelete', 'sm')).toBe('/assets/icons/fileDelete_24.png');
+        expect(rasterIconSource('fileRestore', 'md')).toBe('/assets/icons/fileRestore_32.png');
+    });
 });

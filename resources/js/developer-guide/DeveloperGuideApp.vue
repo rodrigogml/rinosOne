@@ -7,13 +7,15 @@ import ToastMessagesGuide from './toast-messages/ToastMessagesGuide.vue';
 import ToastHost from '../design-system/toast/ToastHost.vue';
 import DialogsGuide from './dialogs/DialogsGuide.vue';
 import DialogHost from '../design-system/dialog/DialogHost.vue';
+import FieldsGuide from './fields/FieldsGuide.vue';
 
-type GuideTopic = 'buttons' | 'associations' | 'toast-messages' | 'dialogs';
+type GuideTopic = 'buttons' | 'associations' | 'toast-messages' | 'dialogs' | 'fields';
 
 const activeTopic = ref<GuideTopic>('buttons');
 const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: ReadonlyArray<{ id: string; label: string }> }> = [
     { id: 'buttons', label: 'Botões', sections: [
         { id: 'buttons-overview', label: 'Visão geral' },
+        { id: 'buttons-centralizer', label: 'Centralizador' },
         { id: 'buttons-variants', label: 'Variantes' },
         { id: 'buttons-composition', label: 'Composição' },
         { id: 'buttons-states', label: 'Estados' },
@@ -23,6 +25,7 @@ const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: Read
     ] },
     { id: 'associations', label: 'Associações', sections: [
         { id: 'associations-overview', label: 'Visão geral' },
+        { id: 'associations-norms', label: 'Contrato obrigatório' },
         { id: 'associations-field-command', label: 'Campo e comando' },
         { id: 'associations-button-bar', label: 'Barras de botões' },
         { id: 'associations-select-command', label: 'Combo e comando' },
@@ -38,6 +41,13 @@ const guideTopics: ReadonlyArray<{ id: GuideTopic; label: string; sections: Read
         { id: 'dialogs-models', label: 'Modelos visuais' },
         { id: 'dialogs-behavior', label: 'Foco e Escape' },
         { id: 'dialogs-emission', label: 'Emissão centralizada' },
+    ] },
+    { id: 'fields', label: 'Campos', sections: [
+        { id: 'fields-overview', label: 'Visão geral' },
+        { id: 'fields-models', label: 'Modelos' },
+        { id: 'fields-temporal', label: 'Data e hora' },
+        { id: 'fields-validation', label: 'Dados validados' },
+        { id: 'fields-adoption', label: 'Adoção' },
     ] },
 ];
 const activeGuideTopic = computed(() => guideTopics.find((topic) => topic.id === activeTopic.value)!);
@@ -82,7 +92,8 @@ function navigateTo(sectionId: string): void {
                 <ButtonsGuide v-if="activeTopic === 'buttons'" />
                 <AssociationsGuide v-else-if="activeTopic === 'associations'" />
                 <ToastMessagesGuide v-else-if="activeTopic === 'toast-messages'" />
-                <DialogsGuide v-else />
+                <DialogsGuide v-else-if="activeTopic === 'dialogs'" />
+                <FieldsGuide v-else />
             </main>
         </div>
         <ToastHost has-top-bar />

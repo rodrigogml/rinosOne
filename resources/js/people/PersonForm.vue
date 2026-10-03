@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import axios from "axios";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -106,8 +107,6 @@ const relationshipSearch = ref("");
 let relationshipSearchTimer: ReturnType<typeof setTimeout> | null = null;
 const isNew = computed(() => props.personId === null);
 const activeSection = ref("basic");
-const cancelIcon = "/assets/icons/btCancel_24.png";
-const saveIcon = "/assets/icons/floppyDisk_24.png";
 const operationTitle = computed(() => {
     if (isNew.value) return "Inserindo Pessoa";
     if (props.initialAction === "duplicate") return "Duplicando Pessoa";
@@ -1293,23 +1292,8 @@ onMounted(() => void initialize());
                         @deleted="emit('cancel')"
                     />
                 </div>
-                <button
-                    type="button"
-                    class="ui-button ui-button--destructive"
-                    @click="requestCancel($event)"
-                >
-                    <img :src="cancelIcon" alt="" aria-hidden="true" />
-                    {{ t("access.people.cancel") }}
-                </button>
-                <button
-                    type="button"
-                    class="ui-button ui-button--primary"
-                    :disabled="!canSave"
-                    @click="save"
-                >
-                    <img :src="saveIcon" alt="" aria-hidden="true" />
-                    {{ saving ? t("access.people.saving") : t("access.people.save") }}
-                </button>
+                <UIRinoButton type="button" @click="requestCancel($event)" command="cancel" />
+                <UIRinoButton type="button" :disabled="!canSave" @click="save" command="save" :loading="saving" />
             </footer>
             </div>
         </form>
@@ -1325,11 +1309,7 @@ onMounted(() => void initialize());
                 {{ t("access.workspace.dialog.discardTitle") }}
             </h4>
             <p>{{ t("access.workspace.dialog.discardDescription") }}</p>
-            <button type="button" @click="cancelDiscard">
-                {{ t("access.workspace.dialog.cancel") }}</button
-            ><button type="button" @click="emit('cancel')">
-                {{ t("access.workspace.dialog.discard") }}
-            </button>
+            <UIRinoButton type="button" @click="cancelDiscard" command="cancel" /><UIRinoButton command="confirm" variant="destructive" label="access.workspace.dialog.discard" @click="emit('cancel')" />
         </section>
         <section
             v-if="removal !== null"
@@ -1343,12 +1323,8 @@ onMounted(() => void initialize());
                 {{ t("access.workspace.dialog.confirmationTitle") }}
             </h4>
             <p>{{ t("access.people.removeItemConfirmation") }}</p>
-            <button type="button" @click="cancelRemoval">
-                {{ t("access.workspace.dialog.cancel") }}
-            </button>
-            <button type="button" @click="confirmRemoval">
-                {{ t("access.people.delete") }}
-            </button>
+            <UIRinoButton type="button" @click="cancelRemoval" command="cancel" />
+            <UIRinoButton type="button" @click="confirmRemoval" command="delete" />
         </section>
     </section>
 </template>

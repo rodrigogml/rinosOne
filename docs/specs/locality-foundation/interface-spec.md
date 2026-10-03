@@ -41,7 +41,7 @@
 **Responsive/Adaptive Behavior**: em desktop, lista e detalhe permanecem lado a lado. Entre 701px e 900px, a lista pode assumir grade acima do detalhe. Em até 700px, o detalhe ocupa a área principal e a lista é ocultada até a pessoa ativar “Voltar às rotinas”. Todos os controles funcionam por toque, mouse e teclado.
 **Accessibility**: preservar `main`, título de nível 2, navegação nomeada, `aria-current` no item selecionado, regiões de anúncio educadas e foco no título do detalhe após seleção. Estado, sucesso e falha têm texto além de cor; botões e seletor mantêm alvo mínimo existente e operação por teclado.
 **Localization**: usar o catálogo i18n existente para rótulos genéricos do Hub. “Localidades brasileiras”, agenda e resumos da rotina devem ter chaves traduzíveis nos idiomas suportados; datas usam `Intl.DateTimeFormat` do locale ativo.
-**Components and Design System**: reutilizar `MaintenanceHubSurface`, `UiButton`, `UiAlert`, o seletor nativo e tokens existentes. Nenhum componente, ícone ou layout novo é necessário.
+**Components and Design System**: reutilizar `MaintenanceHubSurface`, `UIRinoButton`, `UiAlert`, o seletor nativo e tokens existentes. Nenhum componente, ícone ou layout novo é necessário.
 **Integration and Contracts**: consome [contracts/maintenance-routine.md](contracts/maintenance-routine.md) por meio dos endpoints existentes de lista e detalhe do Hub. `capabilities.canSynchronize` deve ser `false`; o endpoint de ação permanece indisponível para essa rotina.
 **Telemetry**: não criar telemetria adicional nesta entrega. Logs/histórico técnicos do backend permanecem a fonte de observabilidade; a interface não registra conteúdo de erros nem dados de execução.
 **Wireframe Requirement**: N/A

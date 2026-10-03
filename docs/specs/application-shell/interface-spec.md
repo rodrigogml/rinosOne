@@ -79,7 +79,7 @@
 **Responsive/Adaptive Behavior**: em desktop e tablet, alinha ao avatar sem ultrapassar a viewport. Em telefone, mantém largura legível e pode usar painel elevado acima do conteúdo, respeitando safe areas e teclado virtual. Os três utilitários inferiores nunca ficam ocultos por escala ampliada; podem rolar internamente se necessário.
 **Accessibility**: papel de menu ou diálogo é aplicado conforme o contrato final do componente, com rótulo acessível “Menu pessoal”. Foco inicial vai para o primeiro item acionável; Escape fecha e devolve foco ao avatar. Tab não permite alcançar conteúdo visualmente bloqueado quando o painel é modal. Cada ícone tem rótulo textual acessível; o divisor não é a única indicação da separação. O item reservado informa que ainda não está disponível, sem simular link funcional.
 **Localization**: traduz título, item reservado, estado de indisponibilidade, preferências, idioma e saída nos quatro idiomas. Bandeira não é a única identificação de idioma.
-**Components and Design System**: introduz `UserMenu`; reutiliza `UserAvatar`, `VisualPreferencesPopover`, `LanguageSelector`, `IconButton`, tokens de popup e estilos de menu compartilhados.
+**Components and Design System**: introduz `UserMenu`; reutiliza `UserAvatar`, `VisualPreferencesPopover`, `LanguageSelector`, `UIRinoButton`, tokens de popup e estilos de menu compartilhados.
 **Integration and Contracts**: a saída chama a intenção existente da aplicação, que usa o contrato de sessão em [auth-api.md](../user-auth/contracts/auth-api.md). Preferências e idioma continuam locais e não consomem API.
 **Telemetry**: N/A nesta entrega. Não registrar escolha de preferência, idioma, nome, saída ou estado de menu.
 **Wireframe Requirement**: REQUIRED
@@ -115,7 +115,7 @@
 **Responsive/Adaptive Behavior**: aparece somente até 639 px; tablet e desktop não mostram o acionador funcional de navegação. Painel ocupa largura suficiente para leitura, preserva margem de contexto e usa rolagem vertical própria quando necessário. Suporta toque, ponteiro e teclado físico; safe areas e teclado virtual não encobrem o controle de fechar.
 **Accessibility**: painel recebe rótulo “Navegação”, foco inicial no controle de fechar e foco devolvido à marca ao fechar. Escape funciona; a camada externa tem comportamento equivalente e não é a única forma de fechar. Enquanto aberto, o conteúdo atrás não entra na ordem de foco. Transição é dispensável quando redução de movimento estiver ativa.
 **Localization**: título, texto de ausência de destinos e rótulo de fechar estão disponíveis nos quatro idiomas. O nome de marca não é traduzido.
-**Components and Design System**: introduz `MobileNavigationDrawer`; reutiliza `BrandMark`, `IconButton`, tokens de sobreposição e estilos compartilhados de painel.
+**Components and Design System**: introduz `MobileNavigationDrawer`; reutiliza `BrandMark`, `UIRinoButton`, tokens de sobreposição e estilos compartilhados de painel.
 **Integration and Contracts**: não consome contrato externo; preserva o contrato de sessão já carregado pela casca.
 **Telemetry**: N/A nesta entrega. Não registrar abertura, largura de tela, sessão ou conteúdo visual.
 **Wireframe Requirement**: REQUIRED

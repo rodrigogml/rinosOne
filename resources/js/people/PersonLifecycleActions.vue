@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import { nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { trapFocus } from "../accessibility/focusTrap";
@@ -132,13 +133,7 @@ defineExpose({ openFromCatalog });
         >
             {{ t("access.people.reactivate") }}
         </button>
-        <button
-            v-if="capabilities.canDeletePeople"
-            type="button"
-            @click="requestDelete($event)"
-        >
-            {{ t("access.people.delete") }}
-        </button>
+        <UIRinoButton v-if="capabilities.canDeletePeople" type="button" @click="requestDelete($event)" command="delete" />
         <p v-if="error && !mode" role="alert">{{ error }}</p>
         <section
             v-if="mode"
@@ -178,15 +173,7 @@ defineExpose({ openFromCatalog });
                 }}
             </p>
             <p v-if="error" role="alert">{{ error }}</p>
-            <button type="button" :disabled="processing" @click="close">
-                {{ t("access.people.cancel") }}</button
-            ><button
-                type="button"
-                :disabled="processing || usages.length > 0"
-                @click="confirm"
-            >
-                {{ t("access.people.confirm") }}
-            </button>
+            <UIRinoButton type="button" :disabled="processing" @click="close" command="cancel" /><UIRinoButton type="button" :disabled="processing || usages.length > 0" @click="confirm" command="confirm" />
         </section>
     </section>
 </template>

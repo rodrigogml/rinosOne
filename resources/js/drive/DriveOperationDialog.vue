@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import UiDialog from '../design-system/UiDialog.vue';
 
 defineProps<{
@@ -19,8 +19,8 @@ const emit = defineEmits<{ submit: [] }>();
             <slot />
             <p v-if="error" class="drive-operation-dialog__error" role="alert">{{ error }}</p>
             <div>
-                <UiButton variant="secondary" :disabled="loading" @click="open = false">{{ cancelLabel }}</UiButton>
-                <UiButton type="submit" :loading="loading">{{ confirmLabel }}</UiButton>
+                <UIRinoButton command="cancel" :disabled="loading" @click="open = false" :label="cancelLabel" />
+                <UIRinoButton command="confirm" type="submit" :loading="loading" :label="confirmLabel" />
             </div>
         </form>
     </UiDialog>

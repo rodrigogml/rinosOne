@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ modelValue: boolean; title: string; subtitle?: string; iconSrc?: string; windowLike?: boolean; tone?: 'warning' | 'error' | 'question' | 'bug' | ''; messageDialog?: boolean; fluid?: boolean; teleportTo?: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean; wide?: boolean; initialFocusSelector?: string }>(), { subtitle: '', iconSrc: '', windowLike: false, tone: '', messageDialog: false, fluid: false, teleportTo: '', destructive: false, escapable: true, backdropDismissible: true, contained: false, wide: false, initialFocusSelector: '' });
+const props = withDefaults(defineProps<{ modelValue: boolean; title: string; subtitle?: string; iconSrc?: string; windowLike?: boolean; tone?: 'warning' | 'error' | 'question' | 'bug' | 'validation' | ''; messageDialog?: boolean; fluid?: boolean; teleportTo?: string; destructive?: boolean; escapable?: boolean; backdropDismissible?: boolean; contained?: boolean; wide?: boolean; initialFocusSelector?: string }>(), { subtitle: '', iconSrc: '', windowLike: false, tone: '', messageDialog: false, fluid: false, teleportTo: '', destructive: false, escapable: true, backdropDismissible: true, contained: false, wide: false, initialFocusSelector: '' });
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const dialog = ref<HTMLElement | null>(null);
 let returnFocus: HTMLElement | null = null;

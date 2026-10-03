@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import UiDialog from '../design-system/UiDialog.vue';
 import type { DriveTransferMode } from './driveWorkspaceApi';
 
-const props = defineProps<{ sourceLabel: string; destinationLabel: string; itemCount: number; sameDrive: boolean; loading?: boolean; error?: string; }>();
+const props = withDefaults(defineProps<{ sourceLabel: string; destinationLabel: string; itemCount: number; sameDrive: boolean; canMove?: boolean; loading?: boolean; error?: string; }>(), { canMove: true });
 const open = defineModel<boolean>({ required: true });
 const emit = defineEmits<{ confirm: [mode: DriveTransferMode] }>();
 const { t } = useI18n();
-const mode = ref<DriveTransferMode>(props.sameDrive ? 'MOVE' : 'COPY');
-const defaultMode = computed<DriveTransferMode>(() => props.sameDrive ? 'MOVE' : 'COPY');
+const mode = ref<DriveTransferMode>(props.sameDrive && props.canMove ? 'MOVE' : 'COPY');
+const defaultMode = computed<DriveTransferMode>(() => props.sameDrive && props.canMove ? 'MOVE' : 'COPY');
 watch(open, (visible) => { if (visible) mode.value = defaultMode.value; });
 watch(defaultMode, (value) => { if (open.value) mode.value = value; });
 </script>
@@ -20,9 +20,9 @@ watch(defaultMode, (value) => { if (open.value) mode.value = value; });
         <form class="drive-transfer-dialog" @submit.prevent="emit('confirm', mode)">
             <p>{{ t('access.drive.transferDescription', { count: itemCount }) }}</p>
             <dl><div><dt>{{ t('access.drive.transferSource') }}</dt><dd>{{ sourceLabel }}</dd></div><div><dt>{{ t('access.drive.transferDestination') }}</dt><dd>{{ destinationLabel }}</dd></div></dl>
-            <fieldset><legend>{{ t('access.drive.transferMode') }}</legend><label><input v-model="mode" type="radio" value="COPY"> {{ t('access.drive.copy') }}</label><label><input v-model="mode" type="radio" value="MOVE"> {{ t('access.drive.move') }}</label></fieldset>
+            <fieldset><legend>{{ t('access.drive.transferMode') }}</legend><label><input v-model="mode" type="radio" value="COPY"> {{ t('access.drive.copy') }}</label><label><input v-model="mode" type="radio" value="MOVE" :disabled="!canMove"> {{ t('access.drive.move') }}</label></fieldset>
             <p v-if="error" role="alert" class="drive-transfer-dialog__error">{{ error }}</p>
-            <div><UiButton variant="secondary" :disabled="loading" @click="open = false">{{ t('access.drive.cancel') }}</UiButton><UiButton type="submit" :loading="loading">{{ mode === 'COPY' ? t('access.drive.copy') : t('access.drive.move') }}</UiButton></div>
+            <div><UIRinoButton :disabled="loading" @click="open = false" command="cancel"  /><UIRinoButton type="submit" :loading="loading" variant="primary" :label="mode === 'COPY' ? 'access.drive.copy' : 'access.drive.move'" /></div>
         </form>
     </UiDialog>
 </template>

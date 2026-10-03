@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import { nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { trapFocus } from "../accessibility/focusTrap";
@@ -120,9 +121,7 @@ defineExpose({ openFromCatalog });
             </fieldset>
             <p v-if="error" role="alert">{{ error }}</p>
             <footer>
-                <button type="button" :disabled="processing" @click="close">
-                    {{ t("access.people.cancel") }}
-                </button>
+                <UIRinoButton type="button" :disabled="processing" @click="close" command="cancel" />
                 <button type="button" :disabled="processing" @click="confirm">
                     {{
                         processing

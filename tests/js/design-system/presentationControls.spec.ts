@@ -45,7 +45,7 @@ describe('presentation controls', () => {
         const { wrapper } = mountWithStore(VisualPreferencesPopover);
         const icon = wrapper.get('button[aria-label="Preferências visuais"] img');
 
-        expect(icon.attributes()).toMatchObject({ src: '/assets/icons/theme_32.png', alt: '', 'aria-hidden': 'true' });
+        expect(icon.attributes()).toMatchObject({ src: '/assets/icons/theme_48.png', alt: '', 'aria-hidden': 'true' });
         wrapper.unmount();
     });
 

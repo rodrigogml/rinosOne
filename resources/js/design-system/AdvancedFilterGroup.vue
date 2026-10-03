@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UIRinoButton from './UIRinoButton.vue';
 import { computed, ref, toRaw } from 'vue';
 import type { AdvancedFilterCondition, AdvancedFilterField, AdvancedFilterGroup, AdvancedFilterNode, AdvancedFilterSchema } from './advancedFilter';
 import { createAdvancedFilterGroup, createAdvancedFilterNodeId } from './advancedFilter';
@@ -60,7 +61,7 @@ function dropAtEnd(event: DragEvent): void { const draggedId = draggedNodeId(eve
                     <label v-if="modelValue.matchMode === 'SAME_RECORD'">{{ t('access.advancedFilter.relation') }}<select :value="modelValue.relation ?? ''" @change="changeGroupRelation"><option v-for="relation in schema.relations" :key="relation.key" :value="relation.key">{{ relation.label }}</option></select></label>
                 </template>
                 <span v-else class="advanced-filter-group__context">{{ t('access.advancedFilter.sameRecordIn', { relation: relationLabel }) }}</span>
-                <button v-if="!root" class="ui-icon-button advanced-filter-group__remove" type="button" :title="t('access.advancedFilter.removeGroup')" :aria-label="t('access.advancedFilter.removeGroup')" @click="emit('remove')"><img :src="'/assets/icons/fileDelete_24.png'" alt=""></button>
+                <UIRinoButton v-if="!root" type="button" @click="emit('remove')" class="advanced-filter-group__remove" icon="fileDelete" accessible-label="access.advancedFilter.removeGroup" />
             </header>
             <p v-if="modelValue.matchMode === 'SAME_RECORD' && !inheritedRelation" class="advanced-filter-group__hint">{{ t('access.advancedFilter.sameRecordHint', { relation: relationLabel }) }}</p>
             <div class="advanced-filter-group__children">
@@ -71,12 +72,12 @@ function dropAtEnd(event: DragEvent): void { const draggedId = draggedNodeId(eve
                         <label><span class="sr-only">{{ t('access.advancedFilter.field') }}</span><select :value="child.field" @change="changeField(index, targetValue($event))"><option v-if="!isCompatible(child)" :value="child.field">{{ fieldFor(child)?.label ?? child.field }} — {{ t('access.advancedFilter.incompatibleField') }}</option><option v-for="field in fields" :key="field.key" :value="field.key">{{ field.label }}</option></select></label>
                         <label><span class="sr-only">{{ t('access.advancedFilter.operator') }}</span><select :value="child.operator" @change="changeConditionOperator(index, $event)"><option v-for="operator in fieldFor(child)?.operators ?? []" :key="operator" :value="operator">{{ t(`access.advancedFilter.operators.${operator}`) }}</option></select></label>
                         <label v-if="needsValue(child)" :key="`${child.field}:${child.operator}`" class="advanced-filter-condition__value"><span class="sr-only">{{ t('access.advancedFilter.value') }}</span><UiMultiSelect v-if="fieldFor(child)?.type === 'ENUM' && ['IN', 'NOT_IN'].includes(child.operator)" :model-value="Array.isArray(child.value) ? child.value : []" :options="fieldFor(child)?.options ?? []" :label="t('access.advancedFilter.value')" @update:model-value="changeConditionValues(index, $event)" /><select v-else-if="fieldFor(child)?.type === 'ENUM'" :value="child.value" @change="changeConditionValue(index, $event)"><option v-for="option in fieldFor(child)?.options ?? []" :key="option.value" :value="option.value">{{ option.label }}</option></select><input v-else :value="String(child.value ?? '')" type="text" @input="changeConditionValue(index, $event)"></label>
-                        <button class="ui-icon-button" type="button" :title="t('access.advancedFilter.removeCondition')" :aria-label="t('access.advancedFilter.removeCondition')" @click="removeChild(index)"><img :src="'/assets/icons/fileDelete_24.png'" alt=""></button>
+                        <UIRinoButton type="button" @click="removeChild(index)" icon="fileDelete" accessible-label="access.advancedFilter.removeCondition" />
                     </div>
                 </template>
                 <div class="advanced-filter-group__drop-tail" :class="{ 'advanced-filter-group__drop-tail--active': dropTarget?.position === 'end' }" @dragover.stop.prevent="markTail" @dragleave.stop="clearDrop" @drop.stop.prevent="dropAtEnd" />
             </div>
-            <footer class="advanced-filter-group__actions"><button class="ui-icon-button" type="button" :title="t('access.advancedFilter.addCondition')" :aria-label="t('access.advancedFilter.addCondition')" @click="addCondition"><img :src="'/assets/icons/add-condition_24.png'" alt=""></button><button v-if="canAddGroup" class="ui-icon-button" type="button" :title="t('access.advancedFilter.addGroup')" :aria-label="t('access.advancedFilter.addGroup')" @click="addGroup"><img :src="'/assets/icons/add-condition-group_24.png'" alt=""></button></footer>
+            <footer class="advanced-filter-group__actions"><UIRinoButton type="button" @click="addCondition" icon="add-condition" accessible-label="access.advancedFilter.addCondition" /><UIRinoButton v-if="canAddGroup" type="button" @click="addGroup" icon="add-condition-group" accessible-label="access.advancedFilter.addGroup" /></footer>
         </div>
     </section>
 </template>

@@ -69,7 +69,7 @@
 
 **Localization**: rótulos e mensagens usam chaves de tradução existentes/novas; datas e horas seguem localidade e fuso do usuário quando disponível; textos permitem expansão de idioma e não expõem dados técnicos sensíveis.
 
-**Components and Design System**: reutiliza a casca autenticada, superfície da Área de Trabalho, `UiButton`, alertas, diálogos e tokens existentes. Cria cartões/tabela de histórico específicos de manutenção somente onde o sistema de design não cobrir a semântica necessária.
+**Components and Design System**: reutiliza a casca autenticada, superfície da Área de Trabalho, `UIRinoButton`, alertas, diálogos e tokens existentes. Cria cartões/tabela de histórico específicos de manutenção somente onde o sistema de design não cobrir a semântica necessária.
 
 **Integration and Contracts**: consome [maintenance-administration.md](contracts/maintenance-administration.md): listagem, detalhe e auditoria. Carregamento inicial não usa cache persistente; recarregamento manual busca estado atual.
 

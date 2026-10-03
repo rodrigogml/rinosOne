@@ -6,7 +6,7 @@ import { createTenantIdempotencyKey } from '../tenant/idempotencyKey';
 import type { TenantSummary } from '../tenant/tenantTypes';
 import TenantStatusBadge from './TenantStatusBadge.vue';
 import UiAlert from './UiAlert.vue';
-import UiButton from './UiButton.vue';
+import UIRinoButton from './UIRinoButton.vue';
 import UiDialog from './UiDialog.vue';
 import UiField from './UiField.vue';
 
@@ -100,7 +100,7 @@ onBeforeUnmount(() => { window.clearTimeout(refreshTimer); window.removeEventLis
             <UiField id="tenant-display-name" :label="t('access.tenant.name')" :error="fieldError" required v-slot="field">
                 <input id="tenant-display-name" v-model="displayName" maxlength="120" autocomplete="organization" :aria-describedby="field.describedBy" :aria-invalid="field.invalid" required>
             </UiField>
-            <UiButton type="submit" :loading="creating" :disabled="!online">{{ t('access.tenant.create') }}</UiButton>
+            <UIRinoButton type="submit" :loading="creating" :disabled="!online" variant="primary" label="access.tenant.create" />
         </form>
         <UiAlert v-if="feedback" :tone="feedback === t('access.tenant.creationAccepted') || feedback === t('access.tenant.availabilityChanged') ? 'success' : 'error'">{{ feedback }}</UiAlert>
         <section class="tenant-management__list" :aria-label="t('access.tenant.managementTitle')">
@@ -108,12 +108,12 @@ onBeforeUnmount(() => { window.clearTimeout(refreshTimer); window.removeEventLis
             <p v-else-if="!tenants.length">{{ t('access.tenant.empty') }}</p>
             <article v-for="tenant in tenants" v-else :key="tenant.id" class="tenant-management__item">
                 <div><strong>{{ tenant.displayName }}</strong><TenantStatusBadge :state="tenant.state" /></div>
-                <UiButton v-if="tenant.canManageAvailability && (tenant.state === 'ACTIVE' || tenant.state === 'INACTIVE')" variant="secondary" :loading="changingTenantId === tenant.id" @click="requestAvailabilityChange(tenant)">{{ tenant.state === 'ACTIVE' ? t('access.tenant.disable') : t('access.tenant.enable') }}</UiButton>
+                <UIRinoButton v-if="tenant.canManageAvailability && (tenant.state === 'ACTIVE' || tenant.state === 'INACTIVE')" variant="secondary" :loading="changingTenantId === tenant.id" @click="requestAvailabilityChange(tenant)" :label="tenant.state === 'ACTIVE' ? 'access.tenant.disable' : 'access.tenant.enable'" />
             </article>
         </section>
     </UiDialog>
     <UiDialog v-model="disableConfirmationOpen" :title="t('access.tenant.disableConfirmationTitle')" destructive>
         <p class="dialog-description">{{ t('access.tenant.disableConfirmationDescription', { name: tenantPendingDisable?.displayName ?? '' }) }}</p>
-        <div class="dialog-actions"><UiButton variant="secondary" @click="tenantPendingDisable = null">{{ t('access.actions.cancel') }}</UiButton><UiButton variant="destructive" @click="confirmDisable">{{ t('access.tenant.disable') }}</UiButton></div>
+        <div class="dialog-actions"><UIRinoButton @click="tenantPendingDisable = null" command="cancel"  /><UIRinoButton variant="destructive" @click="confirmDisable" label="access.tenant.disable" /></div>
     </UiDialog>
 </template>

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UiAlert from '../design-system/UiAlert.vue';
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import UiDialog from '../design-system/UiDialog.vue';
 import type { ProfilePresentation } from './ProfileSettingsPanel.vue';
 
@@ -65,13 +65,13 @@ onBeforeUnmount(clearSource);
             <p class="avatar-crop-dialog__description">{{ t('access.profile.avatarRequirements') }}</p>
             <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
             <input ref="input" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" @change="onFileChange">
-            <section v-if="!ready" class="avatar-crop-dialog__drop" @dragover.prevent @drop="drop"><p>{{ t('access.profile.avatarSelectionHint') }}</p><UiButton @click="input?.click()">{{ t('access.profile.avatarSelect') }}</UiButton></section>
+            <section v-if="!ready" class="avatar-crop-dialog__drop" @dragover.prevent @drop="drop"><p>{{ t('access.profile.avatarSelectionHint') }}</p><UIRinoButton @click="input?.click()" variant="primary" label="access.profile.avatarSelect" /></section>
             <template v-else>
                 <div class="avatar-crop-dialog__preview" :style="previewStyle" role="slider" tabindex="0" :aria-label="t('access.profile.avatarPosition')" :aria-valuetext="t('access.profile.avatarZoomValue', { value: Math.round(zoom * 100) })" @keydown="keys" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" />
                 <label class="avatar-crop-dialog__zoom"><span>{{ t('access.profile.avatarZoomValue', { value: Math.round(zoom * 100) }) }}</span><input v-model.number="zoom" type="range" min="1" max="4" step="0.01" :disabled="processing"></label>
-                <div class="avatar-crop-dialog__tools"><UiButton variant="secondary" :disabled="processing || zoom <= 1" @click="zoom = Math.max(1, zoom - .1)">{{ t('access.profile.avatarZoomOut') }}</UiButton><UiButton variant="secondary" :disabled="processing || zoom >= 4" @click="zoom = Math.min(4, zoom + .1)">{{ t('access.profile.avatarZoomIn') }}</UiButton><UiButton variant="secondary" :disabled="processing" @click="center">{{ t('access.profile.avatarCenter') }}</UiButton><UiButton variant="secondary" :disabled="processing" @click="input?.click()">{{ t('access.profile.avatarChange') }}</UiButton></div>
+                <div class="avatar-crop-dialog__tools"><UIRinoButton variant="secondary" :disabled="processing || zoom <= 1" @click="zoom = Math.max(1, zoom - .1)" label="access.profile.avatarZoomOut" /><UIRinoButton variant="secondary" :disabled="processing || zoom >= 4" @click="zoom = Math.min(4, zoom + .1)" label="access.profile.avatarZoomIn" /><UIRinoButton variant="secondary" :disabled="processing" @click="center" label="access.profile.avatarCenter" /><UIRinoButton variant="secondary" :disabled="processing" @click="input?.click()" label="access.profile.avatarChange" /></div>
             </template>
-            <div class="dialog-actions"><UiButton variant="secondary" :disabled="processing" @click="close">{{ t('access.actions.cancel') }}</UiButton><UiButton :disabled="!ready" :loading="processing" @click="save">{{ t('access.profile.avatarSave') }}</UiButton></div>
+            <div class="dialog-actions"><UIRinoButton :disabled="processing" @click="close" command="cancel"  /><UIRinoButton :disabled="!ready" :loading="processing" @click="save" variant="primary" label="access.profile.avatarSave" /></div>
         </div>
     </UiDialog>
 </template>

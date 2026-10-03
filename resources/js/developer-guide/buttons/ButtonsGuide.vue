@@ -1,224 +1,114 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import IconButton from '../../design-system/IconButton.vue';
-import UiButton from '../../design-system/UiButton.vue';
+import UIRinoButton from '../../design-system/UIRinoButton.vue';
+import UiControlGroup from '../../design-system/UiControlGroup.vue';
+import { rinoButtonCommands } from '../../design-system/rinoButtonCommands';
+import { createRinoToggleGroup } from '../../design-system/rinoToggleGroup';
 
-const iconPath = (name: string): string => `/assets/icons/${name}_24.png`;
-
-type TextButtonVariant = 'primary' | 'secondary' | 'destructive';
-
-const screenCommands: ReadonlyArray<{
-    label: string;
-    icon: string;
-    variant: TextButtonVariant;
-    scope: string;
-    notAllowed: string;
-}> = [
-    { label: 'Inserir', icon: 'dataInsert', variant: 'secondary', scope: 'Abre a inclusão de um novo registro ou objeto, sem confirmar a gravação.', notAllowed: 'Novo, Adicionar, Criar' },
-    { label: 'Duplicar', icon: 'dataDuplicate', variant: 'secondary', scope: 'Inicia um novo registro a partir de uma única seleção existente.', notAllowed: 'Copiar, Clonar' },
-    { label: 'Alterar', icon: 'dataEdit', variant: 'secondary', scope: 'Abre a alteração de um único registro existente.', notAllowed: 'Editar, Modificar' },
-    { label: 'Visualizar', icon: 'dataView', variant: 'secondary', scope: 'Abre a consulta de um único registro sem iniciar edição.', notAllowed: 'Ver, Consultar' },
-    { label: 'Excluir', icon: 'dataDelete', variant: 'destructive', scope: 'Confirma e executa a exclusão de um registro ou objeto.', notAllowed: 'Apagar, Deletar' },
-    { label: 'Salvar', icon: 'floppyDisk', variant: 'primary', scope: 'Persiste a criação ou alteração preenchida em um formulário.', notAllowed: 'Gravar, Concluir' },
-    { label: 'Cancelar', icon: 'btCancel', variant: 'secondary', scope: 'Abandona o fluxo local sem confirmar ou persistir a alteração atual.', notAllowed: 'Voltar, Fechar' },
-    { label: 'Confirmar', icon: 'btConfirm', variant: 'primary', scope: 'Confirma uma consequência já descrita no diálogo; exclusões mantêm o rótulo Excluir.', notAllowed: 'OK, Prosseguir' },
-];
-
-const iconOnlyCommands: ReadonlyArray<{ label: string; icon: string; scope: string }> = [
-    { label: 'Pesquisar', icon: 'search', scope: 'Executa a busca preenchida no campo adjacente.' },
-    { label: 'Filtros', icon: 'funnel', scope: 'Abre ou alterna os filtros da listagem.' },
-    { label: 'Manter seleção', icon: 'tableLockSelection', scope: 'Alterna a preservação dos itens selecionados entre novas buscas.' },
-    { label: 'Exibir selecionados', icon: 'tableShowSelected', scope: 'Alterna a lista para mostrar somente os itens selecionados.' },
-    { label: 'Incluir selecionados ocultos', icon: 'tableShowHiddenSelected', scope: 'Alterna a inclusão de itens selecionados fora dos critérios atuais.' },
-    { label: 'Limpar seleção', icon: 'tableCleanSelection', scope: 'Remove a seleção mantida na listagem.' },
-    { label: 'Colunas', icon: 'tableColumns', scope: 'Abre a configuração de colunas da listagem.' },
-];
-
+const commands = Object.entries(rinoButtonCommands).map(([command, definition]) => ({ command: command as keyof typeof rinoButtonCommands, ...definition }));
 const keepSelection = ref(false);
 const showSelected = ref(false);
+const toggleGroup = createRinoToggleGroup();
+const optionalToggleGroup = createRinoToggleGroup({ required: false });
 </script>
 
 <template>
     <article class="developer-guide-article">
         <header id="buttons-overview" class="developer-guide-article__header" tabindex="-1">
-            <p class="developer-guide-article__eyebrow">Controle · ação</p>
-            <h1>Botões</h1>
-            <p>
-                Este é o catálogo normativo de botões do Rinos One. Toda ação acionável deve reutilizar
-                <code>UiButton</code> ou <code>IconButton</code>; não são permitidas variações locais de cor,
-                borda, raio, tamanho ou comportamento.
-            </p>
+            <p class="developer-guide-article__eyebrow">Controle · ação</p><h1>Botões</h1>
+            <p>Esta página é a norma obrigatória de botões do Rinos One. Todos os modelos e exemplos usam UIRinoButton: um componente próprio da aplicação, não da linguagem nem do framework. Os exemplos aplicam o contrato; não são sugestões de variações locais.</p>
         </header>
-
-        <section class="developer-guide-section" aria-labelledby="buttons-variants">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-variants" tabindex="-1">Variantes</h2>
-                <p>Há três variantes de ação com texto. A escolha segue o momento e a consequência do comando no fluxo, nunca a preferência visual da tela.</p>
-            </div>
-            <div class="developer-guide-showcase">
-                <div class="developer-guide-showcase__examples">
-                    <UiButton>Salvar alterações</UiButton>
-                    <UiButton variant="secondary">Cancelar</UiButton>
-                    <UiButton variant="destructive">Excluir registro</UiButton>
-                </div>
-                <dl class="developer-guide-definition-list">
-                    <div><dt><code>primary</code></dt><dd>Conclui e persiste a ação principal da tela ou da confirmação atual, como Salvar.</dd></div>
-                    <div><dt><code>secondary</code></dt><dd>Abre, consulta ou prepara uma ação; também cancela sem persistir. Inserir, Alterar, Visualizar e Cancelar usam esta variante.</dd></div>
-                    <div><dt><code>destructive</code></dt><dd>Confirma exclusão, descarte ou outra remoção. Use o verbo específico da consequência, como Excluir.</dd></div>
-                </dl>
-            </div>
-            <aside class="developer-guide-note" role="note">
-                <strong>Default e nome canônico.</strong> <code>UiButton</code> sem <code>variant</code> é <code>primary</code>. <code>Cancelar</code> é sempre <code>secondary</code>. A variante destrutiva é <code>destructive</code>; não crie nem use <code>danger</code>, mesmo que “perigo” descreva a semântica do token de cor.
-            </aside>
-            <pre class="developer-guide-code"><code>&lt;UiButton&gt;Salvar alterações&lt;/UiButton&gt;
-&lt;UiButton variant=&quot;secondary&quot;&gt;Cancelar&lt;/UiButton&gt;
-&lt;UiButton variant=&quot;destructive&quot;&gt;Excluir registro&lt;/UiButton&gt;</code></pre>
+        <section id="buttons-norms" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-norms-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-norms-title">Normas obrigatórias</h2></div>
+            <aside class="developer-guide-note developer-guide-note--mandatory"><strong>Obrigatório.</strong> Use exclusivamente <code>UIRinoButton</code> para ações por texto, ícone ou ambos. Comandos conhecidos usam <code>command</code> do registro único <code>rinoButtonCommands</code>. Tradução, ícone, variante, estados e acessibilidade são centralizados.</aside>
+            <aside class="developer-guide-note developer-guide-note--prohibited"><strong>Proibido.</strong> Não recrie botões por HTML, CSS ou componentes paralelos. Não renomeie comandos transversais com sinônimos nem use slots para remontar ícone e texto. Não há uma classe separada de botão de listagem.</aside>
+            <aside class="developer-guide-note developer-guide-note--exception"><strong>Exceção.</strong> Configurações explícitas podem sobrepor o preset para um contexto específico. A sobreposição deve conservar o sentido da ação e seguir estas normas; ela não autoriza CSS local. Novos comandos transversais evoluem o registro e este guia antes da adoção.</aside>
         </section>
+        <section id="buttons-centralizer" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-centralizer-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-centralizer-title">Centralizador de comandos</h2><p>UIRinoButton renderiza diretamente o botão HTML. Não delega a componentes diferentes conforme o local de uso. O formato é inferido: sem label, compacto; sem icon, somente texto; com ambos, ícone e texto.</p></div>
+            <div class="developer-guide-showcase__examples"><UIRinoButton command="insert" /><UIRinoButton command="save" /><UIRinoButton command="delete" /><UIRinoButton command="search" /></div>
+            <p>A resolução segue: propriedade explícita → preset de command → default. Omitir uma propriedade herda; <code>:label="null"</code> ou <code>:icon="null"</code> remove o valor herdado; <code>:toggle="false"</code> desliga a alternância herdada. toggleGroup sempre força toggle, inclusive quando toggle é false.</p>
+            <dl class="developer-guide-definition-list">
+                <div><dt><code>command [null]</code></dt><dd>Identificador do preset de variante, ícone, chave de tradução, nome acessível e alternância. Comando desconhecido gera erro.</dd></div>
+                <div><dt><code>variant [secondary]</code></dt><dd>primary, secondary ou destructive. Uma configuração explícita sobrepõe o preset.</dd></div>
+                <div><dt><code>label [null]</code></dt><dd>Chave i18n do texto visível, nunca texto já traduzido. labelParams informa parâmetros de tradução.</dd></div>
+                <div><dt><code>icon [null]</code></dt><dd>Nome do ativo aprovado, sem caminho ou tamanho. O componente escolhe resolução adequada, preservando a dimensão dos tokens.</dd></div>
+                <div><dt><code>accessibleLabel [null]</code></dt><dd>Chave i18n para nome acessível. Obrigatória para ícone sem texto, salvo quando já fornecida pelo command. Com texto, o próprio texto identifica a ação.</dd></div>
+                <div><dt><code>toggle [false]</code></dt><dd>Guarda selecionado/desselecionado e gera aria-pressed automaticamente.</dd></div>
+                <div><dt><code>toggleGroup [null]</code></dt><dd>Referência criada por createRinoToggleGroup. Por padrão, exige um selecionado: ativar outro troca a seleção e clicar no ativo não o desliga. required: false permite deixar o grupo vazio.</dd></div>
+            </dl>
+            <pre class="developer-guide-code"><code>import UIRinoButton from '../../design-system/UIRinoButton.vue';
 
-        <section id="buttons-composition" class="developer-guide-section" aria-labelledby="buttons-composition-title" tabindex="-1">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-composition-title">Composição</h2>
-                <p>O texto nomeia a ação. Um ícone pode reforçar o significado, mas não o substitui quando o comando cria, altera, consulta ou exclui dados.</p>
-            </div>
-            <div class="developer-guide-showcase developer-guide-showcase--split">
-                <div>
-                    <h3>Texto e ícone</h3>
-                    <div class="developer-guide-showcase__examples">
-                        <UiButton><img class="developer-guide__button-icon" :src="iconPath('floppyDisk')" alt="" aria-hidden="true">Salvar</UiButton>
-                        <UiButton variant="secondary"><img class="developer-guide__button-icon" :src="iconPath('dataInsert')" alt="" aria-hidden="true">Inserir</UiButton>
-                    </div>
-                    <pre class="developer-guide-code"><code>&lt;UiButton&gt;
-  &lt;img src=&quot;/assets/icons/floppyDisk_24.png&quot; alt=&quot;&quot; aria-hidden=&quot;true&quot;&gt;
-  Salvar
-&lt;/UiButton&gt;</code></pre>
-                </div>
-                <div>
-                    <h3>Somente ícone</h3>
-                    <div class="developer-guide-showcase__examples">
-                        <IconButton label="Abrir preferências visuais"><img :src="iconPath('theme')" alt="" aria-hidden="true"></IconButton>
-                        <IconButton label="Sair da conta"><img :src="iconPath('logout')" alt="" aria-hidden="true"></IconButton>
-                    </div>
-                    <pre class="developer-guide-code"><code>&lt;IconButton label=&quot;Abrir preferências visuais&quot;&gt;
-  &lt;img src=&quot;/assets/icons/theme_24.png&quot; alt=&quot;&quot; aria-hidden=&quot;true&quot;&gt;
-&lt;/IconButton&gt;</code></pre>
-                </div>
-            </div>
+&lt;UIRinoButton command="insert" @click="openCreate" /&gt;
+&lt;UIRinoButton command="save" :label="null" /&gt;
+&lt;UIRinoButton command="showSelected" label="rinoButtons.commands.showSelected" /&gt;
+&lt;UIRinoButton label="access.profile.changeImage" /&gt;
+&lt;UIRinoButton icon="theme" accessible-label="access.presentation.visualPreferences" /&gt;</code></pre>
+            <aside class="developer-guide-note"><strong>Contrato inválido.</strong> Sem label e icon, o componente gera erro claro. Um ícone sem nome acessível também gera erro. Não há fallback silencioso para comando inexistente.</aside>
         </section>
-
-        <section id="buttons-states" class="developer-guide-section" aria-labelledby="buttons-states-title" tabindex="-1">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-states-title">Estados e comportamento</h2>
-                <p>O componente mantém altura, foco, contraste e escala derivados dos tokens do sistema em todos os temas e preferências de densidade.</p>
-            </div>
-            <div class="developer-guide-showcase__examples">
-                <UiButton disabled>Indisponível</UiButton>
-                <UiButton loading>Salvando alterações</UiButton>
-                <UiButton variant="secondary" disabled>Cancelar</UiButton>
-            </div>
+        <section id="buttons-variants" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-variants-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-variants-title">Variantes</h2><p>A variante comunica a consequência do fluxo, não uma preferência de cor. A mesma regra vale para botões compactos e com texto.</p></div>
+            <div class="developer-guide-showcase__examples"><UIRinoButton command="save" /><UIRinoButton command="insert" /><UIRinoButton command="delete" /></div>
+            <dl class="developer-guide-definition-list">
+                <div><dt>primary</dt><dd>Conclui ou confirma a ação principal, como Salvar. Sem borda visível.</dd></div>
+                <div><dt>secondary</dt><dd>Abre, prepara ou consulta; também cancela sem persistir. É o default sem command. Usa a borda padrão dos controles.</dd></div>
+                <div><dt>destructive</dt><dd>Confirma uma remoção ou descarte, como Excluir. Sem borda visível.</dd></div>
+            </dl>
+            <p>Cancelar usa command="cancel", com ícone e secondary herdados. Não é um tipo de botão nem uma variante.</p>
+        </section>
+        <section id="buttons-composition" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-composition-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-composition-title">Composição</h2></div>
+            <div class="developer-guide-showcase__examples"><UIRinoButton command="confirm" /><UIRinoButton command="confirm" :icon="null" /><UIRinoButton command="confirm" :label="null" /><UIRinoButton icon="theme" accessible-label="access.presentation.visualPreferences" /></div>
+            <p>As três composições acima são produzidas pelo mesmo componente. Para customização específica, forneça chaves i18n e o identificador de ícone; não passe imagens ou texto em slots. Ícones são decorativos para leitores de tela.</p>
+            <pre class="developer-guide-code"><code>&lt;UIRinoButton command="confirm" /&gt;
+&lt;UIRinoButton command="confirm" :icon="null" /&gt;
+&lt;UIRinoButton command="confirm" :label="null" /&gt;</code></pre>
+        </section>
+        <section id="buttons-states" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-states-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-states-title">Estados e comportamento</h2></div>
+            <div class="developer-guide-showcase__examples"><UIRinoButton command="insert" disabled /><UIRinoButton command="save" loading /></div>
             <ul class="developer-guide-rule-list">
-                <li><code>loading</code> desabilita o comando e expõe <code>aria-busy</code>; mantenha no texto o que está sendo processado.</li>
-                <li><code>disabled</code> é reservado a uma condição objetiva que a pessoa ainda consegue compreender ou resolver.</li>
-                <li>Um botão de formulário usa <code>type=&quot;submit&quot;</code>. Os demais mantêm <code>type=&quot;button&quot;</code>, o padrão do componente.</li>
-                <li>A ação principal bloqueia repetição durante o processamento; a alternativa segura permanece disponível apenas quando não conflitar com a operação.</li>
+                <li>disabled e loading têm default false; ambos impedem clique e mudança de seleção. loading também expõe aria-busy.</li>
+                <li>type tem default button; use submit para enviar formulários, ou reset quando esse for o comportamento necessário.</li>
+                <li>@click entrega o MouseEvent original. A referência do componente expõe focus() para foco inicial e restauração.</li>
+                <li>Não simule indisponibilidade com cor ou opacidade local; não reduza dimensões ou alvo de toque.</li>
             </ul>
-            <pre class="developer-guide-code"><code>&lt;UiButton type=&quot;submit&quot; :loading=&quot;saving&quot;&gt;
-  &#123;&#123; saving ? 'Salvando alterações' : 'Salvar alterações' &#125;&#125;
-&lt;/UiButton&gt;</code></pre>
+            <pre class="developer-guide-code"><code>&lt;UIRinoButton command="save" type="submit" :loading="saving" /&gt;</code></pre>
         </section>
-
-        <section id="buttons-toggle" class="developer-guide-section" aria-labelledby="buttons-toggle-title" tabindex="-1">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-toggle-title">Botões de alternância</h2>
-                <p>Também chamados de <em>toggle buttons</em>, mantêm e tornam visível um estado ligado ou desligado. São usados para ativar modos persistentes da própria tela, não para executar uma ação pontual.</p>
-            </div>
+        <section id="buttons-toggle" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-toggle-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-toggle-title">Botões de alternância</h2><p>Toggle buttons representam modos persistentes ligados/desligados. A aparência padrão usa aria-pressed, sem pills, marcas inferiores ou estilos locais.</p></div>
             <div class="developer-guide-showcase developer-guide-showcase--split developer-guide-toggle-demo">
-                <div>
-                    <h3>Compacto</h3>
-                    <div class="developer-guide-showcase__examples">
-                        <IconButton label="Manter seleção" :aria-pressed="keepSelection" @click="keepSelection = !keepSelection"><img :src="iconPath('tableLockSelection')" alt="" aria-hidden="true"></IconButton>
-                    </div>
-                    <p class="developer-guide-toggle-demo__state" role="status">Manter seleção: {{ keepSelection ? 'ligado' : 'desligado' }}.</p>
-                    <pre class="developer-guide-code"><code>&lt;IconButton
-  label=&quot;Manter seleção&quot;
-  :aria-pressed=&quot;keepSelection&quot;
-  @click=&quot;keepSelection = !keepSelection&quot;
-&gt;…&lt;/IconButton&gt;</code></pre>
-                </div>
-                <div>
-                    <h3>Ícone e texto</h3>
-                    <div class="developer-guide-showcase__examples">
-                        <UiButton variant="secondary" :aria-pressed="showSelected" @click="showSelected = !showSelected"><img class="developer-guide__button-icon" :src="iconPath('tableShowSelected')" alt="" aria-hidden="true">Exibir selecionados</UiButton>
-                    </div>
-                    <p class="developer-guide-toggle-demo__state" role="status">Exibir selecionados: {{ showSelected ? 'ligado' : 'desligado' }}.</p>
-                    <pre class="developer-guide-code"><code>&lt;UiButton
-  variant=&quot;secondary&quot;
-  :aria-pressed=&quot;showSelected&quot;
-  @click=&quot;showSelected = !showSelected&quot;
-&gt;
-  &lt;img src=&quot;/assets/icons/tableShowSelected_24.png&quot; alt=&quot;&quot; aria-hidden=&quot;true&quot;&gt;
-  Exibir selecionados
-&lt;/UiButton&gt;</code></pre>
-                </div>
+                <div><h3>Compacto</h3><div class="developer-guide-showcase__examples"><UIRinoButton command="keepSelection" v-model:selected="keepSelection" /></div><p role="status">Manter seleção: {{ keepSelection ? 'ligado' : 'desligado' }}.</p></div>
+                <div><h3>Ícone e texto</h3><div class="developer-guide-showcase__examples"><UIRinoButton command="showSelected" label="rinoButtons.commands.showSelected" v-model:selected="showSelected" /></div><p role="status">Exibir selecionados: {{ showSelected ? 'ligado' : 'desligado' }}.</p></div>
             </div>
-            <ul class="developer-guide-rule-list">
-                <li>O estado é obrigatório e é exposto com <code>aria-pressed</code> recebendo um booleano reativo. A aparência de pressionado é consequência desse atributo; não a simule somente com uma classe ou cor local.</li>
-                <li>O nome da função permanece estável nos dois estados, como “Manter seleção”; <code>aria-pressed</code> informa se ela está ligada ou desligada. Botões compactos sempre recebem <code>label</code>.</li>
-                <li>Use para modos binários persistentes, como manter seleção ou exibir somente os selecionados. Em uma barra de controles, alternadores compactos podem ser colocados lado a lado.</li>
-                <li>Não use <code>aria-pressed</code> para abrir ou fechar conteúdo: nesse caso, o padrão é <code>aria-expanded</code>. Uma ação sem estado persistente continua sendo um botão comum.</li>
-            </ul>
+            <p>Sem selected, o componente guarda internamente um estado inicialmente false. Com v-model:selected, a tela controla o estado e recebe update:selected. Não escreva aria-pressed nem inverta manualmente o estado no @click. Um selected somente de leitura pode representar estado confirmado externamente, sem aceitar a mudança solicitada pelo botão.</p>
+            <h3>Seleção exclusiva por instância</h3>
+            <aside class="developer-guide-note developer-guide-note--mandatory"><strong>Obrigatório.</strong> O grupo padrão mantém exatamente um selecionado enquanto houver membros disponíveis. Clicar novamente no ativo não o desseleciona; para trocar, clique em outro membro. Esta regra pertence ao grupo, não a handlers da tela.</aside>
+            <UiControlGroup label="Demonstração de seleção exclusiva"><UIRinoButton command="keepSelection" :toggle-group="toggleGroup" /><UIRinoButton command="showSelected" :toggle-group="toggleGroup" /></UiControlGroup>
+            <pre class="developer-guide-code"><code>const group = createRinoToggleGroup();
+&lt;UIRinoButton command="keepSelection" :toggle-group="group" /&gt;
+&lt;UIRinoButton command="showSelected" :toggle-group="group" /&gt;</code></pre>
+            <p>Se a tela não informar seleção inicial, o grupo escolhe o primeiro membro disponível após montar. Com v-model:selected, aceite update:selected também para esta inicialização. Se o selecionado sair do grupo ou a tela limpar a seleção externamente, o grupo seleciona o primeiro disponível. Um botão já selecionado pode permanecer ativo enquanto disabled/loading; a seleção não muda apenas por indisponibilidade temporária. Se não houver nenhum selecionado nem membro disponível, a inicialização aguarda um membro disponível.</p>
+            <h3>Grupo com seleção opcional</h3>
+            <UiControlGroup label="Demonstração de seleção opcional"><UIRinoButton command="keepSelection" :toggle-group="optionalToggleGroup" /><UIRinoButton command="showSelected" :toggle-group="optionalToggleGroup" /></UiControlGroup>
+            <pre class="developer-guide-code"><code>const optionalGroup = createRinoToggleGroup({ required: false });</code></pre>
+            <p>Use required: false somente quando o contexto permitir nenhum modo ativo: nesse grupo, clicar no selecionado o desliga. Toggles fora de um grupo continuam independentes e podem ser desligados normalmente.</p>
+            <p>Compartilhe a mesma referência somente entre membros do mesmo conjunto. Crie uma referência diferente para cada janela ou formulário; não use strings ou grupos globais. Os grupos não implementam navegação de radio group: preservam Tab e aria-pressed. Desabilitados não mudam por clique, mas podem ser desselecionados quando outro membro é ativado. Para abrir/fechar conteúdo, use aria-expanded, não toggle.</p>
         </section>
-
-        <section id="buttons-accessibility" class="developer-guide-section" aria-labelledby="buttons-accessibility-title" tabindex="-1">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-accessibility-title">Acessibilidade e regras de adoção</h2>
-                <p>O componente é a fonte de verdade para foco, alvo de toque, cores e estados. O contexto da ação continua sendo responsabilidade de quem o compõe.</p>
-            </div>
-            <ul class="developer-guide-rule-list">
-                <li>Todo botão somente com ícone usa <code>IconButton</code> e recebe <code>label</code> com verbo e objeto da ação.</li>
-                <li>Ícones decorativos usam <code>alt=&quot;&quot;</code> e <code>aria-hidden=&quot;true&quot;</code>; a imagem não substitui um nome acessível.</li>
-                <li>Não use cor, ícone ou posição como único sinal de consequência, seleção, erro ou indisponibilidade.</li>
-                <li>Não escreva <code>&lt;button class=&quot;ui-button…&quot;&gt;</code> em novas telas. Use os componentes para preservar o contrato.</li>
-                <li>Novos modelos de botão exigem atualização deste guia e do componente compartilhado antes de qualquer uso na aplicação.</li>
-            </ul>
+        <section id="buttons-accessibility" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-accessibility-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-accessibility-title">Acessibilidade e regras de adoção</h2></div>
+            <p>O nome acessível e o tooltip dos botões sem texto são traduzidos centralmente. Ícones usam alt vazio e aria-hidden; foco visível e dimensões seguem os tokens. Não use cor ou posição como único indicador de consequência. Elementos especializados como tabs, árvores e links não são exemplos de botão de ação e conservam seu contrato semântico específico.</p>
         </section>
-
-        <section id="buttons-screen-commands" class="developer-guide-section" aria-labelledby="buttons-screen-commands-title" tabindex="-1">
-            <div class="developer-guide-section__heading">
-                <h2 id="buttons-screen-commands-title">Comandos padrão das telas</h2>
-                <p>Estes são os únicos nomes e ícones para comandos transversais. O rótulo visível e o ícone formam uma unidade: não substitua um pelo outro, nem crie sinônimos locais.</p>
-            </div>
+        <section id="buttons-screen-commands" class="developer-guide-section" tabindex="-1" aria-labelledby="buttons-screen-commands-title">
+            <div class="developer-guide-section__heading"><h2 id="buttons-screen-commands-title">Comandos padrão das telas</h2><p>Registro único de botões padronizados, em qualquer contexto. O Modelo é renderizado diretamente por UIRinoButton com o command indicado; ícone e rótulo não são repetidos em outras colunas.</p></div>
+            <p>Nas colunas de configuração, <strong>—</strong> significa o default de UIRinoButton: variant secondary e toggle false. São mostradas apenas diferenças do preset. As demais opções não são redefinidas por estes comandos; seu contrato está no centralizador acima.</p>
             <div class="developer-guide-table-wrap" tabindex="0">
                 <table class="developer-guide-table">
-                    <caption>Comandos textuais de registros, formulários e confirmações</caption>
-                    <thead><tr><th scope="col">Modelo</th><th scope="col">Ícone obrigatório</th><th scope="col">Variante</th><th scope="col">Escopo e sentido</th><th scope="col">Não usar</th></tr></thead>
-                    <tbody>
-                        <tr v-for="command in screenCommands" :key="command.label">
-                            <td><UiButton :variant="command.variant"><img class="developer-guide__button-icon" :src="iconPath(command.icon)" alt="" aria-hidden="true">{{ command.label }}</UiButton></td>
-                            <td><code>{{ command.icon }}_24.png</code></td>
-                            <td><code>{{ command.variant }}</code></td>
-                            <td>{{ command.scope }}</td>
-                            <td>{{ command.notAllowed }}</td>
-                        </tr>
-                    </tbody>
+                    <caption>Registro dos comandos padronizados</caption>
+                    <thead><tr><th scope="col">Modelo</th><th scope="col">command</th><th scope="col">variant</th><th scope="col">toggle</th><th scope="col">Escopo, sentido e restrições</th></tr></thead>
+                    <tbody><tr v-for="command in commands" :key="command.command"><td><UIRinoButton :command="command.command" /></td><td><code>{{ command.command }}</code></td><td><code v-if="command.variant !== 'secondary'">{{ command.variant }}</code><span v-else>—</span></td><td><code v-if="command.toggle">true</code><span v-else>—</span></td><td>{{ command.scope }}</td></tr></tbody>
                 </table>
             </div>
-            <div class="developer-guide-table-wrap" tabindex="0">
-                <table class="developer-guide-table">
-                    <caption>Controles compactos de listagem</caption>
-                    <thead><tr><th scope="col">Modelo</th><th scope="col">Ícone obrigatório</th><th scope="col">Rótulo obrigatório</th><th scope="col">Escopo e sentido</th></tr></thead>
-                    <tbody>
-                        <tr v-for="command in iconOnlyCommands" :key="command.label">
-                            <td><IconButton :label="command.label"><img :src="iconPath(command.icon)" alt="" aria-hidden="true"></IconButton></td>
-                            <td><code>{{ command.icon }}_24.png</code></td>
-                            <td><code>label=&quot;{{ command.label }}&quot;</code></td>
-                            <td>{{ command.scope }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <aside class="developer-guide-note" role="note">
-                <strong>Regra de seleção.</strong> Comandos de uma listagem que operam sobre um registro exigem exatamente uma seleção; o clique deve explicar como corrigir ausência ou excesso de seleção. A disponibilidade por permissão continua sendo controlada pelo servidor.
-            </aside>
         </section>
     </article>
 </template>

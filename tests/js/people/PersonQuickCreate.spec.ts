@@ -88,7 +88,7 @@ describe("PersonQuickCreate", () => {
 
         expect(wrapper.emitted("saved")?.[0][0]).toMatchObject({ id: 8 });
         expect(wrapper.get('button[type="submit"]').text()).toBe(
-            "Criar Pessoa",
+            "Salvar",
         );
         wrapper.unmount();
     });

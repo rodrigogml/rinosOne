@@ -81,7 +81,7 @@
 **Responsive/Adaptive Behavior**: rail é visível a partir de tablet largo; mega menu tem altura intrínseca com mínimo estético e é alinhado verticalmente ao item acionador. Seu topo é limitado à área de janelas, para nunca encobrir topbar ou taskbar, sair do canvas, ocultar conteúdo ou criar rolagem própria. Em telefone, ambos são substituídos pelo painel de INT-WEB-WORKSPACE-004.
 **Accessibility**: categorias são botões com `aria-expanded` e relação com o painel; Escape retorna foco à categoria; menu aberto recebe foco no primeiro destino ou no título quando vazio. Itens têm nome textual, ícone complementar e navegação por Tab; clique externo nunca é a única forma de fechar.
 **Localization**: os componentes aceitam chaves localizadas para categoria, grupos, vazio e rótulos acessíveis. Texto longo quebra linha sem truncar identificação essencial.
-**Components and Design System**: introduz `WorkspaceNavigationRail` e `WorkspaceMegaMenu`; reutiliza `IconButton`, superfícies flutuantes, tokens de transição e ícones SVG.
+**Components and Design System**: introduz `WorkspaceNavigationRail` e `WorkspaceMegaMenu`; reutiliza `UIRinoButton`, superfícies flutuantes, tokens de transição e ícones SVG.
 **Integration and Contracts**: consome somente o catálogo e o contrato interno [workspace-runtime.md](contracts/workspace-runtime.md); nenhuma chamada é feita para montar menu nesta fase.
 **Telemetry**: N/A nesta entrega. Não registrar categoria, destino, organização ou preferências de navegação.
 **Wireframe Requirement**: REQUIRED
@@ -117,7 +117,7 @@
 **Responsive/Adaptive Behavior**: desktop e tablet usam taskbar horizontal de ícones centralizados, com rolagem interna somente quando a quantidade exceder a largura. Telefone troca taskbar por lista modal de superfícies em INT-WEB-WORKSPACE-004.
 **Accessibility**: item ativo expõe estado por `aria-current` ou equivalente; setas podem mover foco dentro da taskbar, Enter ativa e Delete/controle explícito solicita fechamento. Diálogo da área de trabalho prende foco dentro da área abaixo da topbar, oferece Escape apenas quando dispensável e devolve foco ao originador. Diálogo de janela prende foco somente no limite da própria janela. Notificações usam anúncio educado; erros críticos usam anúncio assertivo sem roubar foco.
 **Localization**: títulos de controles, confirmação, tipos e mensagens são localizados; contador ou pluralização de superfícies usa o idioma ativo.
-**Components and Design System**: introduz `WorkspaceTaskbar`, `WorkspaceOverlayHost`, `WorkspaceWindowDialogHost` e `WorkspaceNotificationHost`; reutiliza `UiDialog`, `UiAlert`, `UiButton`, tokens de superfície, foco e movimento.
+**Components and Design System**: introduz `WorkspaceTaskbar`, `WorkspaceOverlayHost`, `WorkspaceWindowDialogHost` e `WorkspaceNotificationHost`; reutiliza `UiDialog`, `UiAlert`, `UIRinoButton`, tokens de superfície, foco e movimento.
 **Integration and Contracts**: usa [workspace-runtime.md](contracts/workspace-runtime.md); superfícies futuras reportam estado pendente e solicitam operações ao runtime.
 **Telemetry**: N/A nesta entrega. Não registrar títulos, conteúdo de mensagens, atalhos ou alterações pendentes.
 **Wireframe Requirement**: REQUIRED

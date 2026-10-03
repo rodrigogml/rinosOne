@@ -49,9 +49,9 @@ describe('DriveExplorer', () => {
         expect(wrapper.text()).not.toContain('Workspace pessoal');
         expect(wrapper.text()).toContain('Projetos');
         expect(wrapper.text()).toContain('Contrato.pdf');
-        expect(wrapper.get('.drive-explorer__usage').attributes('title')).toBe('2 KB utilizados');
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
-        expect(wrapper.text()).toContain('2 Itens (1 Arquivos + 1 Pastas), 1 Itens Selecionados (1 Arquivos + 0 Pastas) - Tamanho Selecionado 2 KB');
+        expect(wrapper.get('.drive-panel__usage').attributes('title')).toBe('2 KB utilizados');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click');
+        expect(wrapper.text()).toContain('2 Itens [1|1] | Selecionados: 1 Itens [0|1] 2 KB');
     });
 
     it('uses the tenant scoped routes and preserves an accessible partial tree', async () => {
@@ -64,59 +64,50 @@ describe('DriveExplorer', () => {
         expect(axios.get).toHaveBeenNthCalledWith(2, '/api/v1/tenants/42/drive/locations/root');
         expect(wrapper.get('main').attributes('aria-label')).toBe('Rinos Drive Work');
         expect(wrapper.text()).not.toContain('Workspace organizacional');
-        expect(wrapper.find('.drive-explorer__tree-list').text()).toContain('Projetos');
+        expect(wrapper.find('.drive-panel__tree-list').text()).toContain('Projetos');
     });
 
-    it('opens one global Drive surface with every accessible workspace and direct shares', async () => {
-        vi.mocked(axios.get).mockResolvedValueOnce({ data: globalCatalog });
-        queueInitialLoad();
+    it('hides folder creation and upload controls in the trash', async () => {
+        const trashProjection = {
+            ...rootProjection,
+            location: { kind: 'trash', id: null, displayName: 'Lixeira', parentFolderId: null },
+            folders: [],
+            files: [],
+        };
+        queueInitialLoad(trashProjection);
+        const wrapper = mountDrive(personalSurface);
+        await flushPromises();
+
+        expect(wrapper.find('[aria-label="Nova pasta"]').exists()).toBe(false);
+        expect(wrapper.find('[aria-label="Upload"]').exists()).toBe(false);
+    });
+
+    it('opens one global Drive with independently configured panels', async () => {
+        vi.mocked(axios.get).mockImplementation((url: string) => {
+            if (url === '/api/v1/drive/catalog') return Promise.resolve({ data: globalCatalog });
+            if (url.endsWith('/tree')) return Promise.resolve({ data: { folders: rootProjection.folders } });
+            return Promise.resolve({ data: rootProjection });
+        });
         const wrapper = mountDrive(globalSurface);
         await flushPromises();
-
-        expect(axios.get).toHaveBeenNthCalledWith(1, '/api/v1/drive/catalog');
-        expect(axios.get).toHaveBeenNthCalledWith(2, '/api/v1/drive/personal/tree');
-        expect(wrapper.text()).toContain('Meu Drive');
-        expect(wrapper.text()).toContain('Oficina Rubi');
-        expect(wrapper.text()).toContain('Compartilhados comigo');
-        expect(wrapper.get('.drive-explorer__breadcrumbs').text()).toContain('Meu Drive');
-        queueInitialLoad();
         await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
         await flushPromises();
-        expect(wrapper.find('.drive-explorer__panes').classes()).toContain('drive-explorer__panes--split');
-        expect(wrapper.find('.drive-navigation-pane').exists()).toBe(true);
-        expect(wrapper.find('.drive-navigation-pane__tree-heading').text()).toContain('Árvore');
-        expect(wrapper.find('.drive-navigation-pane__tree-list').text()).not.toContain('Compartilhados comigo');
-        expect(wrapper.find('.drive-navigation-pane__status').exists()).toBe(true);
-        expect(wrapper.find('.drive-explorer__items').classes()).toContain('drive-explorer__items--list');
-        expect(wrapper.find('.drive-navigation-pane__items').classes()).toContain('drive-navigation-pane__items--list');
-        await wrapper.get('.drive-explorer__view-mode[aria-label="Grade"]').trigger('click');
-        expect(wrapper.find('.drive-navigation-pane__items').classes()).toContain('drive-navigation-pane__items--grid');
-        expect(window.localStorage.getItem('rinos-one.drive.view-mode.v1')).toBe('grid');
-        expect(wrapper.find('[role="separator"]').attributes('aria-label')).toBe('Redimensionar painéis');
-        expect(window.localStorage.getItem('rinos-one.drive.secondary-pane.v1')).toBe('open');
-        expect(wrapper.find('.drive-explorer__mobile-backdrop').exists()).toBe(true);
-        await wrapper.find('.drive-explorer__layout .drive-explorer__item').trigger('click');
-        await wrapper.find('.drive-explorer__layout .drive-explorer__item').trigger('dragstart');
-        await wrapper.find('.drive-navigation-pane').trigger('drop');
-        await flushPromises();
-        expect(wrapper.find('[role="dialog"]').text()).toContain('Transferir itens');
-
+        const primary = wrapper.get('[data-panel="primary"]');
+        const secondary = wrapper.get('[data-panel="secondary"]');
+        expect(wrapper.get('.drive-explorer__panes').classes()).toContain('drive-explorer__panes--split');
+        expect(primary.get('.drive-panel__tree-list').text()).toContain('Compartilhados comigo');
+        expect(secondary.get('.drive-panel__tree-list').text()).not.toContain('Compartilhados comigo');
+        await secondary.get('.drive-panel__window-action [aria-label="Fechar árvore"]').trigger('click');
+        expect(secondary.get('.drive-panel__layout').classes()).toContain('drive-panel__layout--tree-hidden');
+        expect(primary.get('.drive-panel__layout').classes()).not.toContain('drive-panel__layout--tree-hidden');
+        await primary.get('.drive-panel__view-mode[aria-label="Grade"]').trigger('click');
+        expect(primary.get('.drive-panel__items').classes()).toContain('drive-panel__items--grid');
+        expect(secondary.get('.drive-panel__items').classes()).toContain('drive-panel__items--details');
         const panes = wrapper.get('.drive-explorer__panes');
         Object.defineProperty(panes.element, 'getBoundingClientRect', { configurable: true, value: () => ({ left: 100, width: 1000 }) });
-        await wrapper.get('[role="separator"]').trigger('keydown', { key: 'ArrowRight' });
+        await wrapper.get('.drive-explorer__pane-divider').trigger('keydown', { key: 'ArrowRight' });
         expect(panes.attributes('style')).toContain('--drive-primary-pane-width: 528px');
-
-        queueInitialLoad({ ...rootProjection, location: { ...rootProjection.location, displayName: 'Oficina Rubi' } });
-        await wrapper.findAll('.drive-explorer__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
-        await flushPromises();
-        expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/42/drive/locations/root');
-        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/personal/locations/root');
-
-        vi.mocked(axios.get).mockResolvedValueOnce({ data: { folders: [], files: [] } });
-        await wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Compartilhados comigo'))!.trigger('click');
-        await flushPromises();
-        expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/shared-with-me');
-        expect(wrapper.get('[aria-label="Nova pasta"]').attributes('disabled')).toBeDefined();
+        wrapper.unmount();
     });
 
     it('enables folder creation in the secondary panel for an editable organization drive', async () => {
@@ -130,7 +121,7 @@ describe('DriveExplorer', () => {
         await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
         await flushPromises();
 
-        const tenantDrive = wrapper.findAll('.drive-navigation-pane__drive-header').find((item) => item.text().includes('Oficina Rubi'));
+        const tenantDrive = wrapper.findAll('.drive-panel__drive-header').find((item) => item.text().includes('Oficina Rubi'));
         await tenantDrive!.trigger('click');
         await flushPromises();
 
@@ -152,10 +143,10 @@ describe('DriveExplorer', () => {
         await wrapper.get('[aria-label="Abrir segundo painel"]').trigger('click');
         await flushPromises();
 
-        const secondaryItem = wrapper.get('.drive-navigation-pane__item');
+        const secondaryItem = wrapper.findAll('[data-panel="secondary"] .drive-panel__item').at(-1)!;
         await secondaryItem.trigger('click');
         await secondaryItem.trigger('dragstart');
-        await wrapper.get('.drive-explorer__collection').trigger('drop', { dataTransfer: { files: [] } });
+        await wrapper.get('[data-panel="primary"] .drive-panel__tree-item').trigger('drop', { dataTransfer: { files: [] } });
         await flushPromises();
 
         expect(wrapper.get('[role="dialog"]').text()).toContain('Transferir itens');
@@ -181,7 +172,7 @@ describe('DriveExplorer', () => {
 
         vi.mocked(axios.get).mockResolvedValueOnce({ data: { folders: [] } });
         vi.mocked(axios.get).mockResolvedValueOnce({ data: emptyOrganizationProjection });
-        await wrapper.findAll('.drive-explorer__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
+        await wrapper.findAll('.drive-panel__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
         await flushPromises();
 
         expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/42/drive/locations/root');
@@ -205,15 +196,15 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(globalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Compartilhados comigo'))!.trigger('click');
+        await wrapper.findAll('.drive-panel__tree-item').find((item) => item.text().includes('Compartilhados comigo'))!.trigger('click');
         await flushPromises();
-        await wrapper.find('.drive-explorer__item').trigger('dblclick');
+        await wrapper.find('.drive-panel__item').trigger('dblclick');
         await flushPromises();
         await wrapper.vm.$nextTick();
 
         expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/42/drive/tree');
         expect(axios.get).toHaveBeenCalledWith('/api/v1/tenants/42/drive/folders/91');
-        expect(wrapper.find('.drive-explorer__collection-header .sr-only').text()).toBe('Contratos compartilhados');
+        expect(wrapper.find('.drive-panel__collection-header .sr-only').text()).toBe('Contratos compartilhados');
         expect(wrapper.text()).not.toContain('Contrato.pdf');
     });
 
@@ -228,12 +219,12 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(globalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
+        await wrapper.findAll('.drive-panel__drive-header').find((item) => item.text().includes('Oficina Rubi'))!.trigger('click');
         await flushPromises();
 
-        expect(wrapper.text()).toContain('O acesso ao Rinos Drive não está disponível para este contexto.');
+        expect(wrapper.text()).toContain('Você não tem mais acesso a este local.');
         expect(wrapper.text()).not.toContain('Contrato.pdf');
-        expect(wrapper.findAll('.drive-explorer__drive-header').some((item) => item.text().includes('Oficina Rubi'))).toBe(false);
+        expect(wrapper.findAll('.drive-panel__drive-header').some((item) => item.text().includes('Oficina Rubi'))).toBe(false);
     });
 
     it('restores one opaque pending transfer and renders progress without reopening its dialog', async () => {
@@ -323,31 +314,36 @@ describe('DriveExplorer', () => {
     });
 
     it('opens the mobile tree drawer with a native accessible control', async () => {
+        vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
         queueInitialLoad();
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        const trigger = wrapper.find('.drive-explorer__tree-trigger');
+        const trigger = wrapper.find('.drive-panel__window-action button');
         expect(trigger.attributes('aria-label')).toBe('Abrir árvore de pastas');
         await trigger.trigger('click');
-        expect(wrapper.find('.drive-explorer__tree').classes()).toContain('drive-explorer__tree--open');
+        expect(wrapper.find('.drive-panel__tree').classes()).toContain('drive-panel__tree--open');
         expect(wrapper.get('[role="tree"]').attributes('aria-label')).toBe('Árvore');
         const entries = wrapper.findAll('[role="treeitem"]');
         await entries[0].trigger('keydown', { key: 'ArrowDown' });
         expect(document.activeElement).toBe(entries[1].element);
-        await wrapper.get('.drive-explorer__drawer-close').trigger('click');
+        await wrapper.get('.drive-panel__drawer-close').trigger('click');
         expect(document.activeElement).toBe(trigger.element);
+        wrapper.unmount();
+        vi.unstubAllGlobals();
     });
 
     it('keeps the selected collection mode as a local browser preference', async () => {
+        window.localStorage.setItem('rinos-one.drive.view-mode.v2.local.primary', 'list');
         queueInitialLoad();
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        const detailsMode = wrapper.find('.drive-explorer__view-modes [title="Detalhes"]');
+        expect(wrapper.find('.drive-panel__items').classes()).toContain('drive-panel__items--list');
+        const detailsMode = wrapper.find('.drive-panel__view-modes [title="Detalhes"]');
         await detailsMode.trigger('click');
         expect(detailsMode.attributes('aria-pressed')).toBe('true');
-        expect(window.localStorage.getItem('rinos-one.drive.view-mode.v1')).toBe('details');
+        expect(window.localStorage.getItem('rinos-one.drive.view-mode.v2.local.primary')).toBe('details');
     });
 
     it('offers grid, list and details as the only segmented collection views', async () => {
@@ -355,7 +351,7 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        const modes = wrapper.findAll('.drive-explorer__view-mode');
+        const modes = wrapper.findAll('.drive-panel__view-mode');
         expect(modes).toHaveLength(3);
         expect(modes.map((mode) => mode.attributes('title'))).toEqual(['Grade', 'Lista', 'Detalhes']);
         expect(wrapper.text()).not.toContain('Tabela');
@@ -367,11 +363,11 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__item')[0].trigger('keydown', { key: 'Enter' });
+        await wrapper.findAll('.drive-panel__item')[0].trigger('keydown', { key: 'Enter' });
         await flushPromises();
 
         expect(axios.get).toHaveBeenLastCalledWith('/api/v1/drive/personal/folders/7');
-        expect(document.activeElement).toBe(wrapper.get('.drive-explorer__collection-header > .sr-only').element);
+        expect(document.activeElement).toBe(wrapper.get('.drive-panel__collection-header > .sr-only').element);
     });
 
     it('uses the active application locale for Drive controls', async () => {
@@ -415,7 +411,7 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click');
         await wrapper.get('[aria-label="Mover para a lixeira"]').trigger('click');
         expect(wrapper.text()).toContain('Mover itens para a lixeira?');
         await wrapper.get('[role="dialog"] form').trigger('submit');
@@ -432,7 +428,7 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click');
         await wrapper.get('[aria-label="Mover"]').trigger('click');
         await wrapper.get('[role="dialog"] select').setValue('7');
         await wrapper.get('[role="dialog"] form').trigger('submit');
@@ -447,7 +443,7 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click');
         await wrapper.get('[aria-label="Detalhes"]').trigger('click');
         await flushPromises();
 
@@ -465,15 +461,15 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        expect(wrapper.findAll('.drive-explorer__tree-item').some((item) => item.text().includes('Exportações'))).toBe(false);
+        expect(wrapper.findAll('.drive-panel__tree-item').some((item) => item.text().includes('Exportações'))).toBe(false);
 
-        await wrapper.findAll('.drive-explorer__item')[0].trigger('click');
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click', { ctrlKey: true });
+        await wrapper.findAll('.drive-panel__item')[0].trigger('click');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click', { ctrlKey: true });
         await wrapper.get('[aria-label="Baixar"]').trigger('click');
         await flushPromises();
         expect(axios.post).toHaveBeenCalledWith('/api/v1/drive/personal/exports', { items: [{ type: 'folder', id: 7 }, { type: 'file', id: 8 }] });
 
-        const exportsRoot = wrapper.findAll('.drive-explorer__tree-item').find((item) => item.text().includes('Exportações'))!;
+        const exportsRoot = wrapper.findAll('.drive-panel__tree-item').find((item) => item.text().includes('Exportações'))!;
         expect(exportsRoot.exists()).toBe(true);
         await exportsRoot.trigger('click');
         expect(wrapper.text()).toContain('Aguardando processamento');
@@ -485,7 +481,7 @@ describe('DriveExplorer', () => {
         const wrapper = mountDrive(personalSurface);
         await flushPromises();
 
-        await wrapper.findAll('.drive-explorer__item')[1].trigger('click');
+        await wrapper.findAll('.drive-panel__item')[1].trigger('click');
         await wrapper.get('[aria-label="Detalhes"]').trigger('click');
         await flushPromises();
 

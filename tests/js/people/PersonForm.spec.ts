@@ -47,13 +47,13 @@ describe("PersonForm", () => {
             "Inserindo Pessoa",
         );
         const actions = wrapper.get(".person-form__command-bar");
-        expect(actions.get(".ui-button--destructive").text()).toContain(
+        expect(actions.get(".ui-button--secondary").text()).toContain(
             "Cancelar",
         );
         expect(actions.get(".ui-button--primary").text()).toContain("Salvar");
         expect(actions.findAll("img").map((image) => image.attributes("src"))).toEqual([
-            "/assets/icons/btCancel_24.png",
-            "/assets/icons/floppyDisk_24.png",
+            "/assets/icons/btCancel_48.png",
+            "/assets/icons/floppyDisk_48.png",
         ]);
     });
 

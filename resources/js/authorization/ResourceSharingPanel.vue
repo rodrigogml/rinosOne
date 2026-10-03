@@ -3,7 +3,7 @@ import axios from 'axios';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UiAlert from '../design-system/UiAlert.vue';
-import UiButton from '../design-system/UiButton.vue';
+import UIRinoButton from '../design-system/UIRinoButton.vue';
 import UiField from '../design-system/UiField.vue';
 import type { DriveItem, DriveWorkspaceTarget } from '../drive/driveWorkspaceApi';
 import { ContextualAuthorizationAdministrationResponseShapeError, parseContextualAdministrationResourceShare, parseContextualAdministrationWorkspaceResponsible, type ContextualAdministrationResourceShare, type ContextualAdministrationWorkspaceResponsible } from './contextualAdministrationApi';
@@ -104,19 +104,19 @@ onMounted(async () => { opener = document.activeElement instanceof HTMLElement ?
                 <UiField id="share-recipient-query" :label="t('access.authorization.sharing.recipient')" v-slot="field"><input id="share-recipient-query" v-model.trim="recipientQuery" :aria-describedby="field.describedBy" @input="searchRecipients"></UiField>
                 <select v-if="recipients.length" v-model="selectedRecipient" :aria-label="t('access.authorization.sharing.recipientFound')"><option :value="null">{{ t('access.authorization.sharing.selectRecipient') }}</option><option v-for="recipient in recipients" :key="recipient.subjectId" :value="recipient.subjectId">{{ recipient.displayName }}</option></select>
                 <select v-model="newRelation" :aria-label="t('access.authorization.sharing.accessLevel')"><option value="READ">{{ t('access.authorization.sharing.read') }}</option><option value="EDIT">{{ t('access.authorization.sharing.edit') }}</option></select>
-                <UiButton :disabled="selectedRecipient === null || processing" :loading="processing" @click="createShare">{{ t('access.authorization.sharing.confirm') }}</UiButton>
+                <UIRinoButton :disabled="selectedRecipient === null || processing" :loading="processing" @click="createShare" variant="primary" label="access.authorization.sharing.confirm" />
             </section>
             <p v-if="!shares.length">{{ t('access.authorization.sharing.empty') }}</p>
             <ul v-else>
                 <li v-for="share in shares" :key="share.id">
                     <strong>{{ share.grantee.displayName }}</strong> · {{ share.relation === 'READ' ? t('access.authorization.sharing.read') : t('access.authorization.sharing.edit') }} ·
                     <span v-if="share.origin === 'DIRECT'">{{ t('access.authorization.sharing.direct') }}</span><span v-else>{{ t('access.authorization.sharing.inheritedFrom', { resourceId: share.inheritedFrom?.resourceId }) }}</span>
-                    <div v-if="share.origin === 'DIRECT' && editingShareId === share.id" class="resource-sharing-panel__actions"><select v-model="editingRelation" :aria-label="t('access.authorization.sharing.newAccessLevel')"><option value="READ">{{ t('access.authorization.sharing.read') }}</option><option value="EDIT">{{ t('access.authorization.sharing.edit') }}</option></select><UiButton :loading="processing" @click="updateShare">{{ t('access.authorization.sharing.confirmChange') }}</UiButton><UiButton variant="secondary" :disabled="processing" @click="editingShareId = null">{{ t('access.authorization.sharing.cancel') }}</UiButton></div>
-                    <div v-else-if="share.origin === 'DIRECT'" class="resource-sharing-panel__actions"><UiButton variant="secondary" :disabled="processing" @click="beginEdit(share)">{{ t('access.authorization.sharing.change') }}</UiButton><UiButton variant="secondary" :disabled="processing" @click="beginRevoke(share.id, $event)">{{ t('access.authorization.sharing.revoke') }}</UiButton></div>
+                    <div v-if="share.origin === 'DIRECT' && editingShareId === share.id" class="resource-sharing-panel__actions"><select v-model="editingRelation" :aria-label="t('access.authorization.sharing.newAccessLevel')"><option value="READ">{{ t('access.authorization.sharing.read') }}</option><option value="EDIT">{{ t('access.authorization.sharing.edit') }}</option></select><UIRinoButton :loading="processing" @click="updateShare" variant="primary" label="access.authorization.sharing.confirmChange" /><UIRinoButton variant="secondary" :disabled="processing" @click="editingShareId = null" label="access.authorization.sharing.cancel" /></div>
+                    <div v-else-if="share.origin === 'DIRECT'" class="resource-sharing-panel__actions"><UIRinoButton variant="secondary" :disabled="processing" @click="beginEdit(share)" label="access.authorization.sharing.change" /><UIRinoButton variant="secondary" :disabled="processing" @click="beginRevoke(share.id, $event)" label="access.authorization.sharing.revoke" /></div>
                 </li>
             </ul>
-            <section v-if="revokeShareId !== null" class="resource-sharing-panel__confirmation" role="alertdialog" aria-modal="true" aria-labelledby="resource-sharing-revoke-title"><h5 id="resource-sharing-revoke-title" ref="revokeHeading" tabindex="-1">{{ t('access.authorization.sharing.revoke') }}</h5><p>{{ t('access.authorization.sharing.revokeQuestion') }}</p><UiButton :loading="processing" @click="revokeShare">{{ t('access.authorization.sharing.confirmRevoke') }}</UiButton><UiButton variant="secondary" :disabled="processing" @click="cancelRevoke">{{ t('access.authorization.sharing.cancel') }}</UiButton></section>
-            <UiButton variant="secondary" @click="load">{{ t('access.authorization.sharing.reload') }}</UiButton>
+            <section v-if="revokeShareId !== null" class="resource-sharing-panel__confirmation" role="alertdialog" aria-modal="true" aria-labelledby="resource-sharing-revoke-title"><h5 id="resource-sharing-revoke-title" ref="revokeHeading" tabindex="-1">{{ t('access.authorization.sharing.revoke') }}</h5><p>{{ t('access.authorization.sharing.revokeQuestion') }}</p><UIRinoButton :loading="processing" @click="revokeShare" variant="primary" label="access.authorization.sharing.confirmRevoke" /><UIRinoButton variant="secondary" :disabled="processing" @click="cancelRevoke" label="access.authorization.sharing.cancel" /></section>
+            <UIRinoButton variant="secondary" @click="load" label="access.authorization.sharing.reload" />
         </template>
     </aside>
 </template>
